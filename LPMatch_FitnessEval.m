@@ -99,7 +99,7 @@ SS = cell(Ndrop+1,1); % saved evaluated stacking sequences
 
 
 [FiberAngles] = dvAngles2FiberAngles(GuideAngles,LamType);
-LP(:,1)       = SS2LP(Constraints.ply_t,FiberAngles); 
+LP(:,1)       = SS2LP(FiberAngles); 
 SS{1}         = FiberAngles;
 
 
@@ -110,7 +110,7 @@ for iDrop = 1:Ndrop
     ply_angle(DropsLoc) = [];  % drop plies
     
     [FiberAngles] = dvAngles2FiberAngles(ply_angle,LamType);
-    LP(:,1+iDrop) = SS2LP(Constraints.ply_t,FiberAngles);               % Evaluate Droped Lam. LPs
+    LP(:,1+iDrop) = SS2LP(FiberAngles);               % Evaluate Droped Lam. LPs
     SS{1+iDrop} = FiberAngles;
 end
 

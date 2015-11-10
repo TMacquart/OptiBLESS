@@ -1,3 +1,13 @@
+% =====                                                              ==== 
+% Enforcing_10PercentRule converts the ply angles close to [+-45 90 0] such as 
+%   at least 10% of each +45/-45/0/90 plies are present in the laminate.
+%   Note that this may not always be possible.
+%
+% [GuideAngles] = Enforcing_10PercentRule(GuideAngles)
+% =====                                                              ==== 
+
+
+
 % ----------------------------------------------------------------------- %
 % Copyright (c) <2015>, <Terence Macquart>
 % All rights reserved.
@@ -28,7 +38,9 @@
 % ----------------------------------------------------------------------- %
 
 
-function [GuideAngles] = Enforcing_10PercentRule(GuideAngles)
+
+
+function [GuideAngles] = Enforcing_10PercentRule(GuideAngles,unit)
 
 TenpercentDV = round(length(GuideAngles)*0.1);
 N0Plies      = length(find(GuideAngles==0));

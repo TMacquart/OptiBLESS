@@ -39,7 +39,7 @@
 %  [ Drop1    ... DropM]                      
 % =====                                                              ==== %
 
-function [fitness,LP_Final,output] = SST_FitnessEval (Individual,Constraints,IndexLp,LP_obj,Nsec,Nmax,LamType)
+function [fitness,LP,output] = SST_FitnessEval (Individual,Constraints,IndexLp,LP_obj,Nsec,Nmax,LamType)
 
 FEASIBLE  = true;  
 
@@ -47,20 +47,24 @@ NpliesperLam = Individual(1:Nsec);
 
 if Constraints.ORDERED 
     NpliesperLam = sort(NpliesperLam,'descend');                            % repair to ensure thickness is ordered
+    SortIndex    = 1:Nsec;
     if find(diff(NpliesperLam)>0,1)
         FEASIBLE = false;
     end
+else
+    [NpliesperLam,SortIndex] = sort(NpliesperLam,'descend');
 end
 
 NGuidePlies  = max(NpliesperLam);                                           % number of plies in the guide laminate (take half for Sym.)
 NDropPlies   = abs(diff(NpliesperLam));                                          % number of ply drops
-GuideAngles = Individual(Nsec + [1:NGuidePlies]);
+GuideAngles  = Individual(Nsec + [1:NGuidePlies]);
 
 
 % --- organise ply drop sequences
 Ndrop = length(NDropPlies);
 StartIndex   = Nsec+Nmax;
 DropIndexes = cell(1,Ndrop);
+
 for iDrop = 1 : Ndrop
     DropIndexes{iDrop}  = Individual(StartIndex + [1:NDropPlies(iDrop)]);
     StartIndex           = StartIndex + NDropPlies(iDrop);
@@ -98,18 +102,13 @@ end
 % ---
 if 1    % fitness calculation
 
-    FiberAngles   = dvAngles2FiberAngles(GuideAngles,LamType);
+    FiberAngles  = dvAngles2FiberAngles(GuideAngles,LamType);
 
-    LP(:,1)       = SS2LP(Constraints.ply_t,FiberAngles);                % evaluate lamination parameters for the guide
-
-    UniqueDrops        = unique(cell2mat(DropIndexes)); % unique(max(NpliesperLam)-NpliesperLam);
-    LamNplies          = zeros(length(UniqueDrops),1);
-    LamNplies(1)       = (NGuidePlies);
-    SS    = cell(length(UniqueDrops),1);
-    SS{1} = FiberAngles;
+    LP(:,SortIndex(1))      = SS2LP(FiberAngles);            % evaluate lamination parameters for the guide
+    SS{SortIndex(1)}        = FiberAngles;
     
-    index = 2 ;
     for iDrop = 1 : Ndrop
+        index = SortIndex(iDrop+1);
         
         ply_angles = GuideAngles;
         
@@ -122,13 +121,11 @@ if 1    % fitness calculation
          
         FiberAngles      = dvAngles2FiberAngles(ply_angles,LamType);
         SS{index}        = FiberAngles;
-        LamNplies(index) = length(FiberAngles);
         
-        LP(:,index) = SS2LP(Constraints.ply_t,FiberAngles);          % evaluate lamination parameters for the droped laminates
-        index = index+1;
-        
+        LP(:,index) = SS2LP(FiberAngles);          % evaluate lamination parameters for the droped laminates
     end
 end
+
 
 
 % --- select only the LP corresponding to the NpliesperLam (doubled if any)

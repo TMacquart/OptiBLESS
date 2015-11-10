@@ -34,7 +34,22 @@
 % =====                                                              ==== %
 
 function [FiberAngles] = dvAngles2FiberAngles(ply_angle,LamType)
+%% Input Check
+if ~isnumeric(ply_angle) || ~isreal(ply_angle) || ~isvector(ply_angle)
+    error('Input angles (ply_angle) must be numeric and real')
+end
+if size(ply_angle,2) == 1
+    ply_angle = ply_angle';
+end
 
+StringList = {'Balanced_Sym' 'Sym' 'Balanced' 'Generic'};
+Index      = find(strncmp(LamType,StringList,12),1);
+
+if isempty(Index), 
+    error('Non-recognised LamType used as input');
+end
+
+%% Concatenation
 if strcmp(LamType,'Balanced_Sym'),   FiberAngles = [ply_angle, -ply_angle, fliplr([ply_angle, -ply_angle])]';  end
 if strcmp(LamType,'Sym'),            FiberAngles = [ply_angle, fliplr(ply_angle)]';     end
 if strcmp(LamType,'Balanced'),       FiberAngles = [ply_angle, -ply_angle]';            end

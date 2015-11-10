@@ -197,8 +197,6 @@ fprintf(strcat('Running GA \n'))
 [xOpt,fval] = ga(fct_handle,Nvar,[],[],[],[],LB,UB,[],IntegerDV,options);
 display('GA(s) Terminated Successfully')
 
-
-
 % --- Results
 [~,LPMatched,output] = fct_handle(xOpt);
 SS    = output.SS;
@@ -206,11 +204,9 @@ Table = [{'Lam #'} {'Nplies Ori'} {'Nplies SST'} {'Ply Angles'} {'Lam. Param.'} 
 for j = 1:length(sortIndex)
     LP2Match   = LP_obj(:,j);
     QualIndex1 = norm(LPMatched(IndexLp,j) - LP2Match(IndexLp));
-    QualIndex2 = 100*sum(abs(  LPMatched(IndexLp,j) - LP2Match(IndexLp)./LP2Match(IndexLp) ));
+    QualIndex2 = 100*sum(abs(  (LPMatched(IndexLp,j) - LP2Match(IndexLp))./LP2Match(IndexLp) ));
     Table      = [Table ;  {sortIndex(j)} {Obj.Nplies(sortIndex(j))} {length(SS{j})} SS(j) {LPMatched(:,j)} {QualIndex2} {QualIndex1}];
 end
-
-
 
 output.Table     = Table;
 output.xOpt      = xOpt;

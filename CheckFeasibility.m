@@ -1,3 +1,11 @@
+% =====                                                              ==== 
+%           Check the feasibility of a blended stacking sequence
+%            
+% Non-feasible individual are attributed a penalised fitness values
+% GuideAngles must be input in degrees!
+% =====                                                              ==== 
+
+
 % ----------------------------------------------------------------------- %
 % Copyright (c) <2015>, <Terence Macquart>
 % All rights reserved.
@@ -28,12 +36,6 @@
 % ----------------------------------------------------------------------- %
 
 
-% =====                                                              ==== %
-%           Check the feasibility of a blended stacking sequence
-%            
-% Non-feasible individual are attributed a penalised fitness values
-% GuideAngles must be input in degrees!
-% =====                                                              ==== %
 
 function [FEASIBLE] = CheckFeasibility(ConstraintVector,GuideAngles,DropsIndexes,LamType)
 

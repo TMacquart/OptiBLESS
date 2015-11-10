@@ -1,3 +1,7 @@
+% =====                                                              ==== 
+%  This file is a typical user input file that is used to run the code.
+% =====                                                              ==== 
+
 % ----------------------------------------------------------------------- %
 % Copyright (c) <2015>, <Terence Macquart>
 % All rights reserved.
@@ -28,9 +32,6 @@
 % ----------------------------------------------------------------------- %
 
 
-% =====                                                              ==== %
-%               This file is an user input file example of SSR
-% =====                                                              ==== %
 clear all; clc; format short g; format compact; close all;
 
 % ---
@@ -52,8 +53,8 @@ Lp2Match = [
 Objectives.IndexLP = [1 3];
 Objectives.Table   = [{'Laminate Index'} {'Nplies'} {'LP2Match'}  ;
                             {1}            {20}    {Lp2Match(:,1)}    ;
-                            {2}            {16}    {Lp2Match(:,2)}    ;
-                            {3}            {12}    {Lp2Match(:,3)}    ; ];
+                            {2}            {30}    {Lp2Match(:,2)}    ;
+                            {3}            {20}    {Lp2Match(:,3)}    ; ];
 
 
                         
@@ -66,7 +67,7 @@ Constraints.ply_t      = 0.000127;          % ply thickness
 Constraints.ORDERED    = true;              % only for SST
 Constraints.alpha      = 1;                 % only for SST
 Constraints.Balanced   = false; % not worlking for SST Yet
-Constraints.Sym        = false; % not worlking for SST Yet
+Constraints.Sym        = true; % not worlking for SST Yet
 
 % ---
 GAoptions.Npop    = 100; 	   % Population size
@@ -82,3 +83,6 @@ GAoptions.Method  = 'SST';     % Search method used (can be 'LPMatch' or 'SST')
 
 display(output_Match)
 display(output_Match.Table)
+
+
+% 100*sum(abs ( (output_Match.Table{2,5}(Objectives.IndexLP) - Lp2Match(Objectives.IndexLP,2))./Lp2Match(Objectives.IndexLP,2) ))

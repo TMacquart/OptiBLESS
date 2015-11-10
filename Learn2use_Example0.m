@@ -1,3 +1,12 @@
+% =====                                                              ==== 
+%  If you have open this file 1st you're good to continue on reading.
+%  
+%  This file is a typical user input file that is used to run the code.
+%  In order to follow this code you should also open the PDF file provided 
+%  in this folder.
+% =====                                                              ==== 
+
+
 % ----------------------------------------------------------------------- %
 % Copyright (c) <2015>, <Terence Macquart>
 % All rights reserved.
@@ -28,13 +37,11 @@
 % ----------------------------------------------------------------------- %
 
 
-% =====                                                              ==== %
-%               This file is an user input file example of SSR
-% =====                                                              ==== %
+
 clear all; clc; format short g; format compact; close all;
 
 
-% ---
+% ====================== Definition of Objectives ======================= %
 Lp2Match = [
 % LP2Match1 LP2Match2  LP2Match3
     0.1821	 0.2102	 0.3000   % V1A
@@ -50,11 +57,12 @@ Lp2Match = [
     0.2261	 0.3518	 0.4120   % V3D
    -0.3177	-0.2444	-0.3811]; % V4D
 
+ImportanceFactor   = [1 1 1]; 
 Objectives.IndexLP = [1 3];
-Objectives.Table   = [{'Laminate Index'} {'Nplies'} {'LP2Match'}  ;
-                            {1}            {20}    {Lp2Match(:,1)}    ;
-                            {2}            {16}    {Lp2Match(:,2)}    ;
-                            {3}            {12}    {Lp2Match(:,3)}    ; ];
+Objectives.Table   = [{'Laminate Index'} {'Nplies'} {'LP2Match'}     {'Importance'} ;
+                            {1}            {20}    {Lp2Match(:,1)}   {ImportanceFactor(1)} ;
+                            {2}            {24}    {Lp2Match(:,2)}   {ImportanceFactor(2)} ;
+                            {3}            {12}    {Lp2Match(:,3)}   {ImportanceFactor(3)} ; ];
 
 
                         
@@ -81,3 +89,6 @@ GAoptions.Method  = 'LPMatch'; % Search method used (can be 'LPMatch' or 'SST')
 
 display(output_Match)
 display(output_Match.Table)
+
+% 100*sum(abs ( (output_Match.Table{4,4}(Objectives.IndexLP) - Lp2Match(Objectives.IndexLP,3))./Lp2Match(Objectives.IndexLP,3) ))
+

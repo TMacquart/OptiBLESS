@@ -1,3 +1,7 @@
+% =====                                                              ==== 
+%               This file is an user input file example of SSR
+% =====                                                              ==== 
+
 % ----------------------------------------------------------------------- %
 % Copyright (c) <2015>, <Terence Macquart>
 % All rights reserved.
@@ -26,11 +30,6 @@
 % of the authors and should not be interpreted as representing official policies,
 % either expressed or implied, of the FreeBSD Project.
 % ----------------------------------------------------------------------- %
-
-
-% =====                                                              ==== %
-%               This file is an user input file example of SSR
-% =====                                                              ==== %
 
 clear all; clc; format short g; format compact; close all Force;
 
