@@ -53,8 +53,8 @@ Lp2Match = [
 Objectives.IndexLP = [1 3];
 Objectives.Table   = [{'Laminate Index'} {'Nplies'} {'LP2Match'}  ;
                             {1}            {20}    {Lp2Match(:,1)}    ;
-                            {2}            {30}    {Lp2Match(:,2)}    ;
-                            {3}            {20}    {Lp2Match(:,3)}    ; ];
+                            {2}            {12}    {Lp2Match(:,2)}    ;
+                            {3}            {14}    {Lp2Match(:,3)}    ; ];
 
 
                         
@@ -68,6 +68,7 @@ Constraints.ORDERED    = true;              % only for SST
 Constraints.alpha      = 1;                 % only for SST
 Constraints.Balanced   = false; % not worlking for SST Yet
 Constraints.Sym        = true; % not worlking for SST Yet
+Constraints.NRange     = 1.6;
 
 % ---
 GAoptions.Npop    = 100; 	   % Population size
@@ -85,4 +86,4 @@ display(output_Match)
 display(output_Match.Table)
 
 
-% 100*sum(abs ( (output_Match.Table{2,5}(Objectives.IndexLP) - Lp2Match(Objectives.IndexLP,2))./Lp2Match(Objectives.IndexLP,2) ))
+% 100*sum(abs ( (output_Match.Table{2,5}(Objectives.IndexLP) - Lp2Match(Objectives.IndexLP,1))./Lp2Match(Objectives.IndexLP,1) ))

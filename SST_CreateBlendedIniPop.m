@@ -50,13 +50,20 @@ function [IniPop,IniPopLP,EuclideanDist] = SST_CreateBlendedIniPop (nvar,Npop,Nm
 
 % NDropPlies is the number of plies to drop in the symmetric part only
 
+if sum(arrayfun(@(i) length(AllowedNplies{i}),1:length(AllowedNplies) )) == length(AllowedNplies)
+    ConstantThickness = true;
+    IniPop = zeros(Npop,nvar + length(AllowedNplies));
+else
+    ConstantThickness = false;
+    IniPop = zeros(Npop,nvar);
+end
+
 fprintf(' Creating IniPop ... ' )
 ConstraintVector = Constraints.Vector;
 DeltaAngle       = Constraints.DeltaAngle;
 
 EuclideanDist = cell(Npop,1);
 IniPopLP      = cell(Npop,1);
-IniPop        = zeros(Npop,nvar);
 ipop          = 1 ;
 NTried        = 0;
 
@@ -143,12 +150,6 @@ while ipop < Npop + 1
         if FEASIBLE
             [FEASIBLE] = CheckFeasibility(ConstraintVector,GuideAngles,DropsIndexes,LamType);
         end
-    
-%         if Ndrop ~= 0
-%             [~,~,DropIndex] = SST_DropPlies (GuideAngles_noNan,Ndrop,Constraints);    % min(NPliesGuide)
-%         else
-%             DropIndex = nan*ones(1,Nmax);
-%         end
 
         DropsIndexes = [DropsIndexes nan*ones(1,(Nmax-Nmin)-length(DropsIndexes))];
 
@@ -171,5 +172,8 @@ while ipop < Npop + 1
     
 end
 
+if ConstantThickness
+    IniPop(:,1:length(AllowedNplies)) = []; % remove thickness variables
+end
 fprintf(' IniPop Created ... ' )
 end

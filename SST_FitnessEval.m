@@ -39,30 +39,37 @@
 %  [ Drop1    ... DropM]                      
 % =====                                                              ==== %
 
-function [fitness,LP,output] = SST_FitnessEval (Individual,Constraints,IndexLp,LP_obj,Nsec,Nmax,LamType)
+function [fitness,LP,output] = SST_FitnessEval (Individual,Constraints,IndexLp,SortedObj,Nsec,AllowedNplies,LamType)
 
 FEASIBLE  = true;  
+LP_obj = SortedObj.LP_obj;
 
-NpliesperLam = Individual(1:Nsec); 
+if Constraints.NRange == 1
+    NpliesperLam = cell2mat(AllowedNplies);
+else
+    NpliesperLam = Individual(1:Nsec);
+end
 
-if Constraints.ORDERED 
+if Constraints.ORDERED
     NpliesperLam = sort(NpliesperLam,'descend');                            % repair to ensure thickness is ordered
-    SortIndex    = 1:Nsec;
+    SortIndex    = 1:length(NpliesperLam);
     if find(diff(NpliesperLam)>0,1)
         FEASIBLE = false;
     end
 else
     [NpliesperLam,SortIndex] = sort(NpliesperLam,'descend');
+    keyboard
 end
 
+
 NGuidePlies  = max(NpliesperLam);                                           % number of plies in the guide laminate (take half for Sym.)
-NDropPlies   = abs(diff(NpliesperLam));                                          % number of ply drops
+NDropPlies   = abs(diff(NpliesperLam));                                     % number of ply drops
 GuideAngles  = Individual(Nsec + [1:NGuidePlies]);
 
 
 % --- organise ply drop sequences
 Ndrop = length(NDropPlies);
-StartIndex   = Nsec+Nmax;
+StartIndex   = Nsec+max(cell2mat(AllowedNplies));
 DropIndexes = cell(1,Ndrop);
 
 for iDrop = 1 : Ndrop
@@ -104,8 +111,8 @@ if 1    % fitness calculation
 
     FiberAngles  = dvAngles2FiberAngles(GuideAngles,LamType);
 
-    LP(:,SortIndex(1))      = SS2LP(FiberAngles);            % evaluate lamination parameters for the guide
-    SS{SortIndex(1)}        = FiberAngles;
+    LP(:,SortIndex(1))  = SS2LP(FiberAngles);            % evaluate lamination parameters for the guide
+    SS{SortIndex(1)}    = FiberAngles;
     
     for iDrop = 1 : Ndrop
         index = SortIndex(iDrop+1);
@@ -130,9 +137,9 @@ end
 
 % --- select only the LP corresponding to the NpliesperLam (doubled if any)
 
-localFit = zeros(Nsec,1);
-for isec = 1 : Nsec
-    localFit(isec) = rms(LP_obj(IndexLp,isec) - LP(IndexLp,isec));
+localFit = zeros(length(NpliesperLam),1);
+for ilam = 1 : length(NpliesperLam)
+    localFit(ilam) = rms(LP_obj(IndexLp,ilam) - LP(IndexLp,ilam));
 end
 fitness = sum(localFit);
 
