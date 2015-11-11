@@ -30,7 +30,7 @@
 
 % =====                                                              ==== %
 %                            LP Evaluation function                       %
-%                          Used as fitness fct by the SST GA              %
+%                          Used as fitness fct by the GA                  %
 %
 %  The individual is composed of 3 parts:
 %  --------------------------------------------
@@ -39,7 +39,7 @@
 %  [ Drop1    ... DropM]                      
 % =====                                                              ==== %
 
-function [fitness,LP,output,fitRMS] = SST_FitnessEval (Individual,Constraints,IndexLp,SortedObj,Nsec,AllowedNplies,LamType)
+function [fitness,LP,output] = Eval_Fitness (Individual,Constraints,IndexLp,SortedObj,Nsec,AllowedNplies,LamType)
 
 FEASIBLE  = true;  
 LP_obj    = SortedObj.LP_obj;
@@ -65,6 +65,8 @@ end
 NGuidePlies  = max(NpliesperLam);                                           % number of plies in the guide laminate (take half for Sym.)
 NDropPlies   = abs(diff(NpliesperLam));                                     % number of ply drops
 GuideAngles  = Individual(Nsec + [1:NGuidePlies]);
+GuideAngles  = GuideAngles(~isnan(GuideAngles));
+
 
 
 % --- organise ply drop sequences
@@ -73,8 +75,9 @@ StartIndex   = Nsec+max(cell2mat(AllowedNplies));
 DropIndexes = cell(1,Ndrop);
 
 for iDrop = 1 : Ndrop
-    DropIndexes{iDrop}  = Individual(StartIndex + [1:NDropPlies(iDrop)]);
-    StartIndex           = StartIndex + NDropPlies(iDrop);
+    DropIndexesTEMP     = Individual(StartIndex + [1:NDropPlies(iDrop)]);
+    DropIndexes{iDrop}  = DropIndexesTEMP(~isnan(DropIndexesTEMP));
+    StartIndex          = StartIndex + NDropPlies(iDrop);
 end
 
 
@@ -93,14 +96,21 @@ end
 if ConstraintVector(1) % if Damtol, first angle is +- 45
     A = [-1 1];
     GuideAngles(1) = 45*A(GuideAngles(1));
+    if strcmp(LamType,'Generic') % convert to closest
+        if abs(GuideAngles(end)-45) < abs(GuideAngles(end) +45) % closer to +45
+            GuideAngles(end) = 45;
+        else
+            GuideAngles(end) = -45;
+        end
+    end
 end
 
 if ConstraintVector(2)                                                  % 10% rule (0,90,45)
-    [GuideAngles] = Enforcing_10PercentRule(GuideAngles);
+    [GuideAngles] = Enforce_10PercentRule(GuideAngles);
 end
 
 if FEASIBLE
-    [FEASIBLE] = CheckFeasibility(ConstraintVector,GuideAngles,cell2mat(DropIndexes),LamType);
+    [FEASIBLE] = Check_Feasibility(ConstraintVector,GuideAngles,cell2mat(DropIndexes),NGuidePlies,NDropPlies,LamType);
 end
 
 
@@ -109,9 +119,9 @@ end
 % ---
 if 1    % fitness calculation
 
-    FiberAngles  = dvAngles2FiberAngles(GuideAngles,LamType);
+    FiberAngles  = Convert_dvAngles2FiberAngles(GuideAngles,LamType);
 
-    LP(:,SortIndex(1))  = SS2LP(FiberAngles);            % evaluate lamination parameters for the guide
+    LP(:,SortIndex(1))  = Convert_SS2LP(FiberAngles);            % evaluate lamination parameters for the guide
     SS{SortIndex(1)}    = FiberAngles;
     
     for iDrop = 1 : Ndrop
@@ -124,18 +134,21 @@ if 1    % fitness calculation
             DropsLoc(DropsLoc>NGuidePlies) = [];
         end
    
-        ply_angles(DropsLoc) = [];  % drop plies
-         
-        FiberAngles      = dvAngles2FiberAngles(ply_angles,LamType);
+        ply_angles(DropsLoc(DropsLoc<length(ply_angles))) = [];  % drop plies
+
+        FiberAngles      = Convert_dvAngles2FiberAngles(ply_angles,LamType);
         SS{index}        = FiberAngles;
         
-        LP(:,index) = SS2LP(FiberAngles);          % evaluate lamination parameters for the droped laminates
+        LP(:,index) = Convert_SS2LP(FiberAngles);          % evaluate lamination parameters for the droped laminates
     end
 end
 
 
 
 % --- select only the LP corresponding to the NpliesperLam (doubled if any)
+
+fitness1 = Constraints.FitnessFct(LP(:,SortedObj.sortIndex(SortIndex)),NpliesperLam(SortedObj.sortIndex(SortIndex)));
+
 
 localFit = zeros(length(NpliesperLam),1);
 for ilam = 1 : length(NpliesperLam)
@@ -144,19 +157,21 @@ end
 fitness = sum(localFit.*ImportanceFactor);
 
 % --- to remove
-        if 1
-            localFit = zeros(length(NpliesperLam),1);
-            for ilam = 1 : length(NpliesperLam)
-                localFit(ilam) = rms(LP_obj(IndexLp,ilam) - LP(IndexLp,ilam));
-            end
-            fitRMS = sum(localFit.*ImportanceFactor);
-        end
-% ---
+%         if 1
+%             localFit = zeros(length(NpliesperLam),1);
+%             for ilam = 1 : length(NpliesperLam)
+%                 localFit(ilam) = rms(LP_obj(IndexLp,ilam) - LP(IndexLp,ilam));
+%             end
+%             fitRMS = sum(localFit.*ImportanceFactor);
+%         end
+% % ---
 
 
 fitness = fitness ...
         + (Constraints.alpha)*sum(NpliesperLam)*Constraints.ply_t;        % include weight penalty
 
+    if abs(fitness1-fitness)>1e-12, keyboard; end
+    
 if ~FEASIBLE  % add penalty if not FEASIBLE
     if isnan(fitness)
         keyboard

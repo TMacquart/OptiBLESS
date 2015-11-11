@@ -40,7 +40,7 @@
 
 
 
-function [GuideAngles] = Enforcing_10PercentRule(GuideAngles,unit)
+function [GuideAngles] = Enforce_10PercentRule(GuideAngles,unit)
 
 TenpercentDV = round(length(GuideAngles)*0.1);
 N0Plies      = length(find(GuideAngles==0));

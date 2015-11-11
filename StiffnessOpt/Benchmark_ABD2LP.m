@@ -2,6 +2,8 @@
 
 clear all; clc; format short g; format compact; close all;
 
+
+%% Given by User
 Lp2Match = [
 % LP2Match1 LP2Match2  LP2Match3
     0.1821	 1	 0.3000   % V1A
@@ -16,13 +18,16 @@ Lp2Match = [
    -0.2584	 0	 0.1131   % V2D
     0.2261	 1	 0.4120   % V3D
    -0.3177	 0	-0.3811]; % V4D
-
-
 E1  = 13.0e9;
 E2  = 72.0e9;
 G12 = 26.9e9;
 v12 = 0.33;
 h   = 0.000127 * 10;
 
-[A2Match,B2Match,D2Match] = LP2ABD (E1,E2,v12,G12,h,Lp2Match(:,2),true);
+% convert lamination parameters into ABD matrices
+[A2Match,B2Match,D2Match] = LP2ABD (E1,E2,v12,G12,h,Lp2Match(:,1),true);
+
+
+%% Try to find lamination parameters such that stiffness matrices are matching 
 [LP,Abar,Bbar,Dbar]       = ABD2LP (E1,E2,v12,G12,h,A2Match,B2Match,D2Match,true);
+

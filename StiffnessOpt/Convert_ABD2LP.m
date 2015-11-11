@@ -1,4 +1,4 @@
-function [LPOpt,AOpt,BOpt,DOpt] = ABD2LP (E1,E2,v12,G12,h,A2Match,B2Match,D2Match,NORMALISED)
+function [LPOpt,AOpt,BOpt,DOpt] = Convert_ABD2LP (E1,E2,v12,G12,h,A2Match,B2Match,D2Match,NORMALISED)
 
 
 optionsOpt  = optimset('Algorithm','interior-point','GradConstr','on','GradObj','off','DerivativeCheck','on','DiffMaxChange',1e-5,...
@@ -22,7 +22,7 @@ else
     LPOpt = fmincon(EvaluationFct,LPOpt,[],[],[],[],LPmin,LPmax,@LPConstraints,optionsOpt);
 end
 
-[AOpt,BOpt,DOpt] = LP2ABD (E1,E2,v12,G12,h,LPOpt,NORMALISED);
+[AOpt,BOpt,DOpt] = Convert_LP2ABD (E1,E2,v12,G12,h,LPOpt,NORMALISED);
 display('A Matrix Matching Error')
 display([A2Match-AOpt])
 display('B Matrix Matching Error')
@@ -35,7 +35,7 @@ display([D2Match-DOpt])
 
     function [Obj,dObj] = WrapperLP2ABD(E1,E2,v12,G12,h,LP,NORMALISED,A2Match,B2Match,D2Match)
         
-        [A,B,D,dAdLP,dBdLP,dDdLP] = LP2ABD (E1,E2,v12,G12,h,LP,NORMALISED);
+        [A,B,D,dAdLP,dBdLP,dDdLP] = Convert_LP2ABD (E1,E2,v12,G12,h,LP,NORMALISED);
 
         Obj = (A-A2Match).^2 +(B-B2Match).^2 +(D-D2Match).^2;
         Obj = sum(Obj(:));

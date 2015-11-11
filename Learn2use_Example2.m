@@ -30,14 +30,13 @@
 % of the authors and should not be interpreted as representing official policies,
 % either expressed or implied, of the FreeBSD Project.
 % ----------------------------------------------------------------------- %
-
-
 clear all; clc; format short g; format compact; close all;
 
-% ---
-Lp2Match = [
-% LP2Match1 LP2Match2  LP2Match3
-    0.1821	 0.2102	 0.3000   % V1A
+addpath ./StiffnessOpt
+addpath ./FitnessFcts
+
+LpIni = [
+   0.1821	 0.2102	 0.3000   % V1A
    -0.3643	-0.2871	-0.1732   % V2A
     0.0667	 0.1539	 0.1000   % V3A
    -0.1155	-0.1332	-0.1732   % V4A
@@ -49,29 +48,39 @@ Lp2Match = [
    -0.2584	-0.1579	 0.1131   % V2D
     0.2261	 0.3518	 0.4120   % V3D
    -0.3177	-0.2444	-0.3811]; % V4D
+E1  = 13.0e9;
+E2  = 72.0e9;
+G12 = 26.9e9;
+v12 = 0.33;
+h   = 0.000127 * 10;
 
-NPliesIni = [20 20 12];
+% convert lamination parameters into ABD matrices
+for i = 1:size(LpIni,2)
+    [A2Match{i},B2Match{i},D2Match{i}] = Convert_LP2ABD (E1,E2,v12,G12,h,LpIni(:,i),true);                              %#ok<SAGROW>
+    [Lp2Match{i},Abar{i},Bbar{i},Dbar{i}] = Convert_ABD2LP (E1,E2,v12,G12,h,A2Match{i},B2Match{i},D2Match{i},true);     %#ok<SAGROW>
+end
+
+NPliesIni          = [20 20 12];
 ImportanceFactor   = [1 1 1]; 
-Objectives.IndexLP = [1 3];
-Objectives.Table   = [{'Laminate Index'}     {'Nplies'}      {'LP2Match'}     {'Importance'} ;
-                            {1}            {NPliesIni(1)}    {Lp2Match(:,1)}   {ImportanceFactor(1)} ;
-                            {2}            {NPliesIni(2)}    {Lp2Match(:,2)}   {ImportanceFactor(2)} ;
-                            {3}            {NPliesIni(3)}    {Lp2Match(:,3)}   {ImportanceFactor(3)} ; ];
+Objectives.IndexLP = [1:12];
+Objectives.Table   = [{'Laminate Index'}      {'Nplies'}     {'LP2Match'}     {'Importance'} ;
+                            {1}            {NPliesIni(1)}    Lp2Match{1}   {ImportanceFactor(1)} ;
+                            {2}            {NPliesIni(2)}    Lp2Match{2}   {ImportanceFactor(2)} ;
+                            {3}            {NPliesIni(3)}    Lp2Match{3}   {ImportanceFactor(3)} ; ];
 
                         
                         
 % =========================== Default Options =========================== %
 
 %                        [Damtol  Rule10percent  Disorientation  Contiguity   DiscreteAngle  InernalContinuity  Covering];
-Constraints.Vector     = [true       false          true          true         true            false            true];
+Constraints.Vector     = [true       false          false          false         true            false            true];
 Constraints.DeltaAngle = 5;
 Constraints.ply_t      = 0.000127;          % ply thickness
 Constraints.ORDERED    = true;              
 Constraints.alpha      = 0;                
 Constraints.Balanced   = false; 
-Constraints.Sym        = false; 
-Constraints.NRange     = 1.6;
-Constraints.FitnessFct = @(LP,Nplies) SumNormLP(LP,Nplies,Lp2Match,NPliesIni,Objectives.IndexLP,ImportanceFactor,Constraints);
+Constraints.Sym        = true; 
+Constraints.NRange     = 1.0;
 
 
 % ---
@@ -82,6 +91,8 @@ GAoptions.Elitism = 0.1; 	   % Percentage of elite passing to the next Gen.
 GAoptions.Plot    = true; 	   % Plot Boolean
 
 
+GAoptions.FitnessFct = @(LP,Nplies) SumNormLP(LP,Nplies,cell2mat(Lp2Match),NPliesIni,Objectives.IndexLP,ImportanceFactor,Constraints);
+
 
 % ---
 [output_Match]  = RetrieveSS(Objectives,Constraints,GAoptions);
@@ -89,5 +100,16 @@ GAoptions.Plot    = true; 	   % Plot Boolean
 display(output_Match)
 display(output_Match.Table)
 
+% --- Back from SS 2 ABD
+for i = 1:length(output_Match.SS)
+    [AOpt{i},BOpt{i},DOpt{i}] = Convert_SS2ABD(E1,E2,v12,G12,0.000127,output_Match.SS{i},true);                       %#ok<SAGROW>
+end
 
-% 100*sum(abs ( (output_Match.Table{2,5}(Objectives.IndexLP) - Lp2Match(Objectives.IndexLP,2))./Lp2Match(Objectives.IndexLP,2) ))
+A2Match{i}
+AOpt{i}
+
+B2Match{i}
+BOpt{i}
+
+D2Match{i}
+DOpt{i}

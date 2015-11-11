@@ -16,7 +16,7 @@
 % 2 - [A,B,D] = LP2ABD (181e9,10.3e9,0.28,7.17e9,0.000127*16,SS2LP(0.000127,[42 -40  19 -38 -38 18 59 55 -47 -6 -47 32 37 -47 39 -24]' ),true)
 % % ===================================================================== %
 
-function [A,B,D,dAdLP,dBdLP,dDdLP] = LP2ABD (E1,E2,v12,G12,h,LP,NORMALISED)
+function [A,B,D,dAdLP,dBdLP,dDdLP] = Convert_LP2ABD (E1,E2,v12,G12,h,LP,NORMALISED)
 
 V1A = LP(1);
 V2A = LP(2);

@@ -35,7 +35,7 @@
 %  Terence Macquart (26/04/2015)                                          %
 % =====                                                              ==== %
 
-function [Indexes,Laminate] = Generating_DropIndexes (ply_angle,Ndrop,ConstraintVector)
+function [Indexes,Laminate] = Generate_DropIndexes (ply_angle,Ndrop,ConstraintVector)
 
 % -- ply angles defined from bottom (left) to top (right)
 NoSolution = false;

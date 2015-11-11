@@ -46,7 +46,7 @@
 % ----------------------------------------------------------------------- %
 
 
-function [LP,V1A,V2A,V3A,V4A,V1B,V2B,V3B,V4B,V1D,V2D,V3D,V4D] = SS2LP(ply_angle,unit,ply_t,varargin)
+function [LP,V1A,V2A,V3A,V4A,V1B,V2B,V3B,V4B,V1D,V2D,V3D,V4D] = Convert_SS2LP(ply_angle,unit,ply_t,varargin)
 %% Input Check
 
 

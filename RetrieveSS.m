@@ -105,9 +105,9 @@ if 1    % Define objectives (i.e. LP to match)
         LP_obj(:,i) = cell2mat(Obj.Lps2Match(i));
     end
     
-    [SortedObj.Nplies,sortIndex] = sort(Obj.Nplies,'descend');
-    SortedObj.LP_obj             = LP_obj(:,sortIndex);
-    SortedObj.ImportanceFactor   = Obj.ImportanceFactor(sortIndex);
+    [SortedObj.Nplies,SortedObj.sortIndex] = sort(Obj.Nplies,'descend');
+    SortedObj.LP_obj                       = LP_obj(:,SortedObj.sortIndex);
+    SortedObj.ImportanceFactor             = Obj.ImportanceFactor(SortedObj.sortIndex);
     
     
 end
@@ -131,7 +131,7 @@ if 1    % Set GA options
     
     Nvar       = Nsec + Nmax +(Nmax-Nmin) ; % Nsec (thickness) + Nmax Guide plies + Nmax potential drops 
 
-    fct_handle = @(x)FitnessEval(x,Constraints,IndexLp,SortedObj,Nsec,AllowedNplies,LamType);  % handle of the fitness function becomes constraint
+    fct_handle = @(x)Eval_Fitness(x,Constraints,IndexLp,SortedObj,Nsec,AllowedNplies,LamType);  % handle of the fitness function becomes constraint
     
     % ---
     if 1  % design variable boundaries
@@ -141,18 +141,17 @@ if 1    % Set GA options
             LB = [0*ones(Nmax,1)            ; ones(Nmax-Nmin,1)];
             UB = [(Nd_state-1)*ones(Nmax,1) ; Nmax*ones(Nmax-Nmin,1)];
         else
-            keyboard
-            IntegerDV = [[1:Nsec] [(Nsec+Nmax):(Nsec+2*Nmax)]];             % continuous
+            IntegerDV = [[1:Nsec] [(Nsec+Nmax):(Nsec+2*Nmax-Nmin)]];             % continuous
             LB = [-90*ones(Nmax,1); ones(Nmax-Nmin,1)];
             UB = [90*ones(Nmax,1);  Nmax*ones(Nmax-Nmin,1)];
         end
-        for iply=1:Nsec
+        for iply=Nsec:-1:1
             LB = [AllowedNplies{iply}(1)   ;LB];
             UB = [AllowedNplies{iply}(end) ;UB];
         end
         
         if ConstraintVector(1) % if Damtol, make the first ply +- 45
-            if ~ConstraintVector(5),
+            if ~ConstraintVector(5),    
                 IntegerDV = [Nsec+1 IntegerDV];
             end
             LB(Nsec+1) = 1;
@@ -166,7 +165,7 @@ end
 % --- Generate Ini. Pop.
 for i = 1:5
     try
-        [IniPop] = CreateBlendedIniPop (Nvar,GAoptions.Npop,Nmax,Nmin,Constraints,AllowedNplies,LamType);
+        [IniPop] = Generate_IniPop (Nvar,GAoptions.Npop,Nmax,Nmin,Constraints,AllowedNplies,LamType);
         break; 
     catch
         fprintf('Retrying IniPop Gen. ...\n');
@@ -175,7 +174,7 @@ for i = 1:5
              if strcmp(UserResponse,'y')
                  temp = Constraints;
                  temp.Vector = 0* temp.Vector;
-                 [IniPop] = SST_CreateBlendedIniPop (Nvar,GAoptions.Npop,Nsec,Nmax,Nmin,temp,LamType);
+                 [IniPop] = Generate_IniPop (Nvar,GAoptions.Npop,Nsec,Nmax,Nmin,temp,LamType);
              else 
                  error('Code stopped by the user')
              end
@@ -192,21 +191,20 @@ fprintf(strcat('Running GA \n'))
 display('GA(s) Terminated Successfully')
 
 % --- Results
-[~,LPMatched,output,fitRMS] = fct_handle(xOpt);
+[~,LPMatched,output] = fct_handle(xOpt);
 SS    = output.SS;
 Table = [{'Lam #'} {'Nplies Ori'} {'Nplies SST'} {'Ply Angles'} {'Lam. Param.'} {'Error %'} {'Error Norm'} {'Error RMS'}];
-for j = 1:length(sortIndex)
+for j = 1:length(SortedObj.sortIndex)
     LP2Match   = SortedObj.LP_obj(:,j);
     QualIndex1 = 100*sum(abs(  (LPMatched(IndexLp,j) - LP2Match(IndexLp))./LP2Match(IndexLp) ));
     QualIndex2 = norm(LPMatched(IndexLp,j) - LP2Match(IndexLp));
     QualIndex3 = rms(LPMatched(IndexLp,j) - LP2Match(IndexLp));
-    Table      = [Table ;  {sortIndex(j)} {SortedObj.Nplies(j)} {length(SS{j})} SS(j) {LPMatched(:,j)} {QualIndex1} {QualIndex2} {QualIndex3}];
+    Table      = [Table ;  {SortedObj.sortIndex(j)} {SortedObj.Nplies(j)} {length(SS{j})} SS(j) {LPMatched(:,j)} {QualIndex1} {QualIndex2} {QualIndex3}];
 end
 
 output.Table     = Table;
 output.xOpt      = xOpt;
 output.fval      = fval;
-output.fitRMS    = fitRMS;
 
 if ~output.FEASIBLE
     warning('The SST GA could not find a single feasible solution!')

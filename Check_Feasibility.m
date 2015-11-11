@@ -37,19 +37,33 @@
 
 
 
-function [FEASIBLE] = CheckFeasibility(ConstraintVector,GuideAngles,DropsIndexes,LamType)
+function [FEASIBLE] = CheckFeasibility(ConstraintVector,GuideAngles,DropsIndexes,NGuidePlies,NDropPlies,LamType)
 
 FEASIBLE = true;
 
+if length(GuideAngles) ~= NGuidePlies
+    FEASIBLE = false; 
+    return
+end
+
+
+if length(DropsIndexes) ~= sum(NDropPlies)
+    FEASIBLE = false; 
+    return
+end
+
 
 if max(DropsIndexes)>length(GuideAngles) 
-    FEASIBLE = false; % penalise GA individual with non-unique ply drops --- (only infeasible for SST)
+    FEASIBLE = false; 
+    return
 end 
 
 
-if length(DropsIndexes) ~= length(unique(DropsIndexes)),
+if (length(DropsIndexes) ~= length(unique(DropsIndexes))),
     FEASIBLE = false; % penalise GA individual with non-unique ply drops
+    return
 end 
+
 
 if ConstraintVector(1)
     if abs(GuideAngles(1)) ~= 45
@@ -60,13 +74,30 @@ end
 
 
 if ConstraintVector(3) % Disorientation
-    [FiberAngles] = dvAngles2FiberAngles(GuideAngles,LamType);
-    DeltaOrientation = abs(diff(FiberAngles));
-    if ~isempty(find(DeltaOrientation>45,1)),
-        FEASIBLE = false;
-        return
+    [FiberAngles] = Convert_dvAngles2FiberAngles(GuideAngles,LamType);
+    for iply = 1:numel(FiberAngles)-1
+        if FiberAngles(iply)>=-45 && FiberAngles(iply)<=45
+            DetlaAngle = abs(FiberAngles(iply)-FiberAngles(iply+1));
+        elseif FiberAngles(iply)>45
+            if FiberAngles(iply+1)>=-45
+                DetlaAngle = abs(FiberAngles(iply)-FiberAngles(iply+1));
+            else
+                DetlaAngle = abs(FiberAngles(iply)-(180+FiberAngles(iply+1)));
+            end
+        elseif FiberAngles(iply)<-45
+            if FiberAngles(iply+1)<=45
+                DetlaAngle = abs(FiberAngles(iply)-FiberAngles(iply+1));
+            else
+                DetlaAngle = abs(FiberAngles(iply)-(-180+FiberAngles(iply+1)));
+            end
+        end
+        if DetlaAngle>45
+            FEASIBLE = false;
+            return
+        end
     end
 end
+
 
 if ConstraintVector(4) % Contiguity
     DeltaOrientation = abs(diff(GuideAngles));
@@ -83,13 +114,20 @@ if (ConstraintVector(7) || ConstraintVector(6)) && ~isempty(DropsIndexes)    % c
     
     if ConstraintVector(7) && ~isempty(find(DropsLoc == 1,1)), % covering check first ply is not removed
         FEASIBLE = false;  
+        return
     end 
+    
+    if ConstraintVector(7) && strcmp(LamType,'Generic') && ~isempty(find(DropsLoc == length(GuideAngles),1)), % covering check first ply is not removed
+        FEASIBLE = false;
+        return
+    end
     
     if ConstraintVector(6)
         for i = 1 : length(DropsLoc)-3
             deltaLoc = diff(DropsLoc(i:i+3));
             if sum(abs(deltaLoc))==3
                 FEASIBLE = false;
+                return
             end
         end
     end

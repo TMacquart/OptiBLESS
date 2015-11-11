@@ -28,8 +28,8 @@
 % ----------------------------------------------------------------------- %
 
 
-% =====                                                              ==== %
-%            Creates Initial Population of Ply angles for SST             %
+% =====                                                              ==== 
+%            Creates Initial Population of Ply angles                     %
 %                                                                         %
 % Recommended for heavily constrained problems                            %
 %
@@ -43,9 +43,9 @@
 % IniPop        : Initial population matrix ( Stacking Sequence )
 % IniPopLP      : Initial population LP     
 % EuclideanDist : Euclidean Distance between the LP of each Section
-% =====                                                              ==== %
+% =====                                                              ====
 
-function [IniPop,IniPopLP,EuclideanDist] = SST_CreateBlendedIniPop (nvar,Npop,Nmax,Nmin,Constraints,AllowedNplies,LamType)
+function [IniPop,IniPopLP,EuclideanDist] = Generate_IniPop (nvar,Npop,Nmax,Nmin,Constraints,AllowedNplies,LamType)
 
 
 if sum(arrayfun(@(i) length(AllowedNplies{i}),1:length(AllowedNplies) )) == length(AllowedNplies)
@@ -56,7 +56,7 @@ else
     IniPop = zeros(Npop,nvar);
 end
 
-fprintf(' Creating IniPop ... ' )
+fprintf(' Creating IniPop ... \n ' )
 ConstraintVector = Constraints.Vector;
 DeltaAngle       = Constraints.DeltaAngle;
 
@@ -84,36 +84,41 @@ while ipop < Npop + 1
         if ConstraintVector(1)                                              % Damtol
             A = [-1 1];
             GuideAngles(1) = 45*A(ceil(2*rand)); % 1st ply is +- 45
+            if strcmp(LamType,'Generic')
+                GuideAngles(end) = 45*A(ceil(2*rand)); % Last ply is +- 45
+            end
         else
             GuideAngles(1) = -90 + 180*rand;
+            if strcmp(LamType,'Generic')
+                GuideAngles(end) = -90 + 180*rand;
+            end
         end
         
+        if strcmp(LamType,'Generic')
+            NPliesItt =  NPliesGuide - 1;
+        else
+            NPliesItt = NPliesGuide;
+        end
         
-        for iAngle = 2 : NPliesGuide
+        for iAngle = 2 : NPliesItt
             if ConstraintVector(3)
                 if ConstraintVector(4)
                     A = [(-45 + 40*rand) (5 + 40*rand)];
                     AddedAngle = GuideAngles(iAngle-1) + A(ceil(2*rand));
-                    while abs(AddedAngle)>90
-                        AddedAngle = GuideAngles(iAngle-1) + A(ceil(2*rand)); % not too close (min +5) not too far (max 45)
-                    end
                 else
                     AddedAngle = GuideAngles(iAngle-1) + (-45 + 90*rand);
-                    while abs(AddedAngle)>90
-                        AddedAngle = GuideAngles(iAngle-1) + (-45 + 90*rand); % not too far (max 45)
-                    end
                 end
             else
                 if ConstraintVector(4)
                     A = [(-90 + 85*rand) (5 + 85*rand)];
                     AddedAngle = GuideAngles(iAngle-1) + A(ceil(2*rand));
-                    while abs(AddedAngle)>90
-                        AddedAngle = GuideAngles(iAngle-1) + A(ceil(2*rand)); % not too close (min +5)
-                    end
                 else
                     AddedAngle = -90 + 180*rand;    % no constraint - full range
                 end
             end
+            if AddedAngle>90,    AddedAngle = AddedAngle - 180;   end
+            if AddedAngle<-90,   AddedAngle = AddedAngle + 180;   end
+            
             GuideAngles(iAngle) = AddedAngle;
         end                                     % Stack plies according to constraints activated
         
@@ -132,7 +137,7 @@ while ipop < Npop + 1
     
     NdropPlies = (NPliesGuide)-min(NpliesPerLam);
     if NdropPlies>0
-        DropsIndexes = Generating_DropIndexes (GuideAngles,NdropPlies,ConstraintVector);
+        DropsIndexes = Generate_DropIndexes (GuideAngles,NdropPlies,ConstraintVector);
         if isempty(DropsIndexes)
             FEASIBLE = false;
         end
@@ -141,7 +146,7 @@ while ipop < Npop + 1
     end
     
     if FEASIBLE
-        [FEASIBLE] = CheckFeasibility(ConstraintVector,GuideAngles,DropsIndexes,LamType);
+        [FEASIBLE] = Check_Feasibility(ConstraintVector,GuideAngles,DropsIndexes,NPliesGuide,NdropPlies,LamType);
     end
     
     DropsIndexes = [DropsIndexes nan*ones(1,(Nmax-Nmin)-length(DropsIndexes))];
@@ -150,12 +155,20 @@ while ipop < Npop + 1
         if ~ConstraintVector(1)
             GuideAngles = round((90+GuideAngles)/DeltaAngle);
         else
-            GuideAngles(2:end) = round((90+GuideAngles(2:end))/DeltaAngle);
+            if strcmp(LamType,'Generic')
+                GuideAngles(2:end-1) = round((90+GuideAngles(2:end-1))/DeltaAngle);
+            else
+                GuideAngles(2:end) = round((90+GuideAngles(2:end))/DeltaAngle);
+            end
         end
     end
     if ConstraintVector(1) % make the first ply a discrete value with only 2 possible state
         if (GuideAngles(1) == -45), GuideAngles(1) = 1; end
         if (GuideAngles(1) == 45),  GuideAngles(1) = 2; end
+        if strcmp(LamType,'Generic')
+            if (GuideAngles(end) == -45), GuideAngles(end) = 1; end
+            if (GuideAngles(end) == 45),  GuideAngles(end) = 2; end
+        end
     end
     
     GuideAngles = [GuideAngles nan*ones(1,Nmax-length(GuideAngles)) ]; %#ok<AGROW>
