@@ -39,10 +39,11 @@
 %  [ Drop1    ... DropM]                      
 % =====                                                              ==== %
 
-function [fitness,LP,output] = SST_FitnessEval (Individual,Constraints,IndexLp,SortedObj,Nsec,AllowedNplies,LamType)
+function [fitness,LP,output,fitRMS] = SST_FitnessEval (Individual,Constraints,IndexLp,SortedObj,Nsec,AllowedNplies,LamType)
 
 FEASIBLE  = true;  
-LP_obj = SortedObj.LP_obj;
+LP_obj    = SortedObj.LP_obj;
+ImportanceFactor = SortedObj.ImportanceFactor;
 
 if Constraints.NRange == 1
     NpliesperLam = cell2mat(AllowedNplies);
@@ -58,7 +59,6 @@ if Constraints.ORDERED
     end
 else
     [NpliesperLam,SortIndex] = sort(NpliesperLam,'descend');
-    keyboard
 end
 
 
@@ -139,15 +139,30 @@ end
 
 localFit = zeros(length(NpliesperLam),1);
 for ilam = 1 : length(NpliesperLam)
-    localFit(ilam) = rms(LP_obj(IndexLp,ilam) - LP(IndexLp,ilam));
+    localFit(ilam) = norm(LP_obj(IndexLp,ilam) - LP(IndexLp,ilam));
 end
-fitness = sum(localFit);
+fitness = sum(localFit.*ImportanceFactor);
+
+% --- to remove
+        if 1
+            localFit = zeros(length(NpliesperLam),1);
+            for ilam = 1 : length(NpliesperLam)
+                localFit(ilam) = rms(LP_obj(IndexLp,ilam) - LP(IndexLp,ilam));
+            end
+            fitRMS = sum(localFit.*ImportanceFactor);
+        end
+% ---
+
 
 fitness = fitness ...
         + (Constraints.alpha)*sum(NpliesperLam)*Constraints.ply_t;        % include weight penalty
 
-if ~FEASIBLE || isnan(fitness) % add penalty if not FEASIBLE
-   fitness = fitness * 4 ;
+if ~FEASIBLE  % add penalty if not FEASIBLE
+    if isnan(fitness)
+        keyboard
+    else
+    fitness = fitness * 4 ;
+    end
 end
 
 output.SS          = SS;

@@ -42,7 +42,7 @@ GuideLamDv = [+45 -45 90 0 45 90 0 45];
 Drops      = [2 4];
 GuideLam   = [GuideLamDv, -GuideLamDv, fliplr([GuideLamDv, -GuideLamDv])]'; % balanced/symetric
 
-ImportanceFactor = [1 1 1 1];     % relative importance given to matching the guide laminate LPs integer [1,N], the higher the integer = the more impact on the fit. fct.
+ImportanceFactor = [1 1 1];     % relative importance given to matching the guide laminate LPs integer [1,N], the higher the integer = the more impact on the fit. fct.
 NUniqueLam = length(Drops)+1;
 Lp2Match   = zeros(12,NUniqueLam);
 for i = 1:NUniqueLam
@@ -52,7 +52,7 @@ for i = 1:NUniqueLam
     end
     Lam = [Lam, -Lam, fliplr([Lam, -Lam])]'; % balanced/symetric 
     
-    Lp2Match(:,i) = SS2LP(ply_t,Lam);
+    Lp2Match(:,i) = SS2LP(Lam);
     Objectives.Table = [Objectives.Table; [{i} {length(Lam)} {Lp2Match(:,i)} {ImportanceFactor(i)}]];
 end
 
@@ -64,31 +64,32 @@ Objectives.IndexLP = [1 3 9 10 11 12];
 % =========================== Default Options =========================== %
 
 %                        [Damtol  Rule10percent  Disorientation  Contiguity   DiscreteAngle  InernalContinuity  Covering];
-Constraints.Vector     = [true       false          false          false         true            false            true];
+Constraints.Vector     = [false       false          false          false         true            false            false];
 Constraints.DeltaAngle = 45;
 Constraints.ply_t      = ply_t;          % ply thickness
-Constraints.Balanced   = true; % not worlking for SST Yet
-Constraints.Sym        = true; % not worlking for SST Yet
-
+Constraints.Balanced   = true; 
+Constraints.Sym        = true; 
+Constraints.NRange     = 1;
+Constraints.ORDERED    = true;           
+Constraints.alpha      = 0;               
 
 % ---
-GAoptions.Npop    = 50; 	   % Population size
-GAoptions.Ngen    = 1500; 	   % Number of generations
-GAoptions.NgenMin = 1500; 	   % Minimum number of generation calculated
-GAoptions.Elitism = 0.075; 	   % Percentage of elite passing to the next Gen.
+GAoptions.Npop    = 100; 	   % Population size
+GAoptions.Ngen    = 250; 	   % Number of generations
+GAoptions.NgenMin = 250; 	   % Minimum number of generation calculated
+GAoptions.Elitism = 0.05; 	   % Percentage of elite passing to the next Gen.
 GAoptions.Plot    = true; 	   % Plot Boolean
-GAoptions.Method  = 'LPMatch'; % Search method used (can be 'LPMatch' or 'SST')
-
 
 % ---
 Nrun = 10;
 output_Match = cell(1,Nrun);
 feasible     = zeros(1,Nrun);
 fval         = zeros(1,Nrun);
-for i = 1:10
-    [output_Match{i}]  = RetrieveSS_MatchLP(Objectives,Constraints,GAoptions);
+for i = 1:Nrun
+    [output_Match{i}]  = RetrieveSS_SST(Objectives,Constraints,GAoptions);
     feasible(i)        = output_Match{i}.FEASIBLE;
     fval(i)            = output_Match{i}.fval;
+    fitRMS(i)          = output_Match{i}.fitRMS;
 end
 display(feasible)
 display(fval)

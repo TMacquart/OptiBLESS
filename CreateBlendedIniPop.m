@@ -29,12 +29,12 @@
 
 
 % =====                                                              ==== %
-%            Creates Initial Population of Ply angles for GA              %
+%            Creates Initial Population of Ply angles for SST             %
 %                                                                         %
 % Recommended for heavily constrained problems                            %
 %
 % Requires 4 inputs
-% Nvar       : # a design variables = half (the # of plies + # of drops)
+% nvar       : # a design variables = half (the # of plies + # of drops)
 % Npop       : Size of the initial population
 % NDropPlies : Vector containing the # of plies to drop per section
 % EDoutput   : true or false, enable/disable EuclideanDist calculation
@@ -45,29 +45,42 @@
 % EuclideanDist : Euclidean Distance between the LP of each Section
 % =====                                                              ==== %
 
-function [IniPop,IniPopLP,EuclideanDist] = LPMatch_CreateBlendedIniPop (Npop,NguidePlies,NguideDrops,Constraints,LamType)
+function [IniPop,IniPopLP,EuclideanDist] = SST_CreateBlendedIniPop (nvar,Npop,Nmax,Nmin,Constraints,AllowedNplies,LamType)
 
-Nvar = NguidePlies + sum(NguideDrops);
+
+if sum(arrayfun(@(i) length(AllowedNplies{i}),1:length(AllowedNplies) )) == length(AllowedNplies)
+    ConstantThickness = true;
+    IniPop = zeros(Npop,nvar + length(AllowedNplies));
+else
+    ConstantThickness = false;
+    IniPop = zeros(Npop,nvar);
+end
+
+fprintf(' Creating IniPop ... ' )
 ConstraintVector = Constraints.Vector;
 DeltaAngle       = Constraints.DeltaAngle;
 
-fprintf(' Creating IniPop ... ' )
-
 EuclideanDist = cell(Npop,1);
 IniPopLP      = cell(Npop,1);
-IniPop        = zeros(Npop,Nvar);
-
 ipop          = 1 ;
 NTried        = 0;
 
-
 while ipop < Npop + 1
+
+    NpliesPerLam = zeros(1,length(AllowedNplies));
+    for iply = 1:length(AllowedNplies)
+        NpliesPerLam(iply) = AllowedNplies{iply}(randi([1 length(AllowedNplies{iply})],1,1));
+    end
+    NpliesPerLam  = sort(NpliesPerLam,'descend'); 
+    NPliesGuide   = max(NpliesPerLam);
     
-    GuideAngles = zeros(1,NguidePlies);
+    
+    GuideAngles = zeros(1,NPliesGuide);
     
     % ---
     if 1 % enforce constraints on IniPop - Build the angles step by step
         
+
         if ConstraintVector(1)                                              % Damtol
             A = [-1 1];
             GuideAngles(1) = 45*A(ceil(2*rand)); % 1st ply is +- 45
@@ -76,7 +89,7 @@ while ipop < Npop + 1
         end
         
         
-        for iAngle = 2 : NguidePlies
+        for iAngle = 2 : NPliesGuide
             if ConstraintVector(3)
                 if ConstraintVector(4)
                     A = [(-45 + 40*rand) (5 + 40*rand)];
@@ -90,7 +103,7 @@ while ipop < Npop + 1
                         AddedAngle = GuideAngles(iAngle-1) + (-45 + 90*rand); % not too far (max 45)
                     end
                 end
-            else % no disorientation
+            else
                 if ConstraintVector(4)
                     A = [(-90 + 85*rand) (5 + 85*rand)];
                     AddedAngle = GuideAngles(iAngle-1) + A(ceil(2*rand));
@@ -98,26 +111,28 @@ while ipop < Npop + 1
                         AddedAngle = GuideAngles(iAngle-1) + A(ceil(2*rand)); % not too close (min +5)
                     end
                 else
-                     AddedAngle = -90 + 180*rand;    % no constraint - full range
+                    AddedAngle = -90 + 180*rand;    % no constraint - full range
                 end
             end
             GuideAngles(iAngle) = AddedAngle;
         end                                     % Stack plies according to constraints activated
         
-        if ConstraintVector(2) % 10% rule                                       
+        if ConstraintVector(2) % 10% rule
             [GuideAngles] = Enforcing_10PercentRule(GuideAngles);
         end
         
-        if ConstraintVector(5)
+        if ConstraintVector(5) % will overwrite 10%rule if necessary
             GuideAngles = round((GuideAngles)/DeltaAngle)*DeltaAngle; % made multiples of DeltaAngle
         end
-        
+
     end
     % ---
     
-    FEASIBLE =true;
-    if sum(NguideDrops)>0
-        DropsIndexes = Generating_DropIndexes (GuideAngles,sum(NguideDrops),ConstraintVector);
+    FEASIBLE    = true;
+    
+    NdropPlies = (NPliesGuide)-min(NpliesPerLam);
+    if NdropPlies>0
+        DropsIndexes = Generating_DropIndexes (GuideAngles,NdropPlies,ConstraintVector);
         if isempty(DropsIndexes)
             FEASIBLE = false;
         end
@@ -129,12 +144,8 @@ while ipop < Npop + 1
         [FEASIBLE] = CheckFeasibility(ConstraintVector,GuideAngles,DropsIndexes,LamType);
     end
     
-%     if ipop == 1
-%         GuideAngles  = [+45 -45 90 0 45 90 0]
-%         DropsIndexes = [2 4]
-%     end
+    DropsIndexes = [DropsIndexes nan*ones(1,(Nmax-Nmin)-length(DropsIndexes))];
     
-    % formating angles in design variables
     if ConstraintVector(5) % if DiscreteAngles = use integer indexes
         if ~ConstraintVector(1)
             GuideAngles = round((90+GuideAngles)/DeltaAngle);
@@ -147,8 +158,10 @@ while ipop < Npop + 1
         if (GuideAngles(1) == 45),  GuideAngles(1) = 2; end
     end
     
+    GuideAngles = [GuideAngles nan*ones(1,Nmax-length(GuideAngles)) ]; %#ok<AGROW>
+    
     if FEASIBLE
-        IniPop(ipop,:)    = [GuideAngles DropsIndexes]; % here GuideAngles is not necessarily in degrees
+        IniPop(ipop,:) = [NpliesPerLam GuideAngles DropsIndexes];
         ipop = ipop + 1;
     end
     
@@ -160,7 +173,8 @@ while ipop < Npop + 1
     
 end
 
-
-
+if ConstantThickness
+    IniPop(:,1:length(AllowedNplies)) = []; % remove thickness variables
+end
 fprintf(' IniPop Created ... ' )
 end

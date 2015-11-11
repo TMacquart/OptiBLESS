@@ -1,11 +1,6 @@
 % =====                                                              ==== 
-%  If you have open this file 1st you're good to continue on reading.
-%  
 %  This file is a typical user input file that is used to run the code.
-%  In order to follow this code you should also open the PDF file provided 
-%  in this folder.
 % =====                                                              ==== 
-
 
 % ----------------------------------------------------------------------- %
 % Copyright (c) <2015>, <Terence Macquart>
@@ -37,11 +32,9 @@
 % ----------------------------------------------------------------------- %
 
 
-
 clear all; clc; format short g; format compact; close all;
 
-
-% ====================== Definition of Objectives ======================= %
+% ---
 Lp2Match = [
 % LP2Match1 LP2Match2  LP2Match3
     0.1821	 0.2102	 0.3000   % V1A
@@ -61,7 +54,7 @@ ImportanceFactor   = [1 1 1];
 Objectives.IndexLP = [1 3];
 Objectives.Table   = [{'Laminate Index'} {'Nplies'} {'LP2Match'}     {'Importance'} ;
                             {1}            {20}    {Lp2Match(:,1)}   {ImportanceFactor(1)} ;
-                            {2}            {24}    {Lp2Match(:,2)}   {ImportanceFactor(2)} ;
+                            {2}            {30}    {Lp2Match(:,2)}   {ImportanceFactor(2)} ;
                             {3}            {12}    {Lp2Match(:,3)}   {ImportanceFactor(3)} ; ];
 
 
@@ -72,8 +65,11 @@ Objectives.Table   = [{'Laminate Index'} {'Nplies'} {'LP2Match'}     {'Importanc
 Constraints.Vector     = [true       false          false          false         true            false            false];
 Constraints.DeltaAngle = 5;
 Constraints.ply_t      = 0.000127;          % ply thickness
-Constraints.Balanced   = false; % not worlking for SST Yet
-Constraints.Sym        = false; % not worlking for SST Yet
+Constraints.ORDERED    = true;              
+Constraints.alpha      = 0;                
+Constraints.Balanced   = false; 
+Constraints.Sym        = true; 
+Constraints.NRange     = 1;
 
 % ---
 GAoptions.Npop    = 100; 	   % Population size
@@ -81,14 +77,13 @@ GAoptions.Ngen    = 200; 	   % Number of generations
 GAoptions.NgenMin = 200; 	   % Minimum number of generation calculated
 GAoptions.Elitism = 0.1; 	   % Percentage of elite passing to the next Gen.
 GAoptions.Plot    = true; 	   % Plot Boolean
-GAoptions.Method  = 'LPMatch'; % Search method used (can be 'LPMatch' or 'SST')
 
 
 % ---
-[output_Match]  = RetrieveSS_MatchLP(Objectives,Constraints,GAoptions);
+[output_Match]  = RetrieveSS(Objectives,Constraints,GAoptions);
 
 display(output_Match)
 display(output_Match.Table)
 
-% 100*sum(abs ( (output_Match.Table{4,4}(Objectives.IndexLP) - Lp2Match(Objectives.IndexLP,3))./Lp2Match(Objectives.IndexLP,3) ))
 
+% 100*sum(abs ( (output_Match.Table{2,5}(Objectives.IndexLP) - Lp2Match(Objectives.IndexLP,2))./Lp2Match(Objectives.IndexLP,2) ))
