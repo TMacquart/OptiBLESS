@@ -39,11 +39,9 @@
 %  [ Drop1    ... DropM]                      
 % =====                                                              ==== %
 
-function [fitness,LP,output] = Eval_Fitness (Individual,Constraints,IndexLp,SortedObj,Nsec,AllowedNplies,LamType)
+function [fitness,output] = Eval_Fitness (Individual,FitnessFct,Constraints,SortedObj,Nsec,AllowedNplies,LamType)
 
 FEASIBLE  = true;  
-LP_obj    = SortedObj.LP_obj;
-ImportanceFactor = SortedObj.ImportanceFactor;
 
 if Constraints.NRange == 1
     NpliesperLam = cell2mat(AllowedNplies);
@@ -94,8 +92,8 @@ end
 
 % --- check / enforce constraints for ply Guide 
 if ConstraintVector(1) % if Damtol, first angle is +- 45
-    A = [-1 1];
-    GuideAngles(1) = 45*A(GuideAngles(1));
+    R = [-1 1];
+    GuideAngles(1) = 45*R(GuideAngles(1));
     if strcmp(LamType,'Generic') % convert to closest
         if abs(GuideAngles(end)-45) < abs(GuideAngles(end) +45) % closer to +45
             GuideAngles(end) = 45;
@@ -118,10 +116,15 @@ end
 
 % ---
 if 1    % fitness calculation
-
+    
     FiberAngles  = Convert_dvAngles2FiberAngles(GuideAngles,LamType);
-
-    LP(:,SortIndex(1))  = Convert_SS2LP(FiberAngles);            % evaluate lamination parameters for the guide
+    
+    if strcmp(SortedObj.Type,'LP')
+        LP(:,SortIndex(1))  = Convert_SS2LP(FiberAngles);            % evaluate lamination parameters for the guide
+    end
+     if strcmp(SortedObj.Type,'ABD')
+        [A{SortIndex(1)},B{SortIndex(1)},D{SortIndex(1)}] = Convert_SS2ABD (SortedObj.mat(1),SortedObj.mat(2),SortedObj.mat(4),SortedObj.mat(3),Constraints.ply_t,FiberAngles,0);
+    end
     SS{SortIndex(1)}    = FiberAngles;
     
     for iDrop = 1 : Ndrop
@@ -133,53 +136,46 @@ if 1    % fitness calculation
         if max(DropsLoc)>NGuidePlies
             DropsLoc(DropsLoc>NGuidePlies) = [];
         end
-   
+        
         ply_angles(DropsLoc(DropsLoc<length(ply_angles))) = [];  % drop plies
-
+        
         FiberAngles      = Convert_dvAngles2FiberAngles(ply_angles,LamType);
         SS{index}        = FiberAngles;
         
-        LP(:,index) = Convert_SS2LP(FiberAngles);          % evaluate lamination parameters for the droped laminates
+        if strcmp(SortedObj.Type,'LP')
+            LP(:,index) = Convert_SS2LP(FiberAngles);          % evaluate lamination parameters for the droped laminates
+        end
+        if strcmp(SortedObj.Type,'ABD')
+            [A{index},B{index},D{index}] = Convert_SS2ABD (SortedObj.mat(1),SortedObj.mat(2),SortedObj.mat(4),SortedObj.mat(3),Constraints.ply_t,FiberAngles,0);
+        end
     end
 end
 
-
-
-% --- select only the LP corresponding to the NpliesperLam (doubled if any)
-
-fitness1 = Constraints.FitnessFct(LP(:,SortedObj.sortIndex(SortIndex)),NpliesperLam(SortedObj.sortIndex(SortIndex)));
-
-
-localFit = zeros(length(NpliesperLam),1);
-for ilam = 1 : length(NpliesperLam)
-    localFit(ilam) = norm(LP_obj(IndexLp,ilam) - LP(IndexLp,ilam));
+if strcmp(SortedObj.Type,'LP') 
+    fitness = FitnessFct(LP(:,SortedObj.sortIndex(SortIndex)));
 end
-fitness = sum(localFit.*ImportanceFactor);
-
-% --- to remove
-%         if 1
-%             localFit = zeros(length(NpliesperLam),1);
-%             for ilam = 1 : length(NpliesperLam)
-%                 localFit(ilam) = rms(LP_obj(IndexLp,ilam) - LP(IndexLp,ilam));
-%             end
-%             fitRMS = sum(localFit.*ImportanceFactor);
-%         end
-% % ---
+if strcmp(SortedObj.Type,'ABD')
+    fitness = FitnessFct(A(SortedObj.sortIndex(SortIndex)),B(SortedObj.sortIndex(SortIndex)),D(SortedObj.sortIndex(SortIndex)));
+end
 
 
-fitness = fitness ...
-        + (Constraints.alpha)*sum(NpliesperLam)*Constraints.ply_t;        % include weight penalty
-
-    if abs(fitness1-fitness)>1e-12, keyboard; end
-    
 if ~FEASIBLE  % add penalty if not FEASIBLE
-    if isnan(fitness)
-        keyboard
-    else
-    fitness = fitness * 4 ;
+    if isnan(fitness) || isinf(fitness) || ~isreal(fitness)
+        error('Non appropriate Fitness (i.e. NaN,inf or complex) has been detected')
     end
+    fitness = fitness * 4 ;
 end
 
+
+
+if strcmp(SortedObj.Type,'ABD')
+    output.A  = A;
+    output.B  = B;
+    output.D  = D;
+end
+if strcmp(SortedObj.Type,'LP')
+    output.LP          = LP;
+end
 output.SS          = SS;
 output.DropIndexes = DropIndexes;
 output.FEASIBLE    = FEASIBLE;

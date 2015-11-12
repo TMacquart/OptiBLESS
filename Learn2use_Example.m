@@ -50,35 +50,36 @@ Lp2Match = [
     0.2261	 0.3518	 0.4120   % V3D
    -0.3177	-0.2444	-0.3811]; % V4D
 
-NPliesIni = [20 20 12];
-ImportanceFactor   = [1 1 1]; 
+NPliesIni = [24 20 30];
+ScalingCoef = [1 1 1]; 
 Objectives.IndexLP = [1 3];
-Objectives.Table   = [{'Laminate Index'}     {'Nplies'}      {'LP2Match'}     {'Importance'} ;
-                            {1}            {NPliesIni(1)}    {Lp2Match(:,1)}   {ImportanceFactor(1)} ;
-                            {2}            {NPliesIni(2)}    {Lp2Match(:,2)}   {ImportanceFactor(2)} ;
-                            {3}            {NPliesIni(3)}    {Lp2Match(:,3)}   {ImportanceFactor(3)} ; ];
+Objectives.Table   = [{'Laminate Index'}     {'Nplies'}      {'LP2Match'}     {'Scaling Coefficient'} ;
+                            {1}            {NPliesIni(1)}    {Lp2Match(:,1)}   {ScalingCoef(1)} ;
+                            {2}            {NPliesIni(2)}    {Lp2Match(:,2)}   {ScalingCoef(2)} ;
+                            {3}            {NPliesIni(3)}    {Lp2Match(:,3)}   {ScalingCoef(3)} ; ];
 
                         
                         
 % =========================== Default Options =========================== %
 
 %                        [Damtol  Rule10percent  Disorientation  Contiguity   DiscreteAngle  InernalContinuity  Covering];
-Constraints.Vector     = [true       false          true          true         true            false            true];
+Constraints.Vector     = [false       false          false          false         true            false            false];
 Constraints.DeltaAngle = 5;
 Constraints.ply_t      = 0.000127;          % ply thickness
-Constraints.ORDERED    = true;              
-Constraints.alpha      = 0;                
-Constraints.Balanced   = false; 
-Constraints.Sym        = false; 
+Constraints.ORDERED    = true;                         
+Constraints.Balanced   = true; 
+Constraints.Sym        = true; 
 Constraints.NRange     = 1.6;
-Constraints.FitnessFct = @(LP,Nplies) SumNormLP(LP,Nplies,Lp2Match,NPliesIni,Objectives.IndexLP,ImportanceFactor,Constraints);
+
+Objectives.Type        = 'LP'; % 'ABD'
+Objectives.FitnessFct = @(LP,Nplies) SumRMSLP(LP,Objectives);
 
 
 % ---
 GAoptions.Npop    = 100; 	   % Population size
-GAoptions.Ngen    = 200; 	   % Number of generations
-GAoptions.NgenMin = 200; 	   % Minimum number of generation calculated
-GAoptions.Elitism = 0.1; 	   % Percentage of elite passing to the next Gen.
+GAoptions.Ngen    = 250; 	   % Number of generations
+GAoptions.NgenMin = 250; 	   % Minimum number of generation calculated
+GAoptions.Elitism = 0.05; 	   % Percentage of elite passing to the next Gen.
 GAoptions.Plot    = true; 	   % Plot Boolean
 
 
@@ -90,4 +91,6 @@ display(output_Match)
 display(output_Match.Table)
 
 
-% 100*sum(abs ( (output_Match.Table{2,5}(Objectives.IndexLP) - Lp2Match(Objectives.IndexLP,2))./Lp2Match(Objectives.IndexLP,2) ))
+% 100*sum(abs ( (output_Match.Table{2,5}(Objectives.IndexLP) - (Objectives.Table{3,3}(Objectives.IndexLP)))./(Objectives.Table{3,3}(Objectives.IndexLP) )))
+% rms ( (output_Match.Table{2,5}(Objectives.IndexLP) - (Objectives.Table{3,3}(Objectives.IndexLP))))
+% norm ( (output_Match.Table{2,5}(Objectives.IndexLP) - (Objectives.Table{4,3}(Objectives.IndexLP))))

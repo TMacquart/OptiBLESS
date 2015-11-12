@@ -33,6 +33,7 @@
 
 clear all; clc; format short g; format compact; close all Force;
 
+addpath ./FitnessFcts
 
 % --- Creating a real SS to match
 Objectives.Table   = [{'Laminate Index'} {'Nplies'} {'LP2Match'} {'Importance'}];
@@ -52,8 +53,9 @@ for i = 1:NUniqueLam
     end
     Lam = [Lam, -Lam, fliplr([Lam, -Lam])]'; % balanced/symetric 
     
-    Lp2Match(:,i) = SS2LP(Lam);
-    Objectives.Table = [Objectives.Table; [{i} {length(Lam)} {Lp2Match(:,i)} {ImportanceFactor(i)}]];
+    Lp2Match(:,i) = Convert_SS2LP(Lam);
+    NPliesIni(i)  = length(Lam);
+    Objectives.Table = [Objectives.Table; [{i} {NPliesIni(i)} {Lp2Match(:,i)} {ImportanceFactor(i)}]];
 end
 
 Objectives.IndexLP = [1 3 9 10 11 12];
@@ -69,28 +71,32 @@ Constraints.DeltaAngle = 45;
 Constraints.ply_t      = ply_t;          % ply thickness
 Constraints.Balanced   = true; 
 Constraints.Sym        = true; 
-Constraints.NRange     = 1;
+Constraints.NRange     = 1.0;
 Constraints.ORDERED    = true;           
-Constraints.alpha      = 0;               
+
+
+Objectives.FitnessFct = @(LP,Nplies) SumRMSLP(LP,Nplies,Objectives);
 
 % ---
 GAoptions.Npop    = 100; 	   % Population size
 GAoptions.Ngen    = 250; 	   % Number of generations
 GAoptions.NgenMin = 250; 	   % Minimum number of generation calculated
-GAoptions.Elitism = 0.05; 	   % Percentage of elite passing to the next Gen.
-GAoptions.Plot    = true; 	   % Plot Boolean
+GAoptions.Elitism = 0.075; 	   % Percentage of elite passing to the next Gen.
+GAoptions.Plot    = false; 	   % Plot Boolean
 
 % ---
-Nrun = 10;
+Nrun = 100;
 output_Match = cell(1,Nrun);
 feasible     = zeros(1,Nrun);
 fval         = zeros(1,Nrun);
+MeanRMS      = zeros(1,Nrun);
+MeanNorm     = zeros(1,Nrun);
+
 for i = 1:Nrun
-    [output_Match{i}]  = RetrieveSS(Objectives,Constraints,GAoptions);
-    feasible(i)        = output_Match{i}.FEASIBLE;
-    fval(i)            = output_Match{i}.fval;
-    fitRMS(i)          = output_Match{i}.fitRMS;
+    [output_Match{i}] = RetrieveSS(Objectives,Constraints,GAoptions);
+    feasible(i)       = output_Match{i}.FEASIBLE;
+    fval(i)           = output_Match{i}.fval;
+    MeanRMS(i)        = mean(cell2mat(output_Match{i}.Table(2:end,end)));
+    MeanNorm(i)       = mean(cell2mat(output_Match{i}.Table(2:end,end-1)));
 end
-display(feasible)
-display(fval)
 

@@ -58,7 +58,7 @@ if 1    % Define objectives (i.e. LP to match)
     Nsec          = length(Obj.Nplies);
     Obj.ImportanceFactor = cell2mat(Objectives.Table(2:end,4));
     
-    if Constraints.Sym   && Constraints.Balanced,
+    if Constraints.Sym    && Constraints.Balanced,
         LamType = 'Balanced_Sym';
         NpliesUpBound   = round(Obj.Nplies*Constraints.NRange/4)*4;
         NpliesLowBound  = round(Obj.Nplies/4)*4;
@@ -68,7 +68,7 @@ if 1    % Define objectives (i.e. LP to match)
             AllowedNplies{i} = (NpliesLowBound(i):4:NpliesUpBound(i))/4;
         end
     end
-    if Constraints.Sym   && ~Constraints.Balanced,
+    if Constraints.Sym    && ~Constraints.Balanced,
         LamType = 'Sym';
         NpliesUpBound  = round(Obj.Nplies*Constraints.NRange/2)*2;
         NpliesLowBound  = round(Obj.Nplies/2)*2;
@@ -78,7 +78,7 @@ if 1    % Define objectives (i.e. LP to match)
             AllowedNplies{i} = (NpliesLowBound(i):2:NpliesUpBound(i))/2;
         end
     end
-    if ~Constraints.Sym  && Constraints.Balanced,
+    if ~Constraints.Sym   && Constraints.Balanced,
         LamType = 'Balanced';
         NpliesUpBound   = round(Obj.Nplies*Constraints.NRange/2)*2;
         NpliesLowBound  = round(Obj.Nplies/2)*2;
@@ -108,7 +108,10 @@ if 1    % Define objectives (i.e. LP to match)
     [SortedObj.Nplies,SortedObj.sortIndex] = sort(Obj.Nplies,'descend');
     SortedObj.LP_obj                       = LP_obj(:,SortedObj.sortIndex);
     SortedObj.ImportanceFactor             = Obj.ImportanceFactor(SortedObj.sortIndex);
-    
+    AllowedNplies  = AllowedNplies(SortedObj.sortIndex);
+    FitnessFct     = Objectives.FitnessFct;
+    SortedObj.Type = Objectives.Type;
+    SortedObj.mat  = Objectives.mat;
     
 end
 
@@ -131,7 +134,7 @@ if 1    % Set GA options
     
     Nvar       = Nsec + Nmax +(Nmax-Nmin) ; % Nsec (thickness) + Nmax Guide plies + Nmax potential drops 
 
-    fct_handle = @(x)Eval_Fitness(x,Constraints,IndexLp,SortedObj,Nsec,AllowedNplies,LamType);  % handle of the fitness function becomes constraint
+    fct_handle = @(x)Eval_Fitness(x,FitnessFct,Constraints,SortedObj,Nsec,AllowedNplies,LamType);  % handle of the fitness function becomes constraint
     
     % ---
     if 1  % design variable boundaries
@@ -185,21 +188,33 @@ end
 options = gaoptimset(options,'InitialPopulation' ,IniPop);
 
 
+
 % --- run GA
 fprintf(strcat('Running GA \n'))
 [xOpt,fval] = ga(fct_handle,Nvar,[],[],[],[],LB ,UB,[],IntegerDV,options);
 display('GA(s) Terminated Successfully')
 
+
+
 % --- Results
-[~,LPMatched,output] = fct_handle(xOpt);
+[~,output] = fct_handle(xOpt);
+
+keyboard
 SS    = output.SS;
-Table = [{'Lam #'} {'Nplies Ori'} {'Nplies SST'} {'Ply Angles'} {'Lam. Param.'} {'Error %'} {'Error Norm'} {'Error RMS'}];
-for j = 1:length(SortedObj.sortIndex)
-    LP2Match   = SortedObj.LP_obj(:,j);
-    QualIndex1 = 100*sum(abs(  (LPMatched(IndexLp,j) - LP2Match(IndexLp))./LP2Match(IndexLp) ));
-    QualIndex2 = norm(LPMatched(IndexLp,j) - LP2Match(IndexLp));
-    QualIndex3 = rms(LPMatched(IndexLp,j) - LP2Match(IndexLp));
-    Table      = [Table ;  {SortedObj.sortIndex(j)} {SortedObj.Nplies(j)} {length(SS{j})} SS(j) {LPMatched(:,j)} {QualIndex1} {QualIndex2} {QualIndex3}];
+
+if strcmp(SortedObj.Type,'LP')
+    LPMatched = output.LP;
+    Table = [{'Lam #'} {'Nplies Ori'} {'Nplies SST'} {'Ply Angles'} {'Lam. Param.'} {'Error %'} {'Error Norm'} {'Error RMS'}];
+    for j = 1:length(SortedObj.sortIndex)
+        LP2Match   = SortedObj.LP_obj(:,j);
+        QualIndex1 = 100*sum(abs(  (LPMatched(IndexLp,j) - LP2Match(IndexLp))./LP2Match(IndexLp) ));
+        QualIndex2 = norm(LPMatched(IndexLp,j) - LP2Match(IndexLp));
+        QualIndex3 = rms(LPMatched(IndexLp,j) - LP2Match(IndexLp));
+        Table      = [Table ;  {SortedObj.sortIndex(j)} {SortedObj.Nplies(j)} {length(SS{j})} SS(j) {LPMatched(:,j)} {QualIndex1} {QualIndex2} {QualIndex3}];
+    end
+end
+
+if strcmp(SortedObj.Type,'ABD')
 end
 
 output.Table     = Table;

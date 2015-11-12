@@ -36,7 +36,7 @@ addpath ./StiffnessOpt
 addpath ./FitnessFcts
 
 LpIni = [
-   0.1821	 0.2102	 0.3000   % V1A
+    0.1821	 0.2102	 0.3000   % V1A
    -0.3643	-0.2871	-0.1732   % V2A
     0.0667	 0.1539	 0.1000   % V3A
    -0.1155	-0.1332	-0.1732   % V4A
@@ -54,13 +54,20 @@ G12 = 26.9e9;
 v12 = 0.33;
 h   = 0.000127 * 10;
 
+Objectives.mat = [E1 E2 G12 v12 h];
+
 % convert lamination parameters into ABD matrices
 for i = 1:size(LpIni,2)
-    [A2Match{i},B2Match{i},D2Match{i}] = Convert_LP2ABD (E1,E2,v12,G12,h,LpIni(:,i),true);                              %#ok<SAGROW>
+    [A2Match{i},B2Match{i},D2Match{i}]    = Convert_LP2ABD (E1,E2,v12,G12,h,LpIni(:,i),true);                              %#ok<SAGROW>
     [Lp2Match{i},Abar{i},Bbar{i},Dbar{i}] = Convert_ABD2LP (E1,E2,v12,G12,h,A2Match{i},B2Match{i},D2Match{i},true);     %#ok<SAGROW>
 end
 
-NPliesIni          = [20 20 12];
+
+Objectives.A = A2Match;
+Objectives.B = B2Match;
+Objectives.D = D2Match;
+
+NPliesIni          = [20 22 12];
 ImportanceFactor   = [1 1 1]; 
 Objectives.IndexLP = [1:12];
 Objectives.Table   = [{'Laminate Index'}      {'Nplies'}     {'LP2Match'}     {'Importance'} ;
@@ -76,8 +83,7 @@ Objectives.Table   = [{'Laminate Index'}      {'Nplies'}     {'LP2Match'}     {'
 Constraints.Vector     = [true       false          false          false         true            false            true];
 Constraints.DeltaAngle = 5;
 Constraints.ply_t      = 0.000127;          % ply thickness
-Constraints.ORDERED    = true;              
-Constraints.alpha      = 0;                
+Constraints.ORDERED    = true;                           
 Constraints.Balanced   = false; 
 Constraints.Sym        = true; 
 Constraints.NRange     = 1.0;
@@ -91,7 +97,8 @@ GAoptions.Elitism = 0.1; 	   % Percentage of elite passing to the next Gen.
 GAoptions.Plot    = true; 	   % Plot Boolean
 
 
-GAoptions.FitnessFct = @(LP,Nplies) SumNormLP(LP,Nplies,cell2mat(Lp2Match),NPliesIni,Objectives.IndexLP,ImportanceFactor,Constraints);
+Objectives.Type        = 'ABD'
+Objectives.FitnessFct = @(A,B,D) SumRMSABD(A,B,D,Objectives);
 
 
 % ---

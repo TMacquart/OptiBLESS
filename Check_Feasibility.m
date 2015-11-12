@@ -37,7 +37,7 @@
 
 
 
-function [FEASIBLE] = CheckFeasibility(ConstraintVector,GuideAngles,DropsIndexes,NGuidePlies,NDropPlies,LamType)
+function [FEASIBLE] = Check_Feasibility(ConstraintVector,GuideAngles,DropsIndexes,NGuidePlies,NDropPlies,LamType)
 
 FEASIBLE = true;
 
