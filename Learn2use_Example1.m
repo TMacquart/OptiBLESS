@@ -33,51 +33,87 @@
 
 clear all; clc; format short g; format compact; close all;
 
-% ---
-Lp2Match = [
-% LP2Match1 LP2Match2  LP2Match3
-    0.1821	 0.2102	 0.3000   % V1A
-   -0.3643	-0.2871	-0.1732   % V2A
-    0.0667	 0.1539	 0.1000   % V3A
-   -0.1155	-0.1332	-0.1732   % V4A
-    0.0000	 0.0000	 0.0000   % V1B
-    0.0000	 0.0000	 0.0000   % V2B
-    0.0000	 0.0000	 0.0000   % V3B
-    0.0000	 0.0000	 0.0000   % V4B
-    0.1699	 0.1227	-0.0741   % V1D
-   -0.2584	-0.1579	 0.1131   % V2D
-    0.2261	 0.3518	 0.4120   % V3D
-   -0.3177	-0.2444	-0.3811]; % V4D
+global Pop
 
-NPliesIni = [26 20 16];
-ScalingCoef = [1 1 1]; 
-Objectives.IndexLP = [1 3];
-Objectives.Table   = [{'Laminate #'}     {'Nplies'}      {'LP2Match'}     {'Scaling Coefficient'} ;
-                            {1}            {NPliesIni(1)}    {Lp2Match(:,1)}   {ScalingCoef(1)} ;
-                            {2}            {NPliesIni(2)}    {Lp2Match(:,2)}   {ScalingCoef(2)} ;
-                            {3}            {NPliesIni(3)}    {Lp2Match(:,3)}   {ScalingCoef(3)} ; ];
+if 0
+    for i=1:length(Pop)
+        MeanNply(i) = mean(Pop{i}(:,1));
+        StdNply(i) = std(Pop{i}(:,1));
+        
+        MeanTheta1(i) = mean(Pop{i}(:,2));
+        StdTheta1(i) = std(Pop{i}(:,2));
+    end
+    figure
+    hold all
+%     plot(MeanTheta1)
+%     plot(StdTheta1)
+    plot(MeanNply)
+    plot(StdNply)
+end
 
-                        
-                        
+% --- bottom [ 45   -45    90     0    45    90     0    45] Top
+% with   
+E1   = 13.0e9;
+E2   = 72.0e9;
+G12  = 26.9e9;
+v12  = 0.33;
+tply = 0.000127;  % being the ply thickness
+h    = 8*tply;
+
+A2Match ={[
+   1.0874e+11   5.8225e+10  -9.2917e+09
+   5.8225e+10   1.0874e+11  -9.2917e+09
+  -9.2917e+09  -9.2917e+09   2.5255e+10]};
+B2Match ={[
+  -9.7029e+09   4.1122e+08  -6.9687e+09
+   4.1122e+08   8.8804e+09  -6.9687e+09
+  -6.9687e+09  -6.9687e+09   4.1122e+08]};
+D2Match ={[
+   1.0602e+11   5.7454e+10   -1.626e+10
+   5.7454e+10   1.1299e+11   -1.626e+10
+   -1.626e+10   -1.626e+10   2.4484e+10]};
+
+Objectives.mat = [E1 E2 G12 v12 h];
+ 
+Objectives.A = A2Match;
+Objectives.B = B2Match;
+Objectives.D = D2Match;
+
+NPliesIni        = [6];
+ScalingCoef      = [1]; 
+
+Objectives.IndexAStiff = [1:9];
+Objectives.IndexBStiff = [1:9];
+Objectives.IndexDStiff = [1:9];
+
+
+ScalingCoef = [1]; 
+Objectives.IndexLP = [1:12];
+Objectives.Table   = [{'Laminate #'}     {'Nplies'}      {'LP2Match'}   {'Scaling Coefficient'} ;
+                            {1}          {NPliesIni(1)}  {nan}          {ScalingCoef(1)} ; ];
+
+
 % =========================== Default Options =========================== %
 
 %                        [Damtol  Rule10percent  Disorientation  Contiguity   DiscreteAngle  InernalContinuity  Covering];
 Constraints.Vector     = [false       false          false          false         true            false            false];
-Constraints.DeltaAngle = 5;
+Constraints.DeltaAngle = 45;
 Constraints.ply_t      = 0.000127;          % ply thickness
 Constraints.ORDERED    = true;                         
 Constraints.Balanced   = false; 
 Constraints.Sym        = false; 
-Constraints.NRange     = 1.0;
+Constraints.NRange     = 1.4;
 
-Objectives.Type        = 'LP'; % 'ABD' 'SS' 'LP'
-Objectives.FitnessFct = @(LP) SumRMSLP(LP,Objectives);
+Objectives.Type        = 'ABD'; 
+Objectives.FitnessFct = @(A,B,D) SumRMSABD(A,B,D,Objectives);
+
 
 % ---
 GAoptions.Npop    = 100; 	   % Population size
-GAoptions.Ngen    = 250; 	   % Number of generations
+GAoptions.Ngen    = 500; 	   % Number of generations
 GAoptions.NgenMin = 250; 	   % Minimum number of generation calculated
-GAoptions.Elitism = 0.05; 	   % Percentage of elite passing to the next Gen.
+GAoptions.Elitism = 0.01; 	   % Percentage of elite passing to the next Gen.
+GAoptions.PC      = 0.5; 	   % Percentage of crossover
 GAoptions.Plot    = true; 	   % Plot Boolean
 
 
@@ -88,28 +124,16 @@ GAoptions.Plot    = true; 	   % Plot Boolean
 display(output_Match)
 display(output_Match.Table)
 
-%% Checking output results are correct
-IndexLp = Objectives.IndexLP;
-for i = 2:length(NPliesIni)+1
-    LP2Match = Objectives.Table{i,3};
-    if sum(abs(LP2Match-output_Match.Table{i,5}))>1e-10
-        error('non matching LP2Match')
-    end
-    
-    LP = Convert_SS2LP(output_Match.Table{i,4});
-    if sum(abs(LP-output_Match.Table{i,6}))>1e-10
-        error('non matching SS and LPOpt')
-    end
-    
-    if abs( rms (LP(IndexLp)-LP2Match(IndexLp))-output_Match.Table{i,9})>1e-10
-        error('non matching RSM')
-    end
-    
-    if abs( norm (LP(IndexLp)-LP2Match(IndexLp))-output_Match.Table{i,8})>1e-10
-        error('non matching norm')
-    end
-    
-    if abs( 100*sum(abs(  (LP(IndexLp) - LP2Match(IndexLp))./LP2Match(IndexLp) )) - output_Match.Table{i,7})>1e-10
-        error('non matching error percent')
-    end
+% --- Back from SS 2 ABD
+for i = 1:length(output_Match.SS)
+    [AOpt{i},BOpt{i},DOpt{i}] = Convert_SS2ABD(E1,E2,v12,G12,tply,output_Match.SS{i},true);                       %#ok<SAGROW>
 end
+
+A2Match{i}
+AOpt{i}
+
+B2Match{i}
+BOpt{i}
+
+D2Match{i}
+DOpt{i}

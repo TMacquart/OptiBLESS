@@ -75,12 +75,11 @@ while ipop < Npop + 1
     NPliesGuide   = max(NpliesPerLam);
     
     
-    GuideAngles = zeros(1,NPliesGuide);
+    GuideAngles = zeros(1,Nmax); % some non-coded genea are included
     
     % ---
     if 1 % enforce constraints on IniPop - Build the angles step by step
         
-
         if ConstraintVector(1)                                              % Damtol
             A = [-1 1];
             GuideAngles(1) = 45*A(ceil(2*rand)); % 1st ply is +- 45
@@ -88,17 +87,11 @@ while ipop < Npop + 1
                 GuideAngles(end) = 45*A(ceil(2*rand)); % Last ply is +- 45
             end
         else
-            GuideAngles(1) = -90 + 180*rand;
-            if strcmp(LamType,'Generic')
-                GuideAngles(end) = -90 + 180*rand;
-            end
+            GuideAngles(1)   = randi([0 length(0:DeltaAngle:180)-1],1,1)*DeltaAngle -90;
+            GuideAngles(end) = randi([0 length(0:DeltaAngle:180)-1],1,1)*DeltaAngle -90;
         end
         
-        if strcmp(LamType,'Generic')
-            NPliesItt =  NPliesGuide - 1;
-        else
-            NPliesItt = NPliesGuide;
-        end
+        if strcmp(LamType,'Generic'),   NPliesItt = Nmax - 1;     end
         
         for iAngle = 2 : NPliesItt
             if ConstraintVector(3)
@@ -113,7 +106,7 @@ while ipop < Npop + 1
                     A = [(-90 + 85*rand) (5 + 85*rand)];
                     AddedAngle = GuideAngles(iAngle-1) + A(ceil(2*rand));
                 else
-                    AddedAngle = -90 + 180*rand;    % no constraint - full range
+                    AddedAngle = randi([0 length(0:DeltaAngle:180)-1],1,1)*DeltaAngle-90; % no constraint - full range (use randi for uniform PDF)
                 end
             end
             if AddedAngle>90,    AddedAngle = AddedAngle - 180;   end
@@ -133,11 +126,11 @@ while ipop < Npop + 1
     end
     % ---
     
-    FEASIBLE    = true;
+    FEASIBLE = true;
     
     NdropPlies = (NPliesGuide)-min(NpliesPerLam);
     if NdropPlies>0
-        DropsIndexes = Generate_DropIndexes (GuideAngles,NdropPlies,ConstraintVector);
+        DropsIndexes = Generate_DropIndexes (GuideAngles(1:NPliesGuide),NdropPlies,ConstraintVector);
         if isempty(DropsIndexes)
             FEASIBLE = false;
         end
@@ -146,11 +139,12 @@ while ipop < Npop + 1
     end
     
     if FEASIBLE
-        [FEASIBLE] = Check_Feasibility(ConstraintVector,GuideAngles,DropsIndexes,NPliesGuide,NdropPlies,LamType);
+        [FEASIBLE] = Check_Feasibility(ConstraintVector,GuideAngles(1:NPliesGuide),DropsIndexes,NPliesGuide,NdropPlies,LamType);
     end
     
     DropsIndexes = [DropsIndexes nan*ones(1,(Nmax-Nmin)-length(DropsIndexes))];
     
+
     if ConstraintVector(5) % if DiscreteAngles = use integer indexes
         if ~ConstraintVector(1)
             GuideAngles = round((90+GuideAngles)/DeltaAngle);
@@ -171,7 +165,9 @@ while ipop < Npop + 1
         end
     end
     
-    GuideAngles = [GuideAngles nan*ones(1,Nmax-length(GuideAngles)) ]; %#ok<AGROW>
+%     keyboard
+%     GuideAngles = [GuideAngles nan*ones(1,Nmax-length(GuideAngles)) ]; %#ok<AGROW>
+%     GuideAngles = [GuideAngles nan*ones(1,Nmax-length(GuideAngles)) ]; %#ok<AGROW>
     
     if FEASIBLE
         IniPop(ipop,:) = [NpliesPerLam GuideAngles DropsIndexes];

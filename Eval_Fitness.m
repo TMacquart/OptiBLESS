@@ -39,9 +39,11 @@
 %  [ Drop1    ... DropM]                      
 % =====                                                              ==== %
 
-function [fitness,output] = Eval_Fitness (Individual,FitnessFct,Constraints,SortedObj,Nsec,AllowedNplies,LamType)
+function [fitness,output] = Eval_Fitness (Individual,Objectives,Constraints,Nsec,AllowedNplies,SortedTable,LamType)
+
 
 FEASIBLE  = true;  
+LamNumber = cell2mat(SortedTable(2:end,1)); % after 1st sorting
 
 if Constraints.NRange == 1
     NpliesperLam = cell2mat(AllowedNplies);
@@ -49,6 +51,7 @@ else
     NpliesperLam = Individual(1:Nsec);
 end
 
+% sort ply order to have Guide First
 if Constraints.ORDERED
     NpliesperLam = sort(NpliesperLam,'descend');                            % repair to ensure thickness is ordered
     SortIndex    = 1:length(NpliesperLam);
@@ -59,11 +62,11 @@ else
     [NpliesperLam,SortIndex] = sort(NpliesperLam,'descend');
 end
 
-
-NGuidePlies  = max(NpliesperLam);                                           % number of plies in the guide laminate (take half for Sym.)
-NDropPlies   = abs(diff(NpliesperLam));                                     % number of ply drops
-GuideAngles  = Individual(Nsec + [1:NGuidePlies]);
-GuideAngles  = GuideAngles(~isnan(GuideAngles));
+SortedLamNumber = LamNumber(SortIndex);                                         % after 2nd sorting
+NGuidePlies    = max(NpliesperLam);                                           % number of plies in the guide laminate (take half for Sym.)
+NDropPlies     = abs(diff(NpliesperLam));                                     % number of ply drops
+GuideAngles    = Individual(Nsec + [1:NGuidePlies]);
+GuideAngles    = GuideAngles(~isnan(GuideAngles));
 
 
 
@@ -117,18 +120,20 @@ end
 % ---
 if 1    % fitness calculation
     
-    FiberAngles  = Convert_dvAngles2FiberAngles(GuideAngles,LamType);
+    % Guide
+    FiberAngles = Convert_dvAngles2FiberAngles(GuideAngles,LamType);
     
-    if strcmp(SortedObj.Type,'LP')
-        LP(:,SortIndex(1))  = Convert_SS2LP(FiberAngles);            % evaluate lamination parameters for the guide
+    if strcmp(Objectives.Type,'LP')
+        LP(:,1)  = Convert_SS2LP(FiberAngles);            % evaluate lamination parameters for the guide
     end
-     if strcmp(SortedObj.Type,'ABD')
-        [A{SortIndex(1)},B{SortIndex(1)},D{SortIndex(1)}] = Convert_SS2ABD (SortedObj.mat(1),SortedObj.mat(2),SortedObj.mat(4),SortedObj.mat(3),Constraints.ply_t,FiberAngles,0);
+    if strcmp(Objectives.Type,'ABD')
+        [A{1},B{1},D{1}] = Convert_SS2ABD (Objectives.mat(1),Objectives.mat(2),Objectives.mat(4),Objectives.mat(3),Constraints.ply_t,FiberAngles,true);
     end
-    SS{SortIndex(1)}    = FiberAngles;
+    SS{1} = FiberAngles;
     
+    % After Drops
     for iDrop = 1 : Ndrop
-        index = SortIndex(iDrop+1);
+        index = iDrop + 1;
         
         ply_angles = GuideAngles;
         
@@ -142,20 +147,33 @@ if 1    % fitness calculation
         FiberAngles      = Convert_dvAngles2FiberAngles(ply_angles,LamType);
         SS{index}        = FiberAngles;
         
-        if strcmp(SortedObj.Type,'LP')
+        if strcmp(Objectives.Type,'LP')
             LP(:,index) = Convert_SS2LP(FiberAngles);          % evaluate lamination parameters for the droped laminates
         end
-        if strcmp(SortedObj.Type,'ABD')
-            [A{index},B{index},D{index}] = Convert_SS2ABD (SortedObj.mat(1),SortedObj.mat(2),SortedObj.mat(4),SortedObj.mat(3),Constraints.ply_t,FiberAngles,0);
+        if strcmp(Objectives.Type,'ABD')
+            [A{index},B{index},D{index}] = Convert_SS2ABD (Objectives.mat(1),Objectives.mat(2),Objectives.mat(4),Objectives.mat(3),Constraints.ply_t,FiberAngles,true);
         end
     end
 end
 
-if strcmp(SortedObj.Type,'LP') 
-    fitness = FitnessFct(LP(:,SortedObj.sortIndex(SortIndex)));
+
+% revert both sorting at once
+[~,RevertSort]    = sort(SortedLamNumber);          
+RevertedLamNumber = SortedLamNumber(RevertSort);
+SS = SS(RevertSort);
+
+if strcmp(Objectives.Type,'LP')
+    LP = LP(:,RevertSort);
+    fitness = Objectives.FitnessFct(LP);
 end
-if strcmp(SortedObj.Type,'ABD')
-    fitness = FitnessFct(A(SortedObj.sortIndex(SortIndex)),B(SortedObj.sortIndex(SortIndex)),D(SortedObj.sortIndex(SortIndex)));
+if strcmp(Objectives.Type,'ABD')
+    A = A(RevertSort);
+    B = B(RevertSort);
+    D = D(RevertSort);
+    fitness = Objectives.FitnessFct(A,B,D);
+end
+if strcmp(Objectives.Type,'SS') 
+    fitness = Objectives.FitnessFct(SS);
 end
 
 
@@ -168,14 +186,16 @@ end
 
 
 
-if strcmp(SortedObj.Type,'ABD')
+if strcmp(Objectives.Type,'ABD')
     output.A  = A;
     output.B  = B;
     output.D  = D;
 end
-if strcmp(SortedObj.Type,'LP')
-    output.LP          = LP;
+if strcmp(Objectives.Type,'LP')
+    output.LP = LP;
 end
+
+output.LamIndex    = RevertedLamNumber;
 output.SS          = SS;
 output.DropIndexes = DropIndexes;
 output.FEASIBLE    = FEASIBLE;
