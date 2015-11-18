@@ -72,9 +72,9 @@ while ipop < Npop + 1
         NpliesPerLam(iply) = AllowedNplies{iply}(randi([1 length(AllowedNplies{iply})],1,1));
     end
     NpliesPerLam  = sort(NpliesPerLam,'descend'); 
-    NPliesGuide   = max(NpliesPerLam);
+    NPliesGuide   = max(NpliesPerLam); 
     
-    
+%     GuideAngles = zeros(1,NPliesGuide); % some non-coded genea are included
     GuideAngles = zeros(1,Nmax); % some non-coded genea are included
     
     % ---
@@ -91,9 +91,8 @@ while ipop < Npop + 1
             GuideAngles(end) = randi([0 length(0:DeltaAngle:180)-1],1,1)*DeltaAngle -90;
         end
         
-        if strcmp(LamType,'Generic'),   NPliesItt = Nmax - 1;     end
         
-        for iAngle = 2 : NPliesItt
+        for iAngle = 2 : Nmax - 1 % NPliesGuide-1
             if ConstraintVector(3)
                 if ConstraintVector(4)
                     A = [(-45 + 40*rand) (5 + 40*rand)];
@@ -116,7 +115,7 @@ while ipop < Npop + 1
         end                                     % Stack plies according to constraints activated
         
         if ConstraintVector(2) % 10% rule
-            [GuideAngles] = Enforcing_10PercentRule(GuideAngles);
+            [GuideAngles] = Enforce_10PercentRule(GuideAngles);
         end
         
         if ConstraintVector(5) % will overwrite 10%rule if necessary
@@ -128,9 +127,11 @@ while ipop < Npop + 1
     
     FEASIBLE = true;
     
-    NdropPlies = (NPliesGuide)-min(NpliesPerLam);
+%     NdropPlies = (NPliesGuide)-min(NpliesPerLam);
+    NdropPlies = Nmax-Nmin;
     if NdropPlies>0
-        DropsIndexes = Generate_DropIndexes (GuideAngles(1:NPliesGuide),NdropPlies,ConstraintVector);
+        DropsIndexes = Generate_DropIndexes (GuideAngles,NdropPlies,ConstraintVector,LamType);
+%         DropsIndexes = Generate_DropIndexes (GuideAngles(1:NPliesGuide),NdropPlies,ConstraintVector,LamType);
         if isempty(DropsIndexes)
             FEASIBLE = false;
         end
@@ -139,10 +140,11 @@ while ipop < Npop + 1
     end
     
     if FEASIBLE
-        [FEASIBLE] = Check_Feasibility(ConstraintVector,GuideAngles(1:NPliesGuide),DropsIndexes,NPliesGuide,NdropPlies,LamType);
+         NGuideDropPlies = (NPliesGuide)-min(NpliesPerLam);
+        [FEASIBLE] = Check_Feasibility(ConstraintVector,GuideAngles(1:NPliesGuide),DropsIndexes(1:NGuideDropPlies),NPliesGuide,NGuideDropPlies,LamType);
     end
     
-    DropsIndexes = [DropsIndexes nan*ones(1,(Nmax-Nmin)-length(DropsIndexes))];
+%     DropsIndexes = [DropsIndexes nan*ones(1,(Nmax-Nmin)-length(DropsIndexes))];
     
 
     if ConstraintVector(5) % if DiscreteAngles = use integer indexes
@@ -165,10 +167,7 @@ while ipop < Npop + 1
         end
     end
     
-%     keyboard
-%     GuideAngles = [GuideAngles nan*ones(1,Nmax-length(GuideAngles)) ]; %#ok<AGROW>
-%     GuideAngles = [GuideAngles nan*ones(1,Nmax-length(GuideAngles)) ]; %#ok<AGROW>
-    
+
     if FEASIBLE
         IniPop(ipop,:) = [NpliesPerLam GuideAngles DropsIndexes];
         ipop = ipop + 1;
@@ -176,7 +175,7 @@ while ipop < Npop + 1
     
     
     NTried = NTried + 1;
-    if  NTried == 5000 && ipop<2
+    if  NTried == 10000 && ipop<2
         error('Hard Constrained Problem. Difficulties Generating IniPop')
     end
     

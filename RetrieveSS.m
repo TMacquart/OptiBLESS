@@ -120,7 +120,7 @@ if 1    % Set GA options
     ConstraintVector = Constraints.Vector;                                  % [Damtol  Rule10percent  Disorientation  Contiguity  DiscreteAngle  InernalContinuity  Covering];
     DeltaAngle       = Constraints.DeltaAngle;
     
-    Nvar       = Nsec + Nmax +(Nmax-Nmin) ; % Nsec (thickness) + Nmax Guide plies + Nmax potential drops 
+    Nvar = Nsec + Nmax +(Nmax-Nmin) ; % Nsec (thickness) + Nmax Guide plies + Nmax potential drops 
 
     fct_handle = @(x)Eval_Fitness(x,Objectives,Constraints,Nsec,AllowedNplies,SortedTable,LamType);  % handle of the fitness function becomes constraint
     
@@ -153,7 +153,6 @@ if 1    % Set GA options
 end
 
 
-
 % --- Generate Ini. Pop.
 for i = 1:5
     try
@@ -175,6 +174,9 @@ for i = 1:5
 end
 options = gaoptimset(options,'InitialPopulation' ,IniPop);
 
+% keyboard
+% DropIndexes = IniPop(:,38:end);
+% hist(DropIndexes(:),[1:38])
 
 
 % --- run GA

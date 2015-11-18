@@ -79,18 +79,19 @@ if ConstraintVector(3) % Disorientation
         if FiberAngles(iply)>=-45 && FiberAngles(iply)<=45
             DetlaAngle = abs(FiberAngles(iply)-FiberAngles(iply+1));
         elseif FiberAngles(iply)>45
-            if FiberAngles(iply+1)>=-45
+            if FiberAngles(iply+1)>-45
                 DetlaAngle = abs(FiberAngles(iply)-FiberAngles(iply+1));
             else
                 DetlaAngle = abs(FiberAngles(iply)-(180+FiberAngles(iply+1)));
             end
         elseif FiberAngles(iply)<-45
-            if FiberAngles(iply+1)<=45
+            if FiberAngles(iply+1)<45
                 DetlaAngle = abs(FiberAngles(iply)-FiberAngles(iply+1));
             else
                 DetlaAngle = abs(FiberAngles(iply)-(-180+FiberAngles(iply+1)));
             end
         end
+        
         if DetlaAngle>45
             FEASIBLE = false;
             return

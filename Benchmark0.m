@@ -33,6 +33,24 @@
 
 clear all; clc; format short g; format compact; close all Force;
 
+global Pop
+
+if 0
+    for i=1:length(Pop)
+        MeanNply(i) = mean(Pop{i}(:,1));
+        StdNply(i) = std(Pop{i}(:,1));
+        
+        MeanTheta1(i) = mean(Pop{i}(:,2));
+        StdTheta1(i) = std(Pop{i}(:,2));
+    end
+    figure
+    hold all
+%     plot(MeanTheta1)
+%     plot(StdTheta1)
+    plot(MeanNply)
+    plot(StdNply)
+end
+
 addpath ./FitnessFcts
 
 % --- Creating a real SS to match
@@ -40,10 +58,10 @@ Objectives.Table   = [{'Laminate Index'} {'Nplies'} {'LP2Match'} {'Importance'}]
                         
 ply_t      = 0.000127;
 GuideLamDv = [+45 -45 90 0 45 90 0 45];
-Drops      = [2 4 6 8];
+Drops      = [2 4 6];
 GuideLam   = [GuideLamDv, -GuideLamDv, fliplr([GuideLamDv, -GuideLamDv])]'; % balanced/symetric
 
-ImportanceFactor = [1 1 1 1 1];     % relative importance given to matching the guide laminate LPs integer [1,N], the higher the integer = the more impact on the fit. fct.
+ImportanceFactor = [1 1 1 1];     % relative importance given to matching the guide laminate LPs integer [1,N], the higher the integer = the more impact on the fit. fct.
 NUniqueLam = length(Drops)+1;
 Lp2Match   = zeros(12,NUniqueLam);
 for i = 1:NUniqueLam
@@ -62,7 +80,7 @@ end
 Objectives.IndexLP = [1 3 9 10 11 12];
 
 
-fr
+
                         
 % =========================== Default Options =========================== %
 
@@ -72,7 +90,7 @@ Constraints.DeltaAngle = 45;
 Constraints.ply_t      = ply_t;          % ply thickness
 Constraints.Balanced   = true; 
 Constraints.Sym        = true; 
-Constraints.NRange     = 1.6;
+Constraints.NRange     = 1.0;
 Constraints.ORDERED    = false;           
 
 
@@ -81,10 +99,11 @@ Objectives.FitnessFct = @(LP) SumRMSLP(LP,Objectives);
 
 % ---
 GAoptions.Npop    = 200; 	   % Population size
-GAoptions.Ngen    = 250; 	   % Number of generations
-GAoptions.NgenMin = 250; 	   % Minimum number of generation calculated
+GAoptions.Ngen    = 500; 	   % Number of generations
+GAoptions.NgenMin = 500; 	   % Minimum number of generation calculated
 GAoptions.Elitism = 0.075; 	   % Percentage of elite passing to the next Gen.
 GAoptions.Plot    = true; 	   % Plot Boolean
+GAoptions.PC      = 0.5;
 
 % ---
 Nrun = 1;
@@ -102,7 +121,8 @@ for i = 1:Nrun
     MeanNorm(i)       = mean(cell2mat(output_Match{i}.Table(2:end,end-1)));
 end
 
-output_Match =output_Match{i}
+output_Match = output_Match{i}
+
 %% Checking output results are correct
 IndexLp = Objectives.IndexLP;
 for i = 2:length(NPliesIni)+1

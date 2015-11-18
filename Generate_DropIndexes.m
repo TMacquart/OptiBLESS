@@ -35,27 +35,49 @@
 %  Terence Macquart (26/04/2015)                                          %
 % =====                                                              ==== %
 
-function [Indexes,Laminate] = Generate_DropIndexes (ply_angle,Ndrop,ConstraintVector)
+function [Indexes,Laminate] = Generate_DropIndexes (ply_angle,Ndrop,ConstraintVector,LamType)
+
 
 % -- ply angles defined from bottom (left) to top (right)
 NoSolution = false;
-Laminate = num2cell(ply_angle');
+Laminate   = num2cell(ply_angle');
 
 for iDrop = 1 : Ndrop
     
     NonEmptyCell = ~cellfun(@isempty,Laminate(:,iDrop));
     FeasibleDrop = find(NonEmptyCell);
+    
     IndexArray   = [FeasibleDrop(1:end-2) FeasibleDrop(3:end) FeasibleDrop(2:end-1) zeros(length(FeasibleDrop)-2,1)];  % 1col - 2col = Delta, 3col = index
     
     % ---
     if ConstraintVector(3) == 1          % apply disorientation constrainst to PlyDrop
-        DeltaDrops   = abs( cell2mat(Laminate(IndexArray(:,1),iDrop)) - cell2mat(Laminate(IndexArray(:,2),iDrop)) );
-        IndexArray   = IndexArray(DeltaDrops<=45,:);
+        DetlaAngle = nan*ones(size(IndexArray,1),1);
+        for i = 1:size(IndexArray,1)
+            theta1 = Laminate{IndexArray(i,1),iDrop};
+            theta2 = Laminate{IndexArray(i,2),iDrop};
+            
+            if theta1>=-45 && theta1<=45
+                DetlaAngle(i) = abs(theta1-theta2);
+            elseif theta1>45
+                if theta2>-45
+                    DetlaAngle(i) = abs(theta1-theta2);
+                else
+                    DetlaAngle(i) = abs(theta1-(180+theta2));
+                end
+            elseif theta1<-45
+                if theta2<45
+                    DetlaAngle(i) = abs(theta1-theta2);
+                else
+                    DetlaAngle(i) = abs(theta1-(-180+theta2));
+                end
+            end
+        end
+        IndexArray   = IndexArray(DetlaAngle<=45,:);
     end
     % ---
     
     % ---
-    if ConstraintVector(4) == 1          % apply contiguity constraint
+    if ConstraintVector(4) == 1          % apply contiguity constraint (might need to be improved)
         DeltaDrops   = abs( cell2mat(Laminate(IndexArray(:,1),iDrop)) - cell2mat(Laminate(IndexArray(:,2),iDrop)) );
         IndexArray   = IndexArray(DeltaDrops>=5,:);
     end
@@ -74,39 +96,63 @@ for iDrop = 1 : Ndrop
     end
     % ---
     
-    % ---
-    if ConstraintVector(2)               % apply 10% rule constraint
-        lam_vect   = cell2mat(Laminate(:,iDrop));
-        N10percent = round(0.1*length(lam_vect));
-        N0Plies    = length(find(lam_vect==0));
-        N90Plies   = length(find(abs(lam_vect)==90));
-        N45Plies   = length(find(abs(lam_vect)==45));
-        
-        if N0Plies <= N10percent % cannot remove a 0 ply
-            temp = [abs(cell2mat(Laminate(IndexArray(:,3)))) IndexArray(:,3)];
-            IndexArray(temp(:,1)==0,:) = [];
+    
+    FeasibleDrop = IndexArray(:,3);
+    
+    if ~isempty(IndexArray)
+        % ---
+        if ~ConstraintVector(7) % if not covering
+            FeasibleDrop = [IndexArray(1,1); FeasibleDrop; IndexArray(end,2)]; %#ok<AGROW> % add top and bottom(or mid) ply
+        else
+            if ~strcmp(LamType,'Generic') % if not generic
+                FeasibleDrop = [FeasibleDrop; IndexArray(end,2)]; %#ok<AGROW> % add midplane ply
+            end
         end
+        % ---
         
-        if N45Plies <= N10percent
-            temp = [abs(cell2mat(Laminate(IndexArray(:,3)))) IndexArray(:,3)];
-            IndexArray(temp(:,1)==45,:) = [];
+        % ---
+        if ConstraintVector(2)               % apply 10% rule constraint
+            lam_vect   = cell2mat(Laminate(:,iDrop));
+            N10percent = round(0.1*length(lam_vect));
+            N0Plies    = length(find(lam_vect==0));
+            N90Plies   = length(find(abs(lam_vect)==90));
+            N45Plies   = length(find(lam_vect==45));
+            NM45Plies  = length(find(lam_vect==-45));
+            
+            
+            IndexToKeep = []; % plies not to remove
+            if N0Plies <= N10percent % cannot remove a 0 ply
+                IndexToKeep = [IndexToKeep; find(cell2mat(Laminate(FeasibleDrop,iDrop))==0)];       %#ok<AGROW>
+            end
+            
+            if N45Plies <= N10percent
+                IndexToKeep = [IndexToKeep; find(cell2mat(Laminate(FeasibleDrop,iDrop))==45)];      %#ok<AGROW>
+            end
+            
+            if NM45Plies <= N10percent
+                IndexToKeep = [IndexToKeep; find(cell2mat(Laminate(FeasibleDrop,iDrop))==-45)];     %#ok<AGROW>
+            end
+            
+            if N90Plies <= N10percent
+                IndexToKeep = [IndexToKeep; find(abs(cell2mat(Laminate(FeasibleDrop,iDrop)))==90)]; %#ok<AGROW>
+            end
+            
+            FeasibleDrop(IndexToKeep) = [];
         end
-        
-        if N90Plies <= N10percent
-            temp = [abs(cell2mat(Laminate(IndexArray(:,3)))) IndexArray(:,3)];
-            IndexArray(temp(:,1)==90,:) = [];
-        end
+    else
+        NoSolution = true;
+        break
     end
     % ---
     
-    if isempty(IndexArray),
-        display('Imposible to remove any more ply (probably due to constraints)');
+    if isempty(FeasibleDrop),   %  Imposible to remove any more ply (probably due to constraints)
         NoSolution = true;
         break
     end
     
-    FeasibleDrop        = IndexArray(:,3);
-    DropIndex(iDrop)    = FeasibleDrop( ceil(length(FeasibleDrop)*rand) );
+
+    DropIndex(iDrop) = FeasibleDrop( randi([1 length(FeasibleDrop)],1,1) ); %#ok<AGROW>
+
     Laminate(:,iDrop+1) = Laminate(:,iDrop);
     Laminate(DropIndex(iDrop),iDrop+1) = {[]};
     

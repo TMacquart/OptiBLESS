@@ -49,7 +49,7 @@ Lp2Match = [
     0.2261	 0.3518	 0.4120   % V3D
    -0.3177	-0.2444	-0.3811]; % V4D
 
-NPliesIni = [26 20 16];
+NPliesIni = [28 20 16];
 ScalingCoef = [1 1 1]; 
 Objectives.IndexLP = [1 3];
 Objectives.Table   = [{'Laminate #'}     {'Nplies'}      {'LP2Match'}     {'Scaling Coefficient'} ;
@@ -62,13 +62,13 @@ Objectives.Table   = [{'Laminate #'}     {'Nplies'}      {'LP2Match'}     {'Scal
 % =========================== Default Options =========================== %
 
 %                        [Damtol  Rule10percent  Disorientation  Contiguity   DiscreteAngle  InernalContinuity  Covering];
-Constraints.Vector     = [false       false          false          false         true            false            false];
+Constraints.Vector     = [false       true          true          true         true            true            false];
 Constraints.DeltaAngle = 5;
 Constraints.ply_t      = 0.000127;          % ply thickness
-Constraints.ORDERED    = true;                         
+Constraints.ORDERED    = false;                         
 Constraints.Balanced   = false; 
 Constraints.Sym        = false; 
-Constraints.NRange     = 1.0;
+Constraints.NRange     = 1.2;
 
 Objectives.Type        = 'LP'; % 'ABD' 'SS' 'LP'
 Objectives.FitnessFct = @(LP) SumRMSLP(LP,Objectives);
@@ -79,7 +79,7 @@ GAoptions.Ngen    = 250; 	   % Number of generations
 GAoptions.NgenMin = 250; 	   % Minimum number of generation calculated
 GAoptions.Elitism = 0.05; 	   % Percentage of elite passing to the next Gen.
 GAoptions.Plot    = true; 	   % Plot Boolean
-
+GAoptions.PC      = 0.5; 	   
 
 
 % ---
