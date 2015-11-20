@@ -66,11 +66,13 @@ Lp2Match = [
      -0.46875 % V3D
            0];% V4D
 
-NPliesIni   = [6];
-ScalingCoef = [1]; 
-Objectives.IndexLP = [1:12];
+
+ScalingCoef = ones(12,1); 
 Objectives.Table   = [{'Laminate #'}     {'Nplies'}      {'LP2Match'}     {'Scaling Coefficient'} ;
-                            {1}          {NPliesIni(1)}  {Lp2Match(:,1)}  {ScalingCoef(1)} ; ];
+                            {1}          {[6 10]}         {Lp2Match(:,1)}  {ScalingCoef} ; ];
+
+Objectives.Type       = 'LP'; 
+Objectives.FitnessFct = @(LP) SumRMSLP(LP,Objectives);
 
 
 % =========================== Default Options =========================== %
@@ -82,11 +84,8 @@ Constraints.ply_t      = 0.000127;          % ply thickness
 Constraints.ORDERED    = true;                         
 Constraints.Balanced   = false; 
 Constraints.Sym        = false; 
-Constraints.NRange     = 1.4;
 
-Objectives.Type        = 'LP'; % 'ABD' 'SS' 'LP'
-Objectives.FitnessFct = @(LP) SumRMSLP(LP,Objectives);
-% Objectives.FitnessFct = @(LP) SumNormLP(LP,Objectives);
+
 
 % ---
 GAoptions.Npop    = 100; 	   % Population size
@@ -105,27 +104,28 @@ display(output_Match)
 display(output_Match.Table)
 
 %% Checking output results are correct
-IndexLp = Objectives.IndexLP;
-for i = 2:length(NPliesIni)+1
+ScalingCoef = reshape(cell2mat(Objectives.Table(2:end,4)),12,size(Objectives.Table,1)-1);
+
+for i = 2:size(Objectives.Table,1)
     LP2Match = Objectives.Table{i,3};
-    if sum(abs(LP2Match-output_Match.Table{i,5}))>1e-10
+    if sum(abs(LP2Match-output_Match.Table{i,4}))>1e-10
         error('non matching LP2Match')
     end
     
-    LP = Convert_SS2LP(output_Match.Table{i,4});
+    LP = Convert_SS2LP(output_Match.Table{i,3});
     if sum(abs(LP-output_Match.Table{i,6}))>1e-10
         error('non matching SS and LPOpt')
     end
     
-    if abs( rms (LP(IndexLp)-LP2Match(IndexLp))-output_Match.Table{i,9})>1e-10
+    if abs( rms ( (LP-LP2Match).*ScalingCoef(:,i-1) )-output_Match.Table{i,8})>1e-10
         error('non matching RSM')
     end
     
-    if abs( norm (LP(IndexLp)-LP2Match(IndexLp))-output_Match.Table{i,8})>1e-10
+    if abs( norm ((LP-LP2Match).*ScalingCoef(:,i-1))-output_Match.Table{i,7})>1e-10
         error('non matching norm')
     end
     
-    if abs( 100*sum(abs(  (LP(IndexLp) - LP2Match(IndexLp))./LP2Match(IndexLp) )) - output_Match.Table{i,7})>1e-10
+    if abs( 100*sum(abs(  ((LP-LP2Match)./LP2Match).*ScalingCoef(:,i-1) )) - output_Match.Table{i,6})>1e-10
         error('non matching error percent')
     end
 end

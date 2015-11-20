@@ -33,6 +33,9 @@
 
 clear all; clc; format short g; format compact; close all;
 
+addpath ./FitnessFcts
+addpath ./StiffnessOpt
+
 global Pop
 
 if 0
@@ -75,23 +78,14 @@ D2Match ={[
 
 Objectives.mat = [E1 E2 G12 v12 h];
  
-Objectives.A = A2Match;
-Objectives.B = B2Match;
-Objectives.D = D2Match;
+IndexAStiff = ones(3,3);
+IndexBStiff = ones(3,3);
+IndexDStiff = ones(3,3);
+Objectives.Table   = [{'Laminate #'}     {'Nplies'}   {'A2Match'}  {'B2Match'} {'D2Match'}  {'A Scaling'} {'B Scaling'} {'D Scaling'} ;
+                            {1}          {[6 10]}       A2Match       B2Match     D2Match   {IndexAStiff} {IndexBStiff} {IndexDStiff}];
 
-NPliesIni        = [6];
-ScalingCoef      = [1]; 
-
-Objectives.IndexAStiff = [1:9];
-Objectives.IndexBStiff = [1:9];
-Objectives.IndexDStiff = [1:9];
-
-
-ScalingCoef = [1]; 
-Objectives.IndexLP = [1:12];
-Objectives.Table   = [{'Laminate #'}     {'Nplies'}      {'LP2Match'}   {'Scaling Coefficient'} ;
-                            {1}          {NPliesIni(1)}  {nan}          {ScalingCoef(1)} ; ];
-
+Objectives.Type        = 'ABD'; 
+Objectives.FitnessFct = @(A,B,D) SumRMSABD(A,B,D,Objectives);
 
 % =========================== Default Options =========================== %
 
@@ -102,10 +96,9 @@ Constraints.ply_t      = 0.000127;          % ply thickness
 Constraints.ORDERED    = true;                         
 Constraints.Balanced   = false; 
 Constraints.Sym        = false; 
-Constraints.NRange     = 1.4;
 
-Objectives.Type        = 'ABD'; 
-Objectives.FitnessFct = @(A,B,D) SumRMSABD(A,B,D,Objectives);
+
+
 
 
 % ---

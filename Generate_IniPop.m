@@ -45,16 +45,14 @@
 % EuclideanDist : Euclidean Distance between the LP of each Section
 % =====                                                              ====
 
-function [IniPop,IniPopLP,EuclideanDist] = Generate_IniPop (nvar,Npop,Nmax,Nmin,Constraints,AllowedNplies,LamType)
+function [IniPop,IniPopLP,EuclideanDist] = Generate_IniPop (nvar,Npop,Nmax,Nmin,Constraints,Nsec,AllowedNplies,LamType)
 
 
-if sum(arrayfun(@(i) length(AllowedNplies{i}),1:length(AllowedNplies) )) == length(AllowedNplies)
-    ConstantThickness = true;
-    IniPop = zeros(Npop,nvar + length(AllowedNplies));
-else
-    ConstantThickness = false;
-    IniPop = zeros(Npop,nvar);
-end
+
+IniPop = zeros(Npop,nvar+length(find(Nsec==0)));
+
+
+
 
 fprintf(' Creating IniPop ... \n ' )
 ConstraintVector = Constraints.Vector;
@@ -181,8 +179,7 @@ while ipop < Npop + 1
     
 end
 
-if ConstantThickness
-    IniPop(:,1:length(AllowedNplies)) = []; % remove thickness variables
-end
+IniPop(:,Nsec==0) = []; % remove thickness variables
+
 fprintf(' IniPop Created ... ' )
 end

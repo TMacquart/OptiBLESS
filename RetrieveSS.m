@@ -51,14 +51,13 @@ function [output] = RetrieveSS(Objectives,Constraints,GAoptions)
 
 % ---
 if 1    % Define objectives (i.e. LP to match)
+
    NplyIni = cell2mat(Objectives.Table(2:end,2));
-   IndexLp = Objectives.IndexLP;
-   Nsec    = length(NplyIni);
-    
+
     if Constraints.Sym    && Constraints.Balanced,
         LamType = 'Balanced_Sym';
-        NpliesUpBound   = round(NplyIni*Constraints.NRange/4)*4;
-        NpliesLowBound  = round(NplyIni/4)*4;
+        NpliesUpBound   = round(NplyIni(:,2)/4)*4;
+        NpliesLowBound  = round(NplyIni(:,1)/4)*4;
         Nmax = max(NpliesUpBound)/4 ;
         Nmin = min(NpliesLowBound)/4;
         for i=1:length(NpliesUpBound)
@@ -67,8 +66,8 @@ if 1    % Define objectives (i.e. LP to match)
     end
     if Constraints.Sym    && ~Constraints.Balanced,
         LamType = 'Sym';
-        NpliesUpBound  = round(NplyIni*Constraints.NRange/2)*2;
-        NpliesLowBound  = round(NplyIni/2)*2;
+        NpliesUpBound  = round(NplyIni(:,2)/2)*2;
+        NpliesLowBound  = round(NplyIni(:,1)/2)*2;
         Nmax = max(NpliesUpBound)/2 ;
         Nmin = min(NpliesLowBound)/2;
         for i=1:length(NpliesUpBound)
@@ -77,8 +76,8 @@ if 1    % Define objectives (i.e. LP to match)
     end
     if ~Constraints.Sym   && Constraints.Balanced,
         LamType = 'Balanced';
-        NpliesUpBound   = round(NplyIni*Constraints.NRange/2)*2;
-        NpliesLowBound  = round(NplyIni/2)*2;
+        NpliesUpBound   = round(NplyIni(:,2)/2)*2;
+        NpliesLowBound  = round(NplyIni(:,1)/2)*2;
         Nmax = max(NpliesUpBound)/2 ;
         Nmin = min(NpliesLowBound)/2;
         for i=1:length(NpliesUpBound)
@@ -87,8 +86,8 @@ if 1    % Define objectives (i.e. LP to match)
     end
     if  ~Constraints.Sym  && ~Constraints.Balanced,
         LamType = 'Generic';
-        NpliesUpBound   = round(NplyIni*Constraints.NRange);
-        NpliesLowBound  = round(NplyIni);
+        NpliesUpBound   = round(NplyIni(:,2));
+        NpliesLowBound  = round(NplyIni(:,1));
         Nmax = max(NpliesUpBound) ;
         Nmin = min(NpliesLowBound);
         for i=1:length(NpliesUpBound)
@@ -96,17 +95,21 @@ if 1    % Define objectives (i.e. LP to match)
         end
     end
 
-    [~,sortIndex] = sort(NplyIni,'descend');
+    [~,sortIndex] = sort(NplyIni(:,1),'descend');
     AllowedNplies = AllowedNplies(sortIndex);
     SortedTable   =  [Objectives.Table(1,:); Objectives.Table(1+sortIndex,:)];
     
-    if length(NplyIni) == 1, Nmin = Nmax; end % particular case for Unique SS retrieval
+    if size(NplyIni,1) == 1, Nmin = Nmax; end % particular case for Unique SS retrieval
+    
+
+   Nrange = cellfun(@max,AllowedNplies,'UniformOutput', true) - cellfun(@min,AllowedNplies,'UniformOutput', true); % max ply - min ply per lam.
+   Nsec = zeros(length(Nrange),1);
+   Nsec(Nrange>0)=1; % number of variable thickness lam.
+
 end
 
 
-if Constraints.NRange == 1 
-    Nsec = 0;
-end
+
 
 % ---
 if 1    % Set GA options
@@ -120,7 +123,7 @@ if 1    % Set GA options
     ConstraintVector = Constraints.Vector;                                  % [Damtol  Rule10percent  Disorientation  Contiguity  DiscreteAngle  InernalContinuity  Covering];
     DeltaAngle       = Constraints.DeltaAngle;
     
-    Nvar = Nsec + Nmax +(Nmax-Nmin) ; % Nsec (thickness) + Nmax Guide plies + Nmax potential drops 
+    Nvar = sum(Nsec) + Nmax +(Nmax-Nmin) ; % Nsec (thickness) + Nmax Guide plies + Nmax potential drops 
 
     fct_handle = @(x)Eval_Fitness(x,Objectives,Constraints,Nsec,AllowedNplies,SortedTable,LamType);  % handle of the fitness function becomes constraint
     
@@ -132,53 +135,53 @@ if 1    % Set GA options
             LB = [0*ones(Nmax,1)            ; ones(Nmax-Nmin,1)];
             UB = [(Nd_state-1)*ones(Nmax,1) ; Nmax*ones(Nmax-Nmin,1)];
         else
-            IntegerDV = [[1:Nsec] [(Nsec+Nmax):(Nsec+2*Nmax-Nmin)]];             % continuous
+            IntegerDV = [[1:sum(Nsec)] [(sum(Nsec)+Nmax):(sum(Nsec)+2*Nmax-Nmin)]];             % continuous
             LB = [-90*ones(Nmax,1); ones(Nmax-Nmin,1)];
             UB = [90*ones(Nmax,1);  Nmax*ones(Nmax-Nmin,1)];
         end
-        for iply=Nsec:-1:1
+        for iply=sum(Nsec):-1:1
             LB = [AllowedNplies{iply}(1)   ;LB];
             UB = [AllowedNplies{iply}(end) ;UB];
         end
         
         if ConstraintVector(1) % if Damtol, make the first ply +- 45
             if ~ConstraintVector(5),    
-                IntegerDV = [Nsec+1 IntegerDV];
+                IntegerDV = [sum(Nsec)+1 IntegerDV];
             end
-            LB(Nsec+1) = 1;
-            UB(Nsec+1) = 2;
+            LB(sum(Nsec)+1) = 1;
+            UB(sum(Nsec)+1) = 2;
         end
     end
 
 end
 
-
+% keyboard
 % --- Generate Ini. Pop.
 for i = 1:5
     try
-        [IniPop] = Generate_IniPop (Nvar,GAoptions.Npop,Nmax,Nmin,Constraints,AllowedNplies,LamType);
+        [IniPop] = Generate_IniPop (Nvar,GAoptions.Npop,Nmax,Nmin,Constraints,Nsec,AllowedNplies,LamType);
         break; 
     catch
         fprintf('Retrying IniPop Gen. ...\n');
         if i == 5
-             UserResponse = input('Non-feasible Elmts in the IniPop, Do you want to continue (y|n)','s');
-             if strcmp(UserResponse,'y')
-                 temp = Constraints;
-                 temp.Vector = 0* temp.Vector;
-                 [IniPop] = Generate_IniPop (Nvar,GAoptions.Npop,Nsec,Nmax,Nmin,temp,LamType);
-             else 
-                 error('Code stopped by the user')
-             end
+            error(' Did not manage to generate a feasible initial population.')
+%             
+%              UserResponse = input('Non-feasible Elmts in the IniPop, Do you want to continue (y|n)','s');
+%              if strcmp(UserResponse,'y')
+%                  temp = Constraints;
+%                  temp.Vector = 0* temp.Vector;
+%                  [IniPop] = Generate_IniPop (Nvar,GAoptions.Npop,Nsec,Nmax,Nmin,temp,LamType);
+%              else 
+%                  error('Code stopped by the user')
+%              end
         end
     end
 end
 options = gaoptimset(options,'InitialPopulation' ,IniPop);
 
+
+
 % keyboard
-% DropIndexes = IniPop(:,38:end);
-% hist(DropIndexes(:),[1:38])
-
-
 % --- run GA
 fprintf(strcat('Running GA \n'))
 [xOpt,fval] = ga(fct_handle,Nvar,[],[],[],[],LB,UB,[],IntegerDV,options);
@@ -193,42 +196,49 @@ SS = output.SS;
 
 if strcmp(Objectives.Type,'LP')
     LPMatched = output.LP;
-    Table = [{'Lam #'} {'Nplies Ori'} {'Nplies SST'} {'Ply Angles'} {'LP2Match'} {'LPOpt'} {'Error %'} {'Error Norm'} {'Error RMS'}];
+    Table = [{'Lam #'} {'Nplies SST'} {'Ply Angles'} {'LP2Match'} {'LPOpt'} {'Error %'} {'Error Norm'} {'Error RMS'}];
     for j = 1:length(AllowedNplies)
-        LP2Match   = Objectives.Table{j+1,3};
-        QualIndex1 = 100*sum(abs(  (LPMatched(IndexLp,j) - LP2Match(IndexLp))./LP2Match(IndexLp) ));
-        QualIndex2 = norm(LPMatched(IndexLp,j) - LP2Match(IndexLp));
-        QualIndex3 = rms(LPMatched(IndexLp,j) - LP2Match(IndexLp));
-        Table      = [Table ;  {j} Objectives.Table{j+1,2} {length(SS{j})} SS(j) {LP2Match} {LPMatched(:,j)} {QualIndex1} {QualIndex2} {QualIndex3}];
+        LP2Match    = Objectives.Table{j+1,3};
+        ScalingCoef = Objectives.Table{j+1,4};
+        
+        QualIndex1 = 100*sum(abs(  ((LPMatched(:,j) - LP2Match(:))./LP2Match(:)).*ScalingCoef ));
+        QualIndex2 = norm( (LPMatched(:,j) - LP2Match(:)).*ScalingCoef );
+        QualIndex3 = rms( (LPMatched(:,j) - LP2Match(:)).*ScalingCoef );
+        Table      = [Table ;  {j} {length(SS{j})} SS(j) {LP2Match} {LPMatched(:,j)} {QualIndex1} {QualIndex2} {QualIndex3}];
     end
 end
 
+
 if strcmp(Objectives.Type,'ABD')
 
-    Table = [{'Lam #'} {'Nplies Ori'} {'Nplies SST'} {'Ply Angles'} {'A2Match'} {'AOpt'} {'Error % A'} {'Error Norm A'} {'Error RMS A'} ...
+    Table = [{'Lam #'} {'Nplies SST'} {'Ply Angles'} {'A2Match'} {'AOpt'} {'Error % A'} {'Error Norm A'} {'Error RMS A'} ...
             {'B2Match'} {'BOpt'} {'Error % B'} {'Error Norm B'} {'Error RMS B'} ...
             {'D2Match'} {'DOpt'} {'Error % D'} {'Error Norm D'} {'Error RMS D'}];
     for j = 1:length(AllowedNplies)
         A_Matched = output.A{j};
         B_Matched = output.B{j};
         D_Matched = output.D{j};
-        A2Match   = Objectives.A{j};
-        B2Match   = Objectives.B{j};
-        D2Match   = Objectives.D{j};
+        A2Match   = Objectives.Table{j+1,3};
+        B2Match   = Objectives.Table{j+1,4};
+        D2Match   = Objectives.Table{j+1,5};
         
-        QualIndex1A = 100*sum(abs(  (A_Matched(Objectives.IndexAStiff) - A2Match(Objectives.IndexAStiff))./A2Match(Objectives.IndexAStiff) ));
-        QualIndex2A = norm( A_Matched(Objectives.IndexAStiff) - A2Match(Objectives.IndexAStiff) );
-        QualIndex3A = rms(  A_Matched(Objectives.IndexAStiff) - A2Match(Objectives.IndexAStiff) );
+        AScaling = Objectives.Table{j+1,6};
+        BScaling = Objectives.Table{j+1,7};
+        DScaling = Objectives.Table{j+1,8};
+    
+        QualIndex1A = 100*sum(abs(  AScaling(:).*((A_Matched(:) - A2Match(:))./A2Match(:)) ));
+        QualIndex2A = norm( AScaling(:).*(A_Matched(:) - A2Match(:)) );
+        QualIndex3A = rms(  AScaling(:).*(A_Matched(:) - A2Match(:)) );
         
-        QualIndex1B = 100*sum(abs(  (B_Matched(Objectives.IndexBStiff) - B2Match(Objectives.IndexBStiff))./B2Match(Objectives.IndexBStiff) ));
-        QualIndex2B = norm( B_Matched(Objectives.IndexBStiff) - B2Match(Objectives.IndexBStiff) );
-        QualIndex3B = rms(  B_Matched(Objectives.IndexBStiff) - B2Match(Objectives.IndexBStiff) );
+        QualIndex1B = 100*sum(abs(  BScaling(:).*((B_Matched(:) - B2Match(:))./B2Match(:)) ));
+        QualIndex2B = norm( BScaling(:).*(B_Matched(:) - B2Match(:)) );
+        QualIndex3B = rms(  BScaling(:).*(B_Matched(:) - B2Match(:)) );
         
-        QualIndex1D = 100*sum(abs(  (D_Matched(Objectives.IndexDStiff) - D2Match(Objectives.IndexDStiff))./D2Match(Objectives.IndexDStiff) ));
-        QualIndex2D = norm( D_Matched(Objectives.IndexDStiff) - D2Match(Objectives.IndexDStiff) );
-        QualIndex3D = rms(  D_Matched(Objectives.IndexDStiff) - D2Match(Objectives.IndexDStiff) );
+        QualIndex1D = 100*sum(abs(  DScaling(:).*((D_Matched(:) - D2Match(:))./D2Match(:)) ));
+        QualIndex2D = norm( DScaling(:).*(D_Matched(:) - D2Match(:)) );
+        QualIndex3D = rms(  DScaling(:).*(D_Matched(:) - D2Match(:)) );
         
-        Table = [Table ;  {j} Objectives.Table{j+1,2} {length(SS{j})} SS(j) ...
+        Table = [Table ;  {j} {length(SS{j})} SS(j) ...
                     {A2Match} {A_Matched} {QualIndex1A} {QualIndex2A} {QualIndex3A}...
                     {B2Match} {B_Matched} {QualIndex1B} {QualIndex2B} {QualIndex3B} ...
                     {D2Match} {D_Matched} {QualIndex1D} {QualIndex2D} {QualIndex3D}];

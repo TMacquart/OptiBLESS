@@ -61,7 +61,7 @@ GuideLamDv = [+45 -45 90 0 45 90 0 45];
 Drops      = [2 4 6];
 GuideLam   = [GuideLamDv, -GuideLamDv, fliplr([GuideLamDv, -GuideLamDv])]'; % balanced/symetric
 
-ImportanceFactor = [1 1 1 1];     % relative importance given to matching the guide laminate LPs integer [1,N], the higher the integer = the more impact on the fit. fct.
+ScalingCoef = [1 0 1 0, 0 0 0 0, 1 1 1 1]';      % relative importance given to matching the guide laminate LPs integer [1,N], the higher the integer = the more impact on the fit. fct.
 NUniqueLam = length(Drops)+1;
 Lp2Match   = zeros(12,NUniqueLam);
 for i = 1:NUniqueLam
@@ -73,13 +73,11 @@ for i = 1:NUniqueLam
     Lam = [Lam, -Lam, fliplr([Lam, -Lam])]'; % balanced/symetric 
     
     Lp2Match(:,i) = Convert_SS2LP(Lam);
-    NPliesIni(i)  = length(Lam);
-    Objectives.Table = [Objectives.Table; [{i} {NPliesIni(i)} {Lp2Match(:,i)} {ImportanceFactor(i)}]];
+    Objectives.Table = [Objectives.Table; [{i} {[1 1]*length(Lam)} {Lp2Match(:,i)} {ScalingCoef}]];
 end
 
-Objectives.IndexLP = [1 3 9 10 11 12];
-
-
+Objectives.Type        = 'LP';
+Objectives.FitnessFct = @(LP) SumRMSLP(LP,Objectives);
 
                         
 % =========================== Default Options =========================== %
@@ -90,12 +88,8 @@ Constraints.DeltaAngle = 45;
 Constraints.ply_t      = ply_t;          % ply thickness
 Constraints.Balanced   = true; 
 Constraints.Sym        = true; 
-Constraints.NRange     = 1.0;
 Constraints.ORDERED    = false;           
 
-
-Objectives.Type        = 'LP';
-Objectives.FitnessFct = @(LP) SumRMSLP(LP,Objectives);
 
 % ---
 GAoptions.Npop    = 200; 	   % Population size
@@ -124,27 +118,28 @@ end
 output_Match = output_Match{i}
 
 %% Checking output results are correct
-IndexLp = Objectives.IndexLP;
-for i = 2:length(NPliesIni)+1
+ScalingCoef = reshape(cell2mat(Objectives.Table(2:end,4)),12,size(Objectives.Table,1)-1);
+
+for i = 2:size(Objectives.Table,1)
     LP2Match = Objectives.Table{i,3};
-    if sum(abs(LP2Match-output_Match.Table{i,5}))>1e-10
+    if sum(abs(LP2Match-output_Match.Table{i,4}))>1e-10
         error('non matching LP2Match')
     end
     
-    LP = Convert_SS2LP(output_Match.Table{i,4});
+    LP = Convert_SS2LP(output_Match.Table{i,3});
     if sum(abs(LP-output_Match.Table{i,6}))>1e-10
         error('non matching SS and LPOpt')
     end
     
-    if abs( rms (LP(IndexLp)-LP2Match(IndexLp))-output_Match.Table{i,9})>1e-10
+    if abs( rms ( (LP-LP2Match).*ScalingCoef(:,i-1) )-output_Match.Table{i,8})>1e-10
         error('non matching RSM')
     end
     
-    if abs( norm (LP(IndexLp)-LP2Match(IndexLp))-output_Match.Table{i,8})>1e-10
+    if abs( norm ((LP-LP2Match).*ScalingCoef(:,i-1))-output_Match.Table{i,7})>1e-10
         error('non matching norm')
     end
     
-    if abs( 100*sum(abs(  (LP(IndexLp) - LP2Match(IndexLp))./LP2Match(IndexLp) )) - output_Match.Table{i,7})>1e-10
+    if abs( 100*sum(abs(  ((LP-LP2Match)./LP2Match).*ScalingCoef(:,i-1) )) - output_Match.Table{i,6})>1e-10
         error('non matching error percent')
     end
 end

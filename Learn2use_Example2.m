@@ -63,26 +63,33 @@ for i = 1:size(LpIni,2)
     [Lp2Match{i},Abar{i},Bbar{i},Dbar{i}] = Convert_ABD2LP (E1,E2,v12,G12,h,A2Match{i},B2Match{i},D2Match{i},true);     %#ok<SAGROW>
 end
 
+if 1
+    Objectives.Type       = 'ABD';
+    Objectives.FitnessFct = @(A,B,D) SumRMSABD(A,B,D,Objectives);
+    IndexAStiff = ones(3,3);
+    IndexBStiff = ones(3,3);
+    IndexDStiff = ones(3,3);
+    Objectives.Table   = [{'Laminate #'}     {'Nplies'}   {'A2Match'}  {'B2Match'} {'D2Match'}  {'A Scaling'} {'B Scaling'} {'D Scaling'} ;
+        {1}          {[20 20]}       A2Match(1)       B2Match(1)     D2Match(1)   {IndexAStiff} {IndexBStiff} {IndexDStiff}
+        {2}          {[22 22]}       A2Match(2)       B2Match(2)     D2Match(2)   {IndexAStiff} {IndexBStiff} {IndexDStiff}
+        {3}          {[12 12]}       A2Match(3)       B2Match(3)     D2Match(3)   {IndexAStiff} {IndexBStiff} {IndexDStiff}];
+    
+    
+else
+    Objectives.Type       = 'LP';
+    Objectives.FitnessFct = @(LP) SumRMSLP(LP,Objectives);
+    
+    
+    ScalingCoef = [1 1 1 1, 1 1 1 1, 1 1 1 1]';
+    Objectives.Table   = [{'Laminate #'}  {'Nplies [LB UB]'}    {'LP2Match'}     {'Scaling Coefficient'} ;
+                                {1}           {[20 20]}         Lp2Match(1)     {ScalingCoef} ;
+                                {2}           {[22 22]}         Lp2Match(2)     {ScalingCoef} ;
+                                {3}           {[12 12]}         Lp2Match(3)     {ScalingCoef} ; ];
+    
+end
 
-Objectives.A = A2Match;
-Objectives.B = B2Match;
-Objectives.D = D2Match;
 
-NPliesIni             = [20 22 12];
-ImportanceFactor      = [1 1 1]; 
-Objectives.IndexLP    = [1:12];
-
-Objectives.IndexAStiff = [1:9];
-Objectives.IndexBStiff = [1:9];
-Objectives.IndexDStiff = [1:9];
-
-Objectives.Table   = [{'Laminate Index'}      {'Nplies'}     {'LP2Match'}     {'Importance'} ;
-                            {1}            {NPliesIni(1)}    Lp2Match{1}   {ImportanceFactor(1)} ;
-                            {2}            {NPliesIni(2)}    Lp2Match{2}   {ImportanceFactor(2)} ;
-                            {3}            {NPliesIni(3)}    Lp2Match{3}   {ImportanceFactor(3)} ; ];
-
-                        
-                        
+           
 % =========================== Default Options =========================== %
 
 %                        [Damtol  Rule10percent  Disorientation  Contiguity   DiscreteAngle  InernalContinuity  Covering];
@@ -92,7 +99,6 @@ Constraints.ply_t      = 0.000127;          % ply thickness
 Constraints.ORDERED    = true;                           
 Constraints.Balanced   = false; 
 Constraints.Sym        = true; 
-Constraints.NRange     = 1.6;
 
 
 % ---
@@ -101,12 +107,8 @@ GAoptions.Ngen    = 200; 	   % Number of generations
 GAoptions.NgenMin = 200; 	   % Minimum number of generation calculated
 GAoptions.Elitism = 0.1; 	   % Percentage of elite passing to the next Gen.
 GAoptions.Plot    = true; 	   % Plot Boolean
+GAoptions.PC      = 0.5; 	   % Plot Boolean
 
-Objectives.Type       = 'LP';
-Objectives.FitnessFct = @(LP) SumRMSLP(LP,Objectives);
-
-% Objectives.Type       = 'ABD';
-% Objectives.FitnessFct = @(A,B,D) SumRMSABD(A,B,D,Objectives);
 
 
 % ---

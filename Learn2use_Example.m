@@ -33,6 +33,8 @@
 
 clear all; clc; format short g; format compact; close all;
 
+addpath ./FitnessFcts
+
 % ---
 Lp2Match = [
 % LP2Match1 LP2Match2  LP2Match3
@@ -49,29 +51,27 @@ Lp2Match = [
     0.2261	 0.3518	 0.4120   % V3D
    -0.3177	-0.2444	-0.3811]; % V4D
 
-NPliesIni = [28 20 16];
-ScalingCoef = [1 1 1]; 
-Objectives.IndexLP = [1 3];
-Objectives.Table   = [{'Laminate #'}     {'Nplies'}      {'LP2Match'}     {'Scaling Coefficient'} ;
-                            {1}            {NPliesIni(1)}    {Lp2Match(:,1)}   {ScalingCoef(1)} ;
-                            {2}            {NPliesIni(2)}    {Lp2Match(:,2)}   {ScalingCoef(2)} ;
-                            {3}            {NPliesIni(3)}    {Lp2Match(:,3)}   {ScalingCoef(3)} ; ];
+ScalingCoef = [1 0 1 0, 0 0 0 0, 0 0 0 0]'; 
+Objectives.Table   = [{'Laminate #'}  {'Nplies [LB UB]'}    {'LP2Match'}     {'Scaling Coefficient'} ;
+                            {1}           {[28 28]}         {Lp2Match(:,1)}     {ScalingCoef} ;
+                            {2}           {[20 20]}         {Lp2Match(:,2)}     {ScalingCoef} ;
+                            {3}           {[16 16]}         {Lp2Match(:,3)}     {ScalingCoef} ; ];
 
                         
-                        
+Objectives.Type       = 'LP'; 
+Objectives.FitnessFct = @(LP) SumRMSLP(LP,Objectives);
+
 % =========================== Default Options =========================== %
 
 %                        [Damtol  Rule10percent  Disorientation  Contiguity   DiscreteAngle  InernalContinuity  Covering];
-Constraints.Vector     = [false       true          true          true         true            true            false];
+Constraints.Vector     = [false       false          true          true         true            true            false];
 Constraints.DeltaAngle = 5;
 Constraints.ply_t      = 0.000127;          % ply thickness
 Constraints.ORDERED    = false;                         
 Constraints.Balanced   = false; 
 Constraints.Sym        = false; 
-Constraints.NRange     = 1.2;
 
-Objectives.Type        = 'LP'; % 'ABD' 'SS' 'LP'
-Objectives.FitnessFct = @(LP) SumRMSLP(LP,Objectives);
+
 
 % ---
 GAoptions.Npop    = 100; 	   % Population size
@@ -89,27 +89,28 @@ display(output_Match)
 display(output_Match.Table)
 
 %% Checking output results are correct
-IndexLp = Objectives.IndexLP;
-for i = 2:length(NPliesIni)+1
+ScalingCoef = reshape(cell2mat(Objectives.Table(2:end,4)),12,size(Objectives.Table,1)-1);
+
+for i = 2:size(Objectives.Table,1)
     LP2Match = Objectives.Table{i,3};
-    if sum(abs(LP2Match-output_Match.Table{i,5}))>1e-10
+    if sum(abs(LP2Match-output_Match.Table{i,4}))>1e-10
         error('non matching LP2Match')
     end
     
-    LP = Convert_SS2LP(output_Match.Table{i,4});
+    LP = Convert_SS2LP(output_Match.Table{i,3});
     if sum(abs(LP-output_Match.Table{i,6}))>1e-10
         error('non matching SS and LPOpt')
     end
     
-    if abs( rms (LP(IndexLp)-LP2Match(IndexLp))-output_Match.Table{i,9})>1e-10
+    if abs( rms ( (LP-LP2Match).*ScalingCoef(:,i-1) )-output_Match.Table{i,8})>1e-10
         error('non matching RSM')
     end
     
-    if abs( norm (LP(IndexLp)-LP2Match(IndexLp))-output_Match.Table{i,8})>1e-10
+    if abs( norm ((LP-LP2Match).*ScalingCoef(:,i-1))-output_Match.Table{i,7})>1e-10
         error('non matching norm')
     end
     
-    if abs( 100*sum(abs(  (LP(IndexLp) - LP2Match(IndexLp))./LP2Match(IndexLp) )) - output_Match.Table{i,7})>1e-10
+    if abs( 100*sum(abs(  ((LP-LP2Match)./LP2Match).*ScalingCoef(:,i-1) )) - output_Match.Table{i,6})>1e-10
         error('non matching error percent')
     end
 end

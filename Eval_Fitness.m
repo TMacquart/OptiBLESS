@@ -45,10 +45,15 @@ function [fitness,output] = Eval_Fitness (Individual,Objectives,Constraints,Nsec
 FEASIBLE  = true;  
 LamNumber = cell2mat(SortedTable(2:end,1)); % after 1st sorting
 
-if Constraints.NRange == 1
-    NpliesperLam = cell2mat(AllowedNplies);
-else
-    NpliesperLam = Individual(1:Nsec);
+IndexPly = 1;
+NpliesperLam = nan*ones(length(Nsec),1);
+for iPly = 1:length(Nsec)
+    if Nsec(iPly)==0
+        NpliesperLam(iPly) = AllowedNplies{iPly};
+    else
+        NpliesperLam(iPly) = Individual(IndexPly);
+        IndexPly = IndexPly+1;
+    end
 end
 
 % sort ply order to have Guide First
@@ -65,14 +70,14 @@ end
 SortedLamNumber = LamNumber(SortIndex);                                         % after 2nd sorting
 NGuidePlies    = max(NpliesperLam);                                           % number of plies in the guide laminate (take half for Sym.)
 NDropPlies     = abs(diff(NpliesperLam));                                     % number of ply drops
-GuideAngles    = Individual(Nsec + [1:NGuidePlies]);
+GuideAngles    = Individual(sum(Nsec) + [1:NGuidePlies]);
 GuideAngles    = GuideAngles(~isnan(GuideAngles));
 
 
 
 % --- organise ply drop sequences
 Ndrop = length(NDropPlies);
-StartIndex   = Nsec+max(cell2mat(AllowedNplies));
+StartIndex   = sum(Nsec)+max(cell2mat(AllowedNplies));
 DropIndexes = cell(1,Ndrop);
 
 for iDrop = 1 : Ndrop
