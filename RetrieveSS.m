@@ -181,10 +181,10 @@ options = gaoptimset(options,'InitialPopulation' ,IniPop);
 
 
 
-% keyboard
+
 % --- run GA
 fprintf(strcat('Running GA \n'))
-[xOpt,fval] = ga(fct_handle,Nvar,[],[],[],[],LB,UB,[],IntegerDV,options);
+[xOpt,fval,~,StandardOutputGA] = ga(fct_handle,Nvar,[],[],[],[],LB,UB,[],IntegerDV,options);
 display('GA(s) Terminated Successfully')
 
 
@@ -246,6 +246,8 @@ if strcmp(Objectives.Type,'ABD')
 
 end
 
+output.NfctEval  = StandardOutputGA.funccount;
+output.NGen      = StandardOutputGA.generations;
 output.Table     = Table;
 output.xOpt      = xOpt;
 output.fval      = fval;

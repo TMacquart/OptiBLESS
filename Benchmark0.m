@@ -58,7 +58,7 @@ Objectives.Table   = [{'Laminate Index'} {'Nplies'} {'LP2Match'} {'Importance'}]
                         
 ply_t      = 0.000127;
 GuideLamDv = [+45 -45 90 0 45 90 0 45];
-Drops      = [2 4 6];
+Drops      = []; %[2 4 6];
 GuideLam   = [GuideLamDv, -GuideLamDv, fliplr([GuideLamDv, -GuideLamDv])]'; % balanced/symetric
 
 ScalingCoef = [1 0 1 0, 0 0 0 0, 1 1 1 1]';      % relative importance given to matching the guide laminate LPs integer [1,N], the higher the integer = the more impact on the fit. fct.
@@ -73,7 +73,7 @@ for i = 1:NUniqueLam
     Lam = [Lam, -Lam, fliplr([Lam, -Lam])]'; % balanced/symetric 
     
     Lp2Match(:,i) = Convert_SS2LP(Lam);
-    Objectives.Table = [Objectives.Table; [{i} {[1 1]*length(Lam)} {Lp2Match(:,i)} {ScalingCoef}]];
+    Objectives.Table = [Objectives.Table; [{i} {[0.5 1.5]*length(Lam)} {Lp2Match(:,i)} {ScalingCoef}]];
 end
 
 Objectives.Type        = 'LP';
@@ -92,30 +92,42 @@ Constraints.ORDERED    = false;
 
 
 % ---
-GAoptions.Npop    = 200; 	   % Population size
+GAoptions.Npop    = 100; 	   % Population size
 GAoptions.Ngen    = 500; 	   % Number of generations
-GAoptions.NgenMin = 500; 	   % Minimum number of generation calculated
+GAoptions.NgenMin = 100; 	   % Minimum number of generation calculated
 GAoptions.Elitism = 0.075; 	   % Percentage of elite passing to the next Gen.
 GAoptions.Plot    = true; 	   % Plot Boolean
 GAoptions.PC      = 0.5;
 
 % ---
-Nrun = 1;
+Nrun = 100;
 output_Match = cell(1,Nrun);
 feasible     = zeros(1,Nrun);
 fval         = zeros(1,Nrun);
 MeanRMS      = zeros(1,Nrun);
+Ngens        = zeros(1,Nrun);
+NFctEval     = zeros(1,Nrun);
 MeanNorm     = zeros(1,Nrun);
-
 for i = 1:Nrun
     [output_Match{i}] = RetrieveSS(Objectives,Constraints,GAoptions);
     feasible(i)       = output_Match{i}.FEASIBLE;
     fval(i)           = output_Match{i}.fval;
     MeanRMS(i)        = mean(cell2mat(output_Match{i}.Table(2:end,end)));
     MeanNorm(i)       = mean(cell2mat(output_Match{i}.Table(2:end,end-1)));
+    NFctEval(i)       = output_Match{i}.NfctEval;  
+    Ngens(i)          = output_Match{i}.NGen; 
+
 end
 
-output_Match = output_Match{i}
+if 1
+    figure(2)
+    hist(fval,20)
+    hist(NFctEval,20)
+    hist(Ngens)
+    
+end
+fr
+% output_Match = output_Match{i}
 
 %% Checking output results are correct
 ScalingCoef = reshape(cell2mat(Objectives.Table(2:end,4)),12,size(Objectives.Table,1)-1);
