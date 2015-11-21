@@ -33,6 +33,8 @@
 
 clear all; clc; format short g; format compact; close all;
 
+addpath ./FitnessFcts
+
 global Pop
 
 if 0
