@@ -37,11 +37,24 @@
 
 
 
-function [FEASIBLE] = Check_Feasibility(ConstraintVector,GuideAngles,DropsIndexes,NGuidePlies,NDropPlies,LamType)
+function [FEASIBLE] = Check_Feasibility(ConstraintVector,GuideAngles,ShuffleLoc,DropsIndexes,NGuidePlies,NDropPlies,LamType)
 
 FEASIBLE = true;
 
+if strcmp(LamType,'Balanced') || strcmp(LamType,'Balanced_Sym') % check if balanced
+    [FiberAngles] = Convert_dvAngles2FiberAngles(GuideAngles,ShuffleLoc,LamType);
+    UniqueAngle = unique(FiberAngles);
+    UniqueAngle = UniqueAngle(UniqueAngle>0);
+    for j=1:length(UniqueAngle)
+        if length(find(UniqueAngle(j)==FiberAngles)) ~= length(find(-UniqueAngle(j)==FiberAngles))
+            FEASIBLE = false; 
+            return
+        end
+    end
+end
+
 if length(GuideAngles) ~= NGuidePlies
+    keyboard % should never happen and should be removed
     FEASIBLE = false; 
     return
 end
@@ -74,7 +87,7 @@ end
 
 
 if ConstraintVector(3) % Disorientation
-    [FiberAngles] = Convert_dvAngles2FiberAngles(GuideAngles,LamType);
+    [FiberAngles] = Convert_dvAngles2FiberAngles(GuideAngles,ShuffleLoc,LamType);
     for iply = 1:numel(FiberAngles)-1
         if FiberAngles(iply)>=-45 && FiberAngles(iply)<=45
             DetlaAngle = abs(FiberAngles(iply)-FiberAngles(iply+1));

@@ -73,11 +73,20 @@ NDropPlies     = abs(diff(NpliesperLam));                                     % 
 GuideAngles    = Individual(sum(Nsec) + [1:NGuidePlies]);
 GuideAngles    = GuideAngles(~isnan(GuideAngles));
 
+% --- Shuffle Loc
+if strcmp(LamType,'Balanced') || strcmp(LamType,'Balanced_Sym')
+    ShuffleLoc = Individual(sum(Nsec) + max(cell2mat(AllowedNplies)) + [1:NGuidePlies]);
+    StartIndex = sum(Nsec)+max(cell2mat(AllowedNplies))*2;
+else
+    ShuffleLoc = [];
+    StartIndex = sum(Nsec)+max(cell2mat(AllowedNplies));
+end
+
+if ~isempty(find(ShuffleLoc==0,1)), keyboard; end
 
 
 % --- organise ply drop sequences
 Ndrop = length(NDropPlies);
-StartIndex   = sum(Nsec)+max(cell2mat(AllowedNplies));
 DropIndexes = cell(1,Ndrop);
 
 for iDrop = 1 : Ndrop
@@ -116,17 +125,17 @@ if ConstraintVector(2)                                                  % 10% ru
 end
 
 if FEASIBLE
-    [FEASIBLE] = Check_Feasibility(ConstraintVector,GuideAngles,cell2mat(DropIndexes),NGuidePlies,NDropPlies,LamType);
+    [FEASIBLE] = Check_Feasibility(ConstraintVector,GuideAngles,ShuffleLoc,cell2mat(DropIndexes),NGuidePlies,NDropPlies,LamType);
 end
 
 
 
-
+% keyboard
 % ---
 if 1    % fitness calculation
     
     % Guide
-    FiberAngles = Convert_dvAngles2FiberAngles(GuideAngles,LamType);
+    FiberAngles = Convert_dvAngles2FiberAngles(GuideAngles,ShuffleLoc,LamType);
     
     if strcmp(Objectives.Type,'LP')
         LP(:,1)  = Convert_SS2LP(FiberAngles);            % evaluate lamination parameters for the guide
@@ -147,9 +156,14 @@ if 1    % fitness calculation
             DropsLoc(DropsLoc>NGuidePlies) = [];
         end
         
-        ply_angles(DropsLoc(DropsLoc<length(ply_angles))) = [];  % drop plies
+        ply_angles(DropsLoc(DropsLoc<=length(ply_angles))) = [];  % drop plies
+        ShuffleLoc(DropsLoc(DropsLoc<=length(ShuffleLoc))) = [];  % drop plies
         
-        FiberAngles      = Convert_dvAngles2FiberAngles(ply_angles,LamType);
+%         try
+            FiberAngles      = Convert_dvAngles2FiberAngles(ply_angles,ShuffleLoc,LamType);
+%         catch
+%             keyboard
+%         end
         SS{index}        = FiberAngles;
         
         if strcmp(Objectives.Type,'LP')

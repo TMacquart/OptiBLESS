@@ -84,8 +84,8 @@ Constraints.Vector     = [false       false          false          false       
 Constraints.DeltaAngle = 45;
 Constraints.ply_t      = 0.000127;          % ply thickness
 Constraints.ORDERED    = true;                         
-Constraints.Balanced   = false; 
-Constraints.Sym        = false; 
+Constraints.Balanced   = true; 
+Constraints.Sym        = true; 
 
 
 

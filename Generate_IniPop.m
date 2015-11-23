@@ -51,9 +51,6 @@ function [IniPop,IniPopLP,EuclideanDist] = Generate_IniPop (nvar,Npop,Nmax,Nmin,
 
 IniPop = zeros(Npop,nvar+length(find(Nsec==0)));
 
-
-
-
 fprintf(' Creating IniPop ... \n ' )
 ConstraintVector = Constraints.Vector;
 DeltaAngle       = Constraints.DeltaAngle;
@@ -73,7 +70,8 @@ while ipop < Npop + 1
     NPliesGuide   = max(NpliesPerLam); 
     
 %     GuideAngles = zeros(1,NPliesGuide); % some non-coded genea are included
-    GuideAngles = zeros(1,Nmax); % some non-coded genea are included
+    GuideAngles = zeros(1,Nmax); % some non-coded genes are included
+%     ShuffleLoc  = zeros(1,Nmax); % some non-coded genes are included
     
     % ---
     if 1 % enforce constraints on IniPop - Build the angles step by step
@@ -121,6 +119,15 @@ while ipop < Npop + 1
         end
 
     end
+    
+    
+    % ---
+%     if strcmp(LamType,'Balanced') || strcmp(LamType,'Balanced_Sym')
+        ShuffleLoc = randperm(Nmax*2,Nmax); % not used if not balanced
+        if ~isempty(find(ShuffleLoc==0,1)), keyboard; end
+%     else
+%         ShuffleLoc = [];
+%     end
     % ---
     
     FEASIBLE = true;
@@ -137,9 +144,10 @@ while ipop < Npop + 1
         DropsIndexes = [];
     end
     
+
     if FEASIBLE
          NGuideDropPlies = (NPliesGuide)-min(NpliesPerLam);
-        [FEASIBLE] = Check_Feasibility(ConstraintVector,GuideAngles(1:NPliesGuide),DropsIndexes(1:NGuideDropPlies),NPliesGuide,NGuideDropPlies,LamType);
+        [FEASIBLE] = Check_Feasibility(ConstraintVector,GuideAngles(1:NPliesGuide),ShuffleLoc(1:NPliesGuide),DropsIndexes(1:NGuideDropPlies),NPliesGuide,NGuideDropPlies,LamType);
     end
     
 %     DropsIndexes = [DropsIndexes nan*ones(1,(Nmax-Nmin)-length(DropsIndexes))];
@@ -167,7 +175,11 @@ while ipop < Npop + 1
     
 
     if FEASIBLE
-        IniPop(ipop,:) = [NpliesPerLam GuideAngles DropsIndexes];
+        if strcmp(LamType,'Balanced') || strcmp(LamType,'Balanced_Sym')
+            IniPop(ipop,:) = [NpliesPerLam GuideAngles ShuffleLoc DropsIndexes];
+        else
+            IniPop(ipop,:) = [NpliesPerLam GuideAngles DropsIndexes];
+        end
         ipop = ipop + 1;
     end
     

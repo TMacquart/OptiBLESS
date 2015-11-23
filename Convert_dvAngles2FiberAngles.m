@@ -33,7 +33,9 @@
 %                           length staking sequence
 % =====                                                              ==== %
 
-function [FiberAngles] = dvAngles2FiberAngles(ply_angle,LamType)
+function [FiberAngles] = Convert_dvAngles2FiberAngles(ply_angle,ShuffleLoc,LamType)
+
+
 %% Input Check
 if ~isnumeric(ply_angle) || ~isreal(ply_angle) || ~isvector(ply_angle)
     error('Input angles (ply_angle) must be numeric and real')
@@ -50,9 +52,28 @@ if isempty(Index),
 end
 
 %% Concatenation
-if strcmp(LamType,'Balanced_Sym'),   FiberAngles = [ply_angle, -ply_angle, fliplr([ply_angle, -ply_angle])]';  end
-if strcmp(LamType,'Sym'),            FiberAngles = [ply_angle, fliplr(ply_angle)]';     end
-if strcmp(LamType,'Balanced'),       FiberAngles = [ply_angle, -ply_angle]';            end
 if strcmp(LamType,'Generic'),        FiberAngles = ply_angle';                          end
+if strcmp(LamType,'Sym'),            FiberAngles = [ply_angle, fliplr(ply_angle)]';     end
+
+try
+if strcmp(LamType,'Balanced_Sym') || strcmp(LamType,'Balanced')
+    FiberAngles    = ply_angle;
+    BalancedAngles = [-ply_angle' ShuffleLoc'];
+    BalancedAngles = sortrows(BalancedAngles,2);
+    
+    for j = 1:length(BalancedAngles)
+        if BalancedAngles(j,2)>length(FiberAngles)
+            FiberAngles = [FiberAngles BalancedAngles(j,1)];
+        else
+            FiberAngles = [FiberAngles(1:BalancedAngles(j,2)-1) BalancedAngles(j,1)  FiberAngles(BalancedAngles(j,2):end)];
+        end
+    end
+    if strcmp(LamType,'Balanced_Sym')
+        FiberAngles = [FiberAngles, fliplr([FiberAngles])]';
+    end
+end
+catch
+    keyboard
+end
 
 end

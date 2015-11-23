@@ -107,8 +107,7 @@ if 1    % Define objectives (i.e. LP to match)
    Nsec(Nrange>0)=1; % number of variable thickness lam.
 
 end
-
-
+% keyboard
 
 
 % ---
@@ -123,8 +122,12 @@ if 1    % Set GA options
     ConstraintVector = Constraints.Vector;                                  % [Damtol  Rule10percent  Disorientation  Contiguity  DiscreteAngle  InernalContinuity  Covering];
     DeltaAngle       = Constraints.DeltaAngle;
     
-    Nvar = sum(Nsec) + Nmax +(Nmax-Nmin) ; % Nsec (thickness) + Nmax Guide plies + Nmax potential drops 
-
+    if ~Constraints.Balanced
+        Nvar = sum(Nsec) + Nmax +(Nmax-Nmin) ;   % Nsec (thickness) + Nmax Guide plies + (Nmax-Nmin) potential drops 
+    else
+        Nvar = sum(Nsec) + Nmax*2 +(Nmax-Nmin) ; % if balanced, need ply shuffling = + Nmax var
+    end
+    
     fct_handle = @(x)Eval_Fitness(x,Objectives,Constraints,Nsec,AllowedNplies,SortedTable,LamType);  % handle of the fitness function becomes constraint
     
     % ---
@@ -132,13 +135,28 @@ if 1    % Set GA options
         if ConstraintVector(5) % if DiscreteAngle
             IntegerDV = 1:Nvar;                                             % discrete
             Nd_state  = length(-90:DeltaAngle:90);                           % number of discrete state
-            LB = [0*ones(Nmax,1)            ; ones(Nmax-Nmin,1)];
-            UB = [(Nd_state-1)*ones(Nmax,1) ; Nmax*ones(Nmax-Nmin,1)];
+            LB = 0*ones(Nmax,1)            ;
+            UB = (Nd_state-1)*ones(Nmax,1);
         else
             IntegerDV = [[1:sum(Nsec)] [(sum(Nsec)+Nmax):(sum(Nsec)+2*Nmax-Nmin)]];             % continuous
-            LB = [-90*ones(Nmax,1); ones(Nmax-Nmin,1)];
-            UB = [90*ones(Nmax,1);  Nmax*ones(Nmax-Nmin,1)];
+            LB = -90*ones(Nmax,1);
+            UB = 90*ones(Nmax,1);
         end
+        
+        if Constraints.Balanced % add suffling Bounds
+            LB = [LB; ones(Nmax,1)];
+            UB = [UB; 2*Nmax*ones(Nmax,1)];
+        end
+        
+         if ConstraintVector(5) % if DiscreteAngle
+            LB = [LB            ; ones(Nmax-Nmin,1)];
+            UB = [UB ; Nmax*ones(Nmax-Nmin,1)];
+         else
+            LB = [LB; ones(Nmax-Nmin,1)];
+            UB = [UB;  Nmax*ones(Nmax-Nmin,1)];
+         end
+        
+        
         for iply=sum(Nsec):-1:1
             LB = [AllowedNplies{iply}(1)   ;LB];
             UB = [AllowedNplies{iply}(end) ;UB];
@@ -151,6 +169,8 @@ if 1    % Set GA options
             LB(sum(Nsec)+1) = 1;
             UB(sum(Nsec)+1) = 2;
         end
+        
+
     end
 
 end
@@ -177,9 +197,10 @@ for i = 1:5
         end
     end
 end
+% IniPop(1,:) = [3 1 4 2 5 6 7 8 2]
 options = gaoptimset(options,'InitialPopulation' ,IniPop);
 
-
+% keyboard
 
 
 % --- run GA
