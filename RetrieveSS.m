@@ -198,10 +198,12 @@ for i = 1:5
     end
 end
 % IniPop(1,:) = [3 1 4 2 5 6 7 8 2]
+% IniPop(1,:) = [[3 1 4 2 1 3 4 2] fliplr([3 1 4 2 1 3 4 2])]
+IniPop(1,:) = [3 1 4 2 , 2 4 1 3 , 5 6 7 8 , 9 10 11 12] 
+
 options = gaoptimset(options,'InitialPopulation' ,IniPop);
 
-% keyboard
-
+%  keyboard
 
 % --- run GA
 fprintf(strcat('Running GA \n'))

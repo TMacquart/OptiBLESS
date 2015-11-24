@@ -41,7 +41,7 @@ function [FEASIBLE] = Check_Feasibility(ConstraintVector,GuideAngles,ShuffleLoc,
 
 FEASIBLE = true;
 
-if strcmp(LamType,'Balanced') || strcmp(LamType,'Balanced_Sym') % check if balanced
+if ConstraintVector(8) % check if balanced for indirect constraint handling
     [FiberAngles] = Convert_dvAngles2FiberAngles(GuideAngles,ShuffleLoc,LamType);
     UniqueAngle = unique(FiberAngles);
     UniqueAngle = UniqueAngle(UniqueAngle>0);

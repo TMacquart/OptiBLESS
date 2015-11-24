@@ -59,7 +59,7 @@ Objectives.Table   = [{'Laminate Index'} {'Nplies'} {'LP2Match'} {'Importance'}]
 ply_t      = 0.000127;
 GuideLamDv = [+45 -45 90 0];
 % GuideLamDv = [-90 -45 -45];
-Drops      = [2]; %[2 4 6];
+Drops      = []; %[2 4 6];
 % GuideLam   = [GuideLamDv, -GuideLamDv];
 GuideLam   = [GuideLamDv, -GuideLamDv, fliplr([GuideLamDv, -GuideLamDv])]'; % balanced/symetric
 
@@ -84,8 +84,8 @@ Objectives.FitnessFct = @(LP) SumRMSLP(LP,Objectives);
                         
 % =========================== Default Options =========================== %
 
-%                        [Damtol  Rule10percent  Disorientation  Contiguity   DiscreteAngle  InernalContinuity  Covering];
-Constraints.Vector     = [false       false          false          false         true            false            false];
+%                        [Damtol  Rule10percent  Disorientation  Contiguity   DiscreteAngle  InernalContinuity  Covering  Balanced];
+Constraints.Vector     = [false       false          false          false         true            false            false  true];
 Constraints.DeltaAngle = 45;
 Constraints.ply_t      = ply_t;          % ply thickness
 Constraints.Balanced   = false; 
@@ -94,9 +94,9 @@ Constraints.ORDERED    = false;
 
 
 % ---
-GAoptions.Npop    = 200; 	   % Population size
-GAoptions.Ngen    = 500; 	   % Number of generations
-GAoptions.NgenMin = 250; 	   % Minimum number of generation calculated
+GAoptions.Npop    = 300; 	   % Population size
+GAoptions.Ngen    = 1000; 	   % Number of generations
+GAoptions.NgenMin = 500; 	   % Minimum number of generation calculated
 GAoptions.Elitism = 0.075; 	   % Percentage of elite passing to the next Gen.
 GAoptions.Plot    = true; 	   % Plot Boolean
 GAoptions.PC      = 0.5;
