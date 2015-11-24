@@ -41,22 +41,42 @@ function [FEASIBLE] = Check_Feasibility(ConstraintVector,GuideAngles,ShuffleLoc,
 
 FEASIBLE = true;
 
+
+
 if ConstraintVector(8) % check if balanced for indirect constraint handling
-    [FiberAngles] = Convert_dvAngles2FiberAngles(GuideAngles,ShuffleLoc,LamType);
+    % guide
+    [FiberAngles] = Convert_dvAngles2FiberAngles(GuideAngles,[],LamType);
     UniqueAngle = unique(FiberAngles);
-    UniqueAngle = UniqueAngle(UniqueAngle>0);
+    UniqueAngle(abs(UniqueAngle)==90) = [];
+    UniqueAngle(UniqueAngle==0)       = [];
     for j=1:length(UniqueAngle)
         if length(find(UniqueAngle(j)==FiberAngles)) ~= length(find(-UniqueAngle(j)==FiberAngles))
-            FEASIBLE = false; 
+            FEASIBLE = false;
             return
         end
     end
-end
-
-if length(GuideAngles) ~= NGuidePlies
-    keyboard % should never happen and should be removed
-    FEASIBLE = false; 
-    return
+    
+    % guideDroped laminates
+    for iDrop=1:length(DropsIndexes)
+        ply_angles = GuideAngles;
+        DropsLoc = unique(DropsIndexes(1:iDrop));
+        if max(DropsLoc)>NGuidePlies
+            DropsLoc(DropsLoc>NGuidePlies) = [];
+        end
+        
+        ply_angles(DropsLoc(DropsLoc<=length(ply_angles))) = [];  % drop plies
+        FiberAngles      = Convert_dvAngles2FiberAngles(ply_angles,[],LamType);
+        UniqueAngle = unique(FiberAngles);
+        UniqueAngle(abs(UniqueAngle)==90) = [];
+        UniqueAngle(UniqueAngle==0)       = [];
+        
+        for j=1:length(UniqueAngle)
+            if length(find(UniqueAngle(j)==FiberAngles)) ~= length(find(-UniqueAngle(j)==FiberAngles))
+                FEASIBLE = false;
+                return
+            end
+        end
+    end
 end
 
 
@@ -83,32 +103,55 @@ if ConstraintVector(1)
         FEASIBLE = false;
         return
     end
+    if strcmp(LamType,'Generic') && abs(GuideAngles(end)) ~= 45
+        FEASIBLE = false;
+        return
+    end
 end
 
 
 if ConstraintVector(3) % Disorientation
-    [FiberAngles] = Convert_dvAngles2FiberAngles(GuideAngles,ShuffleLoc,LamType);
-    for iply = 1:numel(FiberAngles)-1
-        if FiberAngles(iply)>=-45 && FiberAngles(iply)<=45
-            DetlaAngle = abs(FiberAngles(iply)-FiberAngles(iply+1));
-        elseif FiberAngles(iply)>45
-            if FiberAngles(iply+1)>-45
-                DetlaAngle = abs(FiberAngles(iply)-FiberAngles(iply+1));
-            else
-                DetlaAngle = abs(FiberAngles(iply)-(180+FiberAngles(iply+1)));
+
+    for iDrop= 0:length(DropsIndexes)
+        
+        if iDrop == 0
+            [FiberAngles] = Convert_dvAngles2FiberAngles(GuideAngles,ShuffleLoc,LamType);
+        else
+            ply_angles    = GuideAngles;
+            plyShuffleLoc = ShuffleLoc;
+            DropsLoc = unique(DropsIndexes(1:iDrop));
+            if max(DropsLoc)>NGuidePlies
+                DropsLoc(DropsLoc>NGuidePlies) = [];
             end
-        elseif FiberAngles(iply)<-45
-            if FiberAngles(iply+1)<45
+            
+            ply_angles(DropsLoc(DropsLoc<=length(ply_angles))) = [];            % drop plies
+            plyShuffleLoc(DropsLoc(DropsLoc<=length(plyShuffleLoc))) = [];      % drop plies
+            FiberAngles = Convert_dvAngles2FiberAngles(ply_angles,plyShuffleLoc,LamType);
+        end
+        
+        for iply = 1:numel(FiberAngles)-1
+            if FiberAngles(iply)>=-45 && FiberAngles(iply)<=45
                 DetlaAngle = abs(FiberAngles(iply)-FiberAngles(iply+1));
-            else
-                DetlaAngle = abs(FiberAngles(iply)-(-180+FiberAngles(iply+1)));
+            elseif FiberAngles(iply)>45
+                if FiberAngles(iply+1)>-45
+                    DetlaAngle = abs(FiberAngles(iply)-FiberAngles(iply+1));
+                else
+                    DetlaAngle = abs(FiberAngles(iply)-(180+FiberAngles(iply+1)));
+                end
+            elseif FiberAngles(iply)<-45
+                if FiberAngles(iply+1)<45
+                    DetlaAngle = abs(FiberAngles(iply)-FiberAngles(iply+1));
+                else
+                    DetlaAngle = abs(FiberAngles(iply)-(-180+FiberAngles(iply+1)));
+                end
+            end
+            
+            if DetlaAngle>45
+                FEASIBLE = false;
+                return
             end
         end
         
-        if DetlaAngle>45
-            FEASIBLE = false;
-            return
-        end
     end
 end
 

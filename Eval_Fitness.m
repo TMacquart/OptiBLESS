@@ -135,8 +135,11 @@ end
 if 1    % fitness calculation
     
     % Guide
-    FiberAngles = Convert_dvAngles2FiberAngles(GuideAngles,ShuffleLoc,LamType);
-    
+    try
+        FiberAngles = Convert_dvAngles2FiberAngles(GuideAngles,ShuffleLoc,LamType);
+    catch
+        keyboard
+    end
     if strcmp(Objectives.Type,'LP')
         LP(:,1)  = Convert_SS2LP(FiberAngles);            % evaluate lamination parameters for the guide
     end
@@ -156,14 +159,15 @@ if 1    % fitness calculation
             DropsLoc(DropsLoc>NGuidePlies) = [];
         end
         
+        plyShuffleLoc = ShuffleLoc;
         ply_angles(DropsLoc(DropsLoc<=length(ply_angles))) = [];  % drop plies
-        ShuffleLoc(DropsLoc(DropsLoc<=length(ShuffleLoc))) = [];  % drop plies
+        plyShuffleLoc(DropsLoc(DropsLoc<=length(plyShuffleLoc))) = [];  % drop plies
         
-%         try
-            FiberAngles      = Convert_dvAngles2FiberAngles(ply_angles,ShuffleLoc,LamType);
-%         catch
-%             keyboard
-%         end
+        try
+        FiberAngles      = Convert_dvAngles2FiberAngles(ply_angles,plyShuffleLoc,LamType);
+        catch
+            keyboard
+        end
         SS{index}        = FiberAngles;
         
         if strcmp(Objectives.Type,'LP')

@@ -55,7 +55,7 @@ end
 if strcmp(LamType,'Generic'),        FiberAngles = ply_angle';                          end
 if strcmp(LamType,'Sym'),            FiberAngles = [ply_angle, fliplr(ply_angle)]';     end
 
-try
+
 if strcmp(LamType,'Balanced_Sym') || strcmp(LamType,'Balanced')
     FiberAngles    = ply_angle;
     BalancedAngles = [-ply_angle' ShuffleLoc'];
@@ -72,8 +72,6 @@ if strcmp(LamType,'Balanced_Sym') || strcmp(LamType,'Balanced')
         FiberAngles = [FiberAngles, fliplr([FiberAngles])]';
     end
 end
-catch
-    keyboard
-end
+
 
 end

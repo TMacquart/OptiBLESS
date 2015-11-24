@@ -57,52 +57,57 @@ addpath ./FitnessFcts
 Objectives.Table   = [{'Laminate Index'} {'Nplies'} {'LP2Match'} {'Importance'}];
                         
 ply_t      = 0.000127;
-GuideLamDv = [+45 -45 90 0];
+GuideLamDv = [+45 0 -45 90]; % theta 1
+% GuideLamDv = [+45 0 -45 90 45 0 -45 0]; % theta 2
+% GuideLamDv = [-45 0 45  90 0  -45  45  90  -45  45]; % theta 3
+% GuideLamDv = [0 -45 45 45 -45   0 45 90  90 0 -45 45 0  -45 45 90 90 -45 0   0] % theta 4
 % GuideLamDv = [-90 -45 -45];
 Drops      = []; %[2 4 6];
+GuideLam   = [GuideLamDv, fliplr(GuideLamDv)];
 % GuideLam   = [GuideLamDv, -GuideLamDv];
-GuideLam   = [GuideLamDv, -GuideLamDv, fliplr([GuideLamDv, -GuideLamDv])]'; % balanced/symetric
+% GuideLam   = [GuideLamDv, -GuideLamDv, fliplr([GuideLamDv, -GuideLamDv])]'; % balanced/symetric
 
 ScalingCoef = [1 0 1 0, 1 1 1 1, 1 1 1 1]';      % relative importance given to matching the guide laminate LPs integer [1,N], the higher the integer = the more impact on the fit. fct.
-NUniqueLam = length(Drops)+1;
-Lp2Match   = zeros(12,NUniqueLam);
+NUniqueLam  = length(Drops)+1;
+Lp2Match    = zeros(12,NUniqueLam);
 for i = 1:NUniqueLam
     Lam = GuideLamDv;
     if i ~= 1,        
         Lam(Drops(1:i-1)) = [];   
     end
+    Lam   = [Lam, fliplr(Lam)];
 %     Lam = [Lam, -Lam]'; % balanced/symetric 
-    Lam = [Lam, -Lam, fliplr([Lam, -Lam])]'; % balanced/symetric 
-    
-    Lp2Match(:,i) = Convert_SS2LP(Lam);
+%     Lam = [Lam, -Lam, fliplr([Lam, -Lam])]'; % balanced/symetric 
+%     keyboard
+    Lp2Match(:,i)    = Convert_SS2LP(Lam);
     Objectives.Table = [Objectives.Table; [{i} {[1 1]*length(Lam)} {Lp2Match(:,i)} {ScalingCoef}]];
 end
 
 Objectives.Type        = 'LP';
 Objectives.FitnessFct = @(LP) SumRMSLP(LP,Objectives);
 
-                        
+                      
 % =========================== Default Options =========================== %
 
-%                        [Damtol  Rule10percent  Disorientation  Contiguity   DiscreteAngle  InernalContinuity  Covering  Balanced];
-Constraints.Vector     = [false       false          false          false         true            false            false  true];
-Constraints.DeltaAngle = 45;
-Constraints.ply_t      = ply_t;          % ply thickness
-Constraints.Balanced   = false; 
-Constraints.Sym        = false; 
+%                        [Damtol  Rule10percent  Disorientation  Contiguity   DiscreteAngle  InernalContinuity  Covering  BalancedIndirect];
+Constraints.Vector     = [false       false          false          false         true            false            false        false];
+Constraints.DeltaAngle = 5;
+Constraints.ply_t      = ply_t;      % ply thickness
+Constraints.Balanced   = true;      % Direct Constraint Handling
+Constraints.Sym        = true; 
 Constraints.ORDERED    = false;           
 
 
 % ---
-GAoptions.Npop    = 300; 	   % Population size
-GAoptions.Ngen    = 1000; 	   % Number of generations
-GAoptions.NgenMin = 500; 	   % Minimum number of generation calculated
+GAoptions.Npop    = 60; 	   % Population size
+GAoptions.Ngen    = 300; 	   % Number of generations
+GAoptions.NgenMin = 300; 	   % Minimum number of generation calculated
 GAoptions.Elitism = 0.075; 	   % Percentage of elite passing to the next Gen.
-GAoptions.Plot    = true; 	   % Plot Boolean
+GAoptions.Plot    = false; 	   % Plot Boolean
 GAoptions.PC      = 0.5;
 
 % ---
-Nrun = 1;
+Nrun = 100
 output_Match = cell(1,Nrun);
 feasible     = zeros(1,Nrun);
 fval         = zeros(1,Nrun);
@@ -110,7 +115,10 @@ MeanRMS      = zeros(1,Nrun);
 Ngens        = zeros(1,Nrun);
 NFctEval     = zeros(1,Nrun);
 MeanNorm     = zeros(1,Nrun);
+
+
 for i = 1:Nrun
+    display(i)
     [output_Match{i}] = RetrieveSS(Objectives,Constraints,GAoptions);
     feasible(i)       = output_Match{i}.FEASIBLE;
     fval(i)           = output_Match{i}.fval;
@@ -118,15 +126,17 @@ for i = 1:Nrun
     MeanNorm(i)       = mean(cell2mat(output_Match{i}.Table(2:end,end-1)));
     NFctEval(i)       = output_Match{i}.NfctEval;  
     Ngens(i)          = output_Match{i}.NGen; 
-
 end
 
 if 0
     figure(2)
-    hist(fval,20)
+    hist(fval,[-0.025:0.025:1])
+    [N,X] = hist(fval,[-0.025:0.025:1]);
+    [N' X']
     hist(NFctEval,20)
     hist(Ngens)
     
+    [[1:Nrun]' fval' NFctEval' Ngens']
 end
 fr
 % output_Match = output_Match{i}
