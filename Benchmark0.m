@@ -57,23 +57,42 @@ addpath ./FitnessFcts
 Objectives.Table   = [{'Laminate Index'} {'Nplies'} {'LP2Match'} {'Importance'}];
                         
 ply_t      = 0.000127;
-GuideLamDv = [+45 0 -45 90]; % theta 1
-% GuideLamDv = [+45 0 -45 90 45 0 -45 0]; % theta 2
-% GuideLamDv = [-45 0 45  90 0  -45  45  90  -45  45]; % theta 3
-% GuideLamDv = [0 -45 45 45 -45   0 45 90  90 0 -45 45 0  -45 45 90 90 -45 0   0] % theta 4
-% GuideLamDv = [-90 -45 -45];
-Drops      = []; %[2 4 6];
+
+%% Balanced Symmetric
+% GuideLamDv = [+45 0 -45 90];                                                   % theta 1
+% GuideLamDv = [+45 0 -45 90 45 0 -45 0];                                        % theta 2
+% GuideLamDv = [-45 0 45  90 0  -45  45  90  -45  45];                           % theta 3
+% GuideLamDv = [0 -45 45 45 -45   0 45 90  90 0 -45 45 0  -45 45 90 90 -45 0   0]; % theta 4
+% GuideLam   = [GuideLamDv, fliplr(GuideLamDv)];
+
+%% Symmetric 
+GuideLamDv = [45   -15    30   -55    40   -80   -40   -80   -70    60];                                                              % theta 5
+% GuideLamDv = [40   -30    85   -80   -10   -20    50    55   -55     0  -5    30    40    50   -40    35    30   -60   -65     0];    % theta 6
 GuideLam   = [GuideLamDv, fliplr(GuideLamDv)];
+
+%% Balanced
+% GuideLamDv = [0 30 -40 -30 85 -85 40 -70 70 0];                                                                                       % theta 7
+% GuideLamDv = [-50 85 -40  -25  20 25  -45 -85 50 -20 -40  5 -5 -75 40  75  45 -85 40 85];                                             % theta 8
+
+%% Generic 
+% GuideLamDv = [10   -65   -60   -40    65   -40    60   -45    80   -25];                                                              % theta 9
+% GuideLamDv = [-50   -40    25     0   -25    60    20    10    80   -35 50    50   -20    15   -75   -80    10    55    80   -65];    % theta 10
+
+%%
+% GuideLamDv = [-90 -45 -45];
+Drops      = [{[2 3 8]}]; %[2 4 6];
+% GuideLam   = [GuideLamDv, fliplr(GuideLamDv)];
 % GuideLam   = [GuideLamDv, -GuideLamDv];
 % GuideLam   = [GuideLamDv, -GuideLamDv, fliplr([GuideLamDv, -GuideLamDv])]'; % balanced/symetric
 
-ScalingCoef = [1 0 1 0, 1 1 1 1, 1 1 1 1]';      % relative importance given to matching the guide laminate LPs integer [1,N], the higher the integer = the more impact on the fit. fct.
+ScalingCoef = [1 1 1 1, 1 1 1 1, 1 1 1 1]';      % relative importance given to matching the guide laminate LPs integer [1,N], the higher the integer = the more impact on the fit. fct.
 NUniqueLam  = length(Drops)+1;
 Lp2Match    = zeros(12,NUniqueLam);
 for i = 1:NUniqueLam
     Lam = GuideLamDv;
-    if i ~= 1,        
-        Lam(Drops(1:i-1)) = [];   
+    DropsLoc = cell2mat(Drops(1:i-1));
+    if i ~= 1,  
+        Lam(DropsLoc) = [];   
     end
     Lam   = [Lam, fliplr(Lam)];
 %     Lam = [Lam, -Lam]'; % balanced/symetric 
@@ -86,22 +105,22 @@ end
 Objectives.Type        = 'LP';
 Objectives.FitnessFct = @(LP) SumRMSLP(LP,Objectives);
 
-                      
+         
 % =========================== Default Options =========================== %
 
 %                        [Damtol  Rule10percent  Disorientation  Contiguity   DiscreteAngle  InernalContinuity  Covering  BalancedIndirect];
 Constraints.Vector     = [false       false          false          false         true            false            false        false];
 Constraints.DeltaAngle = 5;
 Constraints.ply_t      = ply_t;      % ply thickness
-Constraints.Balanced   = true;      % Direct Constraint Handling
+Constraints.Balanced   = false;      % Direct Constraint Handling
 Constraints.Sym        = true; 
 Constraints.ORDERED    = false;           
 
 
 % ---
-GAoptions.Npop    = 60; 	   % Population size
-GAoptions.Ngen    = 300; 	   % Number of generations
-GAoptions.NgenMin = 300; 	   % Minimum number of generation calculated
+GAoptions.Npop    = 100; 	   % Population size
+GAoptions.Ngen    = 400; 	   % Number of generations
+GAoptions.NgenMin = 400; 	   % Minimum number of generation calculated
 GAoptions.Elitism = 0.075; 	   % Percentage of elite passing to the next Gen.
 GAoptions.Plot    = false; 	   % Plot Boolean
 GAoptions.PC      = 0.5;
@@ -138,7 +157,7 @@ if 0
     
     [[1:Nrun]' fval' NFctEval' Ngens']
 end
-fr
+
 % output_Match = output_Match{i}
 
 %% Checking output results are correct

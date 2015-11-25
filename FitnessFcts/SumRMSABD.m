@@ -1,7 +1,8 @@
 function Fitness = SumRMSABD(A,B,D,Objectives)
 
-localFit = zeros(size(A,2),1);
-for ilam = 1 : size(A,2)
+Nlam = size(A,2);
+localFit = zeros(Nlam,1);
+for ilam = 1 : Nlam
     
     AScaling = Objectives.Table{ilam+1,6};
     BSacling = Objectives.Table{ilam+1,7};
@@ -11,6 +12,6 @@ for ilam = 1 : size(A,2)
                    + rms( BSacling(:).*(B{ilam}(:) - Objectives.Table{ilam+1,4}(:)) ) ...
                    + rms( DScaling(:).*(D{ilam}(:) - Objectives.Table{ilam+1,5}(:)) );
 end
-Fitness = sum(localFit); %
+Fitness = sum(localFit)/Nlam; %
 
 end
