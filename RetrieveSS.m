@@ -202,8 +202,10 @@ end
 % IniPop(1,:) = [3 1 4 2 , 2 4 1 3 , 5 6 7 8 , 9 10 11 12] 
 % IniPop(1,:) = [3 4 1 2 1 0 3 2]
 
-% IniPop(1,:) = [9 12 3 6 3 0 9 6 4 8]
+%  IniPop(1,:) = [(90+[45   -15    30   -55    40   -80   -40   -80   -70    60])/Constraints.DeltaAngle [2 3 8]]
 options = gaoptimset(options,'InitialPopulation' ,IniPop);
+
+
 
 %  keyboard
 
@@ -221,15 +223,17 @@ SS = output.SS;
 
 if strcmp(Objectives.Type,'LP')
     LPMatched = output.LP;
-    Table = [{'Lam #'} {'Nplies SST'} {'Ply Angles'} {'LP2Match'} {'LPOpt'} {'Error %'} {'Error Norm'} {'Error RMS'}];
+    Table = [{'Lam #'} {'Nplies SST'} {'Ply Angles'} {'LP2Match'} {'LPOpt'} {'NormE'} {'RMSE'} {'MAE'} {'MaxAE'}];
     for j = 1:length(AllowedNplies)
         LP2Match    = Objectives.Table{j+1,3};
         ScalingCoef = Objectives.Table{j+1,4};
         
-        QualIndex1 = 100*sum(abs(  ((LPMatched(:,j) - LP2Match(:))./LP2Match(:)).*ScalingCoef ));
-        QualIndex2 = norm( (LPMatched(:,j) - LP2Match(:)).*ScalingCoef );
-        QualIndex3 = rms( (LPMatched(:,j) - LP2Match(:)).*ScalingCoef );
-        Table      = [Table ;  {j} {length(SS{j})} SS(j) {LP2Match} {LPMatched(:,j)} {QualIndex1} {QualIndex2} {QualIndex3}];
+        
+        QualIndex1 = norm( (LPMatched(:,j) - LP2Match(:)).*ScalingCoef );
+        QualIndex2 = rms( (LPMatched(:,j) - LP2Match(:)).*ScalingCoef );
+        QualIndex3 = mae( (LPMatched(:,j) - LP2Match(:)).*ScalingCoef );
+        QualIndex4 = max( abs((LPMatched(:,j) - LP2Match(:)).*ScalingCoef) );
+        Table      = [Table ;  {j} {length(SS{j})} SS(j) {LP2Match} {LPMatched(:,j)} {QualIndex1} {QualIndex2} {QualIndex3} {QualIndex4}];
     end
 end
 
