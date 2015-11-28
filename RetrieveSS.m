@@ -41,182 +41,55 @@
 % 
 %  The individual of GA is composed of 3 parts:
 %  --------------------------------------------
-%  [ [Nply(1) ... Nply(Nsec)]                   -- the Number of plies
+%  [ [Nply(1) ... Nply(Npatch)]                   -- the Number of plies
 %  [ Theta(1) ... Theta(N)   nan ... nan]       -- N is the guide Nply
 %  [ Drop(1)  ... Drop(M)    nan ... nan]       -- M is the Delta Nply
 % =====                                                              ==== %
 
 function [output] = RetrieveSS(Objectives,Constraints,GAoptions)
+%% Treat Inputs  
+[Nvar,NpatchVar,NthetaVar,NdropVar,LamType,LB,UB,AllowedNplies] = FormatInput(Objectives,Constraints);
 
 
-% ---
-if 1    % Define objectives (i.e. LP to match)
 
-   NplyIni = cell2mat(Objectives.Table(2:end,2));
-
-    if Constraints.Sym    && Constraints.Balanced,
-        LamType = 'Balanced_Sym';
-        NpliesUpBound   = round(NplyIni(:,2)/4)*4;
-        NpliesLowBound  = round(NplyIni(:,1)/4)*4;
-        Nmax = max(NpliesUpBound)/4 ;
-        Nmin = min(NpliesLowBound)/4;
-        for i=1:length(NpliesUpBound)
-            AllowedNplies{i} = (NpliesLowBound(i):4:NpliesUpBound(i))/4;
-        end
-    end
-    if Constraints.Sym    && ~Constraints.Balanced,
-        LamType = 'Sym';
-        NpliesUpBound  = round(NplyIni(:,2)/2)*2;
-        NpliesLowBound  = round(NplyIni(:,1)/2)*2;
-        Nmax = max(NpliesUpBound)/2 ;
-        Nmin = min(NpliesLowBound)/2;
-        for i=1:length(NpliesUpBound)
-            AllowedNplies{i} = (NpliesLowBound(i):2:NpliesUpBound(i))/2;
-        end
-    end
-    if ~Constraints.Sym   && Constraints.Balanced,
-        LamType = 'Balanced';
-        NpliesUpBound   = round(NplyIni(:,2)/2)*2;
-        NpliesLowBound  = round(NplyIni(:,1)/2)*2;
-        Nmax = max(NpliesUpBound)/2 ;
-        Nmin = min(NpliesLowBound)/2;
-        for i=1:length(NpliesUpBound)
-            AllowedNplies{i} = (NpliesLowBound(i):2:NpliesUpBound(i))/2;
-        end
-    end
-    if  ~Constraints.Sym  && ~Constraints.Balanced,
-        LamType = 'Generic';
-        NpliesUpBound   = round(NplyIni(:,2));
-        NpliesLowBound  = round(NplyIni(:,1));
-        Nmax = max(NpliesUpBound) ;
-        Nmin = min(NpliesLowBound);
-        for i=1:length(NpliesUpBound)
-            AllowedNplies{i} = NpliesLowBound(i):NpliesUpBound(i);
-        end
-    end
-
-    [~,sortIndex] = sort(NplyIni(:,1),'descend');
-    AllowedNplies = AllowedNplies(sortIndex);
-    SortedTable   =  [Objectives.Table(1,:); Objectives.Table(1+sortIndex,:)];
-    
-    if size(NplyIni,1) == 1, Nmin = Nmax; end % particular case for Unique SS retrieval
-    
-
-   Nrange = cellfun(@max,AllowedNplies,'UniformOutput', true) - cellfun(@min,AllowedNplies,'UniformOutput', true); % max ply - min ply per lam.
-   Nsec = zeros(length(Nrange),1);
-   Nsec(Nrange>0)=1; % number of variable thickness lam.
-
-end
-% keyboard
-
-
-% ---
-if 1    % Set GA options
-    options  = gaoptimset('PopulationSize' ,GAoptions.Npop,'Generation',GAoptions.Ngen, ...
-        'StallGenLimit',GAoptions.NgenMin,'EliteCount',ceil(GAoptions.Elitism*GAoptions.Npop),...
-        'FitnessLimit' ,1e-5,'TolFun' ,1e-10,'PlotInterval',1,'CrossoverFraction',GAoptions.PC);
-    if GAoptions.Plot
-        options  = gaoptimset(options,'PlotFcns' ,{@GACustomPlot}); %gaplotbestf
-    end
-    
-    ConstraintVector = Constraints.Vector;                                  % [Damtol  Rule10percent  Disorientation  Contiguity  DiscreteAngle  InernalContinuity  Covering];
-    DeltaAngle       = Constraints.DeltaAngle;
-    
-    if ~Constraints.Balanced
-        Nvar = sum(Nsec) + Nmax +(Nmax-Nmin) ;   % Nsec (thickness) + Nmax Guide plies + (Nmax-Nmin) potential drops 
-    else
-        Nvar = sum(Nsec) + Nmax*2 +(Nmax-Nmin) ; % if balanced, need ply shuffling = + Nmax var
-    end
-    
-    fct_handle = @(x)Eval_Fitness(x,Objectives,Constraints,Nsec,AllowedNplies,SortedTable,LamType);  % handle of the fitness function becomes constraint
-    
-    % ---
-    if 1  % design variable boundaries
-        if ConstraintVector(5) % if DiscreteAngle
-            IntegerDV = 1:Nvar;                                             % discrete
-            Nd_state  = length(-90:DeltaAngle:90);                           % number of discrete state
-            LB = 0*ones(Nmax,1)            ;
-            UB = (Nd_state-1)*ones(Nmax,1);
-        else
-            IntegerDV = [[1:sum(Nsec)] [(sum(Nsec)+Nmax):(sum(Nsec)+2*Nmax-Nmin)]];             % continuous
-            LB = -90*ones(Nmax,1);
-            UB = 90*ones(Nmax,1);
-        end
-        
-        if Constraints.Balanced % add suffling Bounds
-            LB = [LB; ones(Nmax,1)];
-            UB = [UB; 2*Nmax*ones(Nmax,1)];
-        end
-        
-         if ConstraintVector(5) % if DiscreteAngle
-            LB = [LB            ; ones(Nmax-Nmin,1)];
-            UB = [UB ; Nmax*ones(Nmax-Nmin,1)];
-         else
-            LB = [LB; ones(Nmax-Nmin,1)];
-            UB = [UB;  Nmax*ones(Nmax-Nmin,1)];
-         end
-        
-        
-        for iply=sum(Nsec):-1:1
-            LB = [AllowedNplies{iply}(1)   ;LB];
-            UB = [AllowedNplies{iply}(end) ;UB];
-        end
-        
-        if ConstraintVector(1) % if Damtol, make the first ply +- 45
-            if ~ConstraintVector(5),    
-                IntegerDV = [sum(Nsec)+1 IntegerDV];
-            end
-            LB(sum(Nsec)+1) = 1;
-            UB(sum(Nsec)+1) = 2;
-        end
-        
-
-    end
-
+%% Set GA
+options  = gaoptimset('PopulationSize' ,GAoptions.Npop,'Generation',GAoptions.Ngen, ...
+    'StallGenLimit',GAoptions.NgenMin,'EliteCount',ceil(GAoptions.Elitism*GAoptions.Npop),...
+    'FitnessLimit' ,1e-5,'TolFun' ,1e-10,'PlotInterval',1,'CrossoverFraction',GAoptions.PC);
+if GAoptions.Plot
+    options  = gaoptimset(options,'PlotFcns' ,{@GACustomPlot}); %gaplotbestf
 end
 
+fct_handle = @(x)Eval_Fitness(x,Objectives,Constraints,NpatchVar,NthetaVar,AllowedNplies,LamType);  % handle of the fitness function becomes constraint
+
+
+
 % keyboard
-% --- Generate Ini. Pop.
+%% Generate Ini. Pop.
 for i = 1:5
     try
-        [IniPop] = Generate_IniPop (Nvar,GAoptions.Npop,Nmax,Nmin,Constraints,Nsec,AllowedNplies,LamType);
+        [IniPop] = Generate_IniPop (Nvar,GAoptions.Npop,NpatchVar,NthetaVar,NdropVar,Constraints,AllowedNplies,LamType);
         break; 
     catch
-        fprintf('Retrying IniPop Gen. ...\n');
+        fprintf('Inipop Failed. Retrying ...\n');
         if i == 5
-            error(' Did not manage to generate a feasible initial population.')
-%             
-%              UserResponse = input('Non-feasible Elmts in the IniPop, Do you want to continue (y|n)','s');
-%              if strcmp(UserResponse,'y')
-%                  temp = Constraints;
-%                  temp.Vector = 0* temp.Vector;
-%                  [IniPop] = Generate_IniPop (Nvar,GAoptions.Npop,Nsec,Nmax,Nmin,temp,LamType);
-%              else 
-%                  error('Code stopped by the user')
-%              end
+            error(' Did not manage to generate a feasible initial population. Try relaxing some constraints.')
         end
     end
 end
-% IniPop(1,:) = [3 1 4 2 5 6 7 8 2]
-% IniPop(1,:) = [[3 1 4 2 1 3 4 2] fliplr([3 1 4 2 1 3 4 2])]
-% IniPop(1,:) = [3 1 4 2 , 2 4 1 3 , 5 6 7 8 , 9 10 11 12] 
-% IniPop(1,:) = [3 4 1 2 1 0 3 2]
-
-%  IniPop(1,:) = [(90+[45   -15    30   -55    40   -80   -40   -80   -70    60])/Constraints.DeltaAngle [2 3 8]]
+%  IniPop(1,:) = [(90+[ 0 -45 45 45 -45   0 45 90  90 0 -45 45 0  -45 45 90 90 -45 0   0])/Constraints.DeltaAngle [5 8 9 15 16 17]]
 options = gaoptimset(options,'InitialPopulation' ,IniPop);
 
 
 
-%  keyboard
-
-% --- run GA
+%% run GA
 fprintf(strcat('Running GA \n'))
-[xOpt,fval,~,StandardOutputGA] = ga(fct_handle,Nvar,[],[],[],[],LB,UB,[],IntegerDV,options);
+[xOpt,fval,~,StandardOutputGA] = ga(fct_handle,Nvar,[],[],[],[],LB,UB,[],1:Nvar,options);
 display('GA(s) Terminated Successfully')
 
 
 
-% --- Results
+%% Format Results
 [~,output] = fct_handle(xOpt);
 
 SS = output.SS;

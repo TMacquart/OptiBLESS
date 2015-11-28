@@ -58,12 +58,16 @@ Objectives.Table   = [{'Laminate Index'} {'Nplies'} {'LP2Match'} {'Importance'}]
                         
 ply_t = 0.000127;
 
+
+
+% GuideLamDv = [+45 0 -45 0]; % test
+
 %% Balanced Symmetric
 % GuideLamDv = [+45 0 -45 90];                                                   % theta 1
 % GuideLamDv = [+45 0 -45 90 45 0 -45 0];                                        % theta 2
-% GuideLamDv = [-45 0 45  90 0  -45  45  90  -45  45];                           % theta 3
-GuideLamDv = [0 -45 45 45 -45   0 45 90  90 0 -45 45 0  -45 45 90 90 -45 0   0]; % theta 4
-GuideLam   = [GuideLamDv, fliplr(GuideLamDv)];
+GuideLamDv = [-45 0 45  90 0  -45  45  90  -45  45];                           % theta 3
+% GuideLamDv = [0 -45 45 45 -45   0 45 90  90 0 -45 45 0  -45 45 90 90 -45 0   0]; % theta 4
+% GuideLam   = [GuideLamDv, fliplr(GuideLamDv)];
 
 %% Symmetric 
 % GuideLamDv = [45   -15    30   -55    40   -80   -40   -80   -70    60];                                                              % theta 5
@@ -83,7 +87,7 @@ GuideLam   = [GuideLamDv, fliplr(GuideLamDv)];
 
 %%
 % GuideLamDv = [-90 -45 -45];
-Drops      = [{}] %[{[7 8 9 15 16 17]}]%[{[2 3 8]}]; %[2 4 6];
+Drops      = [{[4 6 7 8]}] %[{[4 5 6 11 15 17 20]}]%[{[2 3 8]}]; %[2 4 6];
 % GuideLam   = [GuideLamDv, fliplr(GuideLamDv)];
 % GuideLam   = [GuideLamDv, -GuideLamDv];
 % GuideLam   = [GuideLamDv, -GuideLamDv, fliplr([GuideLamDv, -GuideLamDv])]'; % balanced/symetric
@@ -97,7 +101,9 @@ for i = 1:NUniqueLam
     if i ~= 1,  
         Lam(DropsLoc) = [];   
     end
-      Lam   = [Lam, fliplr(Lam)];
+    
+       Lam   = [Lam, fliplr(Lam)];
+       
 %     Lam = [Lam, -Lam]'; % balanced/symetric 
 %     Lam = [Lam, -Lam, fliplr([Lam, -Lam])]'; % balanced/symetric 
 %     keyboard
@@ -110,8 +116,8 @@ Objectives.FitnessFct = @(LP) RMSE_MMaxAE_LP(LP,Objectives);
 
 % =========================== Default Options =========================== %
 
-%                        [Damtol  Rule10percent  Disorientation  Contiguity   DiscreteAngle  InernalContinuity  Covering  BalancedIndirect];
-Constraints.Vector     = [false       false          false          false         true            false            false        false];
+%                        [Damtol  Rule10percent  Disorientation  Contiguity   BalancedIndirect  InernalContinuity  Covering  ];
+Constraints.Vector     = [false       false          false          false         false            false            false       ];
 Constraints.DeltaAngle = 5;
 Constraints.ply_t      = ply_t;      % ply thickness
 Constraints.Balanced   = true;      % Direct Constraint Handling
@@ -119,16 +125,17 @@ Constraints.Sym        = true;
 Constraints.ORDERED    = false;           
 
 
+
 % ---
-GAoptions.Npop    = 100; 	   % Population size
+GAoptions.Npop    = 200; 	   % Population size
 GAoptions.Ngen    = 500; 	   % Number of generations
 GAoptions.NgenMin = 500; 	   % Minimum number of generation calculated
 GAoptions.Elitism = 0.075; 	   % Percentage of elite passing to the next Gen.
 GAoptions.Plot    = false; 	   % Plot Boolean
-GAoptions.PC      = 0.85;
+GAoptions.PC      = 0.55;
 
 % ---
-Nrun = 100
+Nrun = 1
 output_Match = cell(1,Nrun);
 feasible     = zeros(1,Nrun);
 fval         = zeros(1,Nrun);
@@ -138,7 +145,7 @@ NFctEval     = zeros(1,Nrun);
 MeanNorm     = zeros(1,Nrun);
 
 
-parfor i = 1:Nrun
+for i = 1:Nrun
     display(i)
     [output_Match{i}] = RetrieveSS(Objectives,Constraints,GAoptions);
     feasible(i)       = output_Match{i}.FEASIBLE;
@@ -154,7 +161,6 @@ parfor i = 1:Nrun
     display(fval(i))
 end
 
-
 fr
 if 0
     NormMAE = [[-0.01:0.01:0.1] [0.12 0.14 0.16 0.18 0.2 0.3 0.4 0.5]]
@@ -168,7 +174,7 @@ if 0
     [[1:Nrun]' fval' NFctEval' Ngens' MeanNorm']
 end
 
-% output_Match = output_Match{i}
+% output_Match = output_Match{1}
 
 %% Checking output results are correct
 ScalingCoef = reshape(cell2mat(Objectives.Table(2:end,4)),12,size(Objectives.Table,1)-1);
@@ -180,19 +186,15 @@ for i = 2:size(Objectives.Table,1)
     end
     
     LP = Convert_SS2LP(output_Match.Table{i,3});
-    if sum(abs(LP-output_Match.Table{i,6}))>1e-10
+    if sum(abs(LP-output_Match.Table{i,5}))>1e-10
         error('non matching SS and LPOpt')
     end
     
-    if abs( rms ( (LP-LP2Match).*ScalingCoef(:,i-1) )-output_Match.Table{i,8})>1e-10
+    if abs( rms ( (LP-LP2Match).*ScalingCoef(:,i-1) )-output_Match.Table{i,7})>1e-10
         error('non matching RSM')
     end
     
-    if abs( norm ((LP-LP2Match).*ScalingCoef(:,i-1))-output_Match.Table{i,7})>1e-10
+    if abs( norm ((LP-LP2Match).*ScalingCoef(:,i-1))-output_Match.Table{i,6})>1e-10
         error('non matching norm')
-    end
-    
-    if abs( 100*sum(abs(  ((LP-LP2Match)./LP2Match).*ScalingCoef(:,i-1) )) - output_Match.Table{i,6})>1e-10
-        error('non matching error percent')
     end
 end

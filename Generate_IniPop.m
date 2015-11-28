@@ -45,11 +45,11 @@
 % EuclideanDist : Euclidean Distance between the LP of each Section
 % =====                                                              ====
 
-function [IniPop,IniPopLP,EuclideanDist] = Generate_IniPop (nvar,Npop,Nmax,Nmin,Constraints,Nsec,AllowedNplies,LamType)
+function [IniPop,IniPopLP,EuclideanDist] = Generate_IniPop (nvar,Npop,NpatchVar,NthetaVar,NdropVar,Constraints,AllowedNplies,LamType)
 
+% keyboard
 
-
-IniPop = zeros(Npop,nvar+length(find(Nsec==0)));
+IniPop = zeros(Npop,nvar);
 
 fprintf(' Creating IniPop ... \n ' )
 ConstraintVector = Constraints.Vector;
@@ -69,9 +69,7 @@ while ipop < Npop + 1
     NpliesPerLam  = sort(NpliesPerLam,'descend'); 
     NPliesGuide   = max(NpliesPerLam); 
     
-%     GuideAngles = zeros(1,NPliesGuide); % some non-coded genea are included
-    GuideAngles = zeros(1,Nmax); % some non-coded genes are included
-%     ShuffleLoc  = zeros(1,Nmax); % some non-coded genes are included
+    GuideAngles = zeros(1,NthetaVar); % some non-coded genes are included
     
     % ---
     if 1 % enforce constraints on IniPop - Build the angles step by step
@@ -88,7 +86,7 @@ while ipop < Npop + 1
         end
         
         
-        for iAngle = 2 : Nmax - 1 % NPliesGuide-1
+        for iAngle = 2 : NthetaVar - 1 % NPliesGuide-1
             if ConstraintVector(3)
                 if ConstraintVector(4)
                     A = [(-45 + 40*rand) (5 + 40*rand)];
@@ -114,29 +112,18 @@ while ipop < Npop + 1
             [GuideAngles] = Enforce_10PercentRule(GuideAngles);
         end
         
-        if ConstraintVector(5) % will overwrite 10%rule if necessary
-            GuideAngles = round((GuideAngles)/DeltaAngle)*DeltaAngle; % made multiples of DeltaAngle
-        end
-
+        GuideAngles = round((GuideAngles)/DeltaAngle)*DeltaAngle; % Convert to Angles in degree
     end
     
-    
-    % ---
-%     if strcmp(LamType,'Balanced') || strcmp(LamType,'Balanced_Sym')
-        ShuffleLoc = randperm(Nmax*2,Nmax); % not used if not balanced
-        if ~isempty(find(ShuffleLoc==0,1)), keyboard; end
-%     else
-%         ShuffleLoc = [];
-%     end
-    % ---
+
+    ShuffleLoc = randperm(NthetaVar*2,NthetaVar); % not used if not balanced
+    if ~isempty(find(ShuffleLoc==0,1)), keyboard; end
     
     FEASIBLE = true;
     
-%     NdropPlies = (NPliesGuide)-min(NpliesPerLam);
-    NdropPlies = Nmax-Nmin;
+    NdropPlies = NdropVar; 
     if NdropPlies>0
         DropsIndexes = Generate_DropIndexes (GuideAngles,NdropPlies,ConstraintVector,LamType);
-%         DropsIndexes = Generate_DropIndexes (GuideAngles(1:NPliesGuide),NdropPlies,ConstraintVector,LamType);
         if isempty(DropsIndexes)
             FEASIBLE = false;
         end
@@ -145,15 +132,13 @@ while ipop < Npop + 1
     end
     
 
-    if FEASIBLE
-         NGuideDropPlies = (NPliesGuide)-min(NpliesPerLam);
+    if FEASIBLE 
+        NGuideDropPlies = NPliesGuide-min(NpliesPerLam);
         [FEASIBLE] = Check_Feasibility(ConstraintVector,GuideAngles(1:NPliesGuide),ShuffleLoc(1:NPliesGuide),DropsIndexes(1:NGuideDropPlies),NPliesGuide,NGuideDropPlies,LamType);
     end
     
-%     DropsIndexes = [DropsIndexes nan*ones(1,(Nmax-Nmin)-length(DropsIndexes))];
-    
 
-    if ConstraintVector(5) % if DiscreteAngles = use integer indexes
+        % Convert to Angles in degree
         if ~ConstraintVector(1)
             GuideAngles = round((90+GuideAngles)/DeltaAngle);
         else
@@ -163,7 +148,8 @@ while ipop < Npop + 1
                 GuideAngles(2:end) = round((90+GuideAngles(2:end))/DeltaAngle);
             end
         end
-    end
+
+        
     if ConstraintVector(1) % make the first ply a discrete value with only 2 possible state
         if (GuideAngles(1) == -45), GuideAngles(1) = 1; end
         if (GuideAngles(1) == 45),  GuideAngles(1) = 2; end
@@ -175,10 +161,10 @@ while ipop < Npop + 1
     
 
     if FEASIBLE
-        if strcmp(LamType,'Balanced') || strcmp(LamType,'Balanced_Sym')
-            IniPop(ipop,:) = [NpliesPerLam GuideAngles ShuffleLoc DropsIndexes];
+        if Constraints.Balanced
+            IniPop(ipop,:) = [NpliesPerLam(find(NpatchVar)) GuideAngles ShuffleLoc DropsIndexes];
         else
-            IniPop(ipop,:) = [NpliesPerLam GuideAngles DropsIndexes];
+            IniPop(ipop,:) = [NpliesPerLam(find(NpatchVar)) GuideAngles DropsIndexes];
         end
         ipop = ipop + 1;
     end
@@ -190,8 +176,6 @@ while ipop < Npop + 1
     end
     
 end
-
-IniPop(:,Nsec==0) = []; % remove thickness variables
 
 fprintf(' IniPop Created ... ' )
 end

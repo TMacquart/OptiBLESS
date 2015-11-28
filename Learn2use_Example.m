@@ -54,17 +54,17 @@ Lp2Match = [
 ScalingCoef = [1 0 1 0, 0 0 0 0, 0 0 0 0]'; 
 Objectives.Table   = [{'Laminate #'}  {'Nplies [LB UB]'}    {'LP2Match'}     {'Scaling Coefficient'} ;
                             {1}           {[28 28]}         {Lp2Match(:,1)}     {ScalingCoef} ;
-                            {2}           {[20 20]}         {Lp2Match(:,2)}     {ScalingCoef} ;
+                            {2}           {[30 30]}         {Lp2Match(:,2)}     {ScalingCoef} ;
                             {3}           {[16 16]}         {Lp2Match(:,3)}     {ScalingCoef} ; ];
 
                         
 Objectives.Type       = 'LP'; 
-Objectives.FitnessFct = @(LP) SumRMSLP(LP,Objectives);
+Objectives.FitnessFct = @(LP) RMSE_MMaxAE_LP(LP,Objectives);
 
 % =========================== Default Options =========================== %
 
-%                        [Damtol  Rule10percent  Disorientation  Contiguity   DiscreteAngle  InernalContinuity  Covering];
-Constraints.Vector     = [false       false          true          true         true            true            false];
+%                        [Damtol  Rule10percent  Disorientation  Contiguity   BalancedIndirect  InernalContinuity  Covering];
+Constraints.Vector     = [true       false          false          true         false            true            false];
 Constraints.DeltaAngle = 5;
 Constraints.ply_t      = 0.000127;          % ply thickness
 Constraints.ORDERED    = false;                         
@@ -83,12 +83,13 @@ GAoptions.PC      = 0.5;
 
 
 % ---
-[output_Match]  = RetrieveSS(Objectives,Constraints,GAoptions);
+[output_Match] = RetrieveSS(Objectives,Constraints,GAoptions);
 
 display(output_Match)
 display(output_Match.Table)
 
-%% Checking output results are correct
+
+%% Validating results
 ScalingCoef = reshape(cell2mat(Objectives.Table(2:end,4)),12,size(Objectives.Table,1)-1);
 
 for i = 2:size(Objectives.Table,1)
@@ -98,19 +99,16 @@ for i = 2:size(Objectives.Table,1)
     end
     
     LP = Convert_SS2LP(output_Match.Table{i,3});
-    if sum(abs(LP-output_Match.Table{i,6}))>1e-10
+    if sum(abs(LP-output_Match.Table{i,5}))>1e-10
         error('non matching SS and LPOpt')
     end
     
-    if abs( rms ( (LP-LP2Match).*ScalingCoef(:,i-1) )-output_Match.Table{i,8})>1e-10
+    if abs( rms ( (LP-LP2Match).*ScalingCoef(:,i-1) )-output_Match.Table{i,7})>1e-10
         error('non matching RSM')
     end
     
-    if abs( norm ((LP-LP2Match).*ScalingCoef(:,i-1))-output_Match.Table{i,7})>1e-10
+    if abs( norm ((LP-LP2Match).*ScalingCoef(:,i-1))-output_Match.Table{i,6})>1e-10
         error('non matching norm')
     end
     
-    if abs( 100*sum(abs(  ((LP-LP2Match)./LP2Match).*ScalingCoef(:,i-1) )) - output_Match.Table{i,6})>1e-10
-        error('non matching error percent')
-    end
 end

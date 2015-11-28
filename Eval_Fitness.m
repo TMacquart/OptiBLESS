@@ -34,21 +34,21 @@
 %
 %  The individual is composed of 3 parts:
 %  --------------------------------------------
-%  [ [Nply(1) ... Nply(Nsec)]                   -- the Number of plies
+%  [ [Nply(1) ... Nply(NpatchVar)]                   -- the Number of plies
 %  [ Theta(1) ... Theta(N)   nan ... nan]       -- N is the guide Nply
 %  [ Drop1    ... DropM]                      
 % =====                                                              ==== %
-
-function [fitness,output] = Eval_Fitness (Individual,Objectives,Constraints,Nsec,AllowedNplies,SortedTable,LamType)
+function [fitness,output] = Eval_Fitness (Individual,Objectives,Constraints,NpatchVar,NthetaVar,AllowedNplies,LamType)
 
 
 FEASIBLE  = true;  
-LamNumber = cell2mat(SortedTable(2:end,1)); % after 1st sorting
+LamNumber = cell2mat(Objectives.Table(2:end,1)); 
 
+% Extract Nply per lam.
 IndexPly = 1;
-NpliesperLam = nan*ones(length(Nsec),1);
-for iPly = 1:length(Nsec)
-    if Nsec(iPly)==0
+NpliesperLam = nan*ones(length(NpatchVar),1);
+for iPly = 1:length(NpatchVar)
+    if NpatchVar(iPly)==0
         NpliesperLam(iPly) = AllowedNplies{iPly};
     else
         NpliesperLam(iPly) = Individual(IndexPly);
@@ -70,17 +70,18 @@ end
 SortedLamNumber = LamNumber(SortIndex);                                         % after 2nd sorting
 NGuidePlies    = max(NpliesperLam);                                           % number of plies in the guide laminate (take half for Sym.)
 NDropPlies     = abs(diff(NpliesperLam));                                     % number of ply drops
-GuideAngles    = Individual(sum(Nsec) + [1:NGuidePlies]);
-GuideAngles    = GuideAngles(~isnan(GuideAngles));
+GuideAngles    = Individual(sum(NpatchVar) + [1:NGuidePlies]);
 
-% --- Shuffle Loc
-if strcmp(LamType,'Balanced') || strcmp(LamType,'Balanced_Sym')
-    ShuffleLoc = Individual(sum(Nsec) + max(cell2mat(AllowedNplies)) + [1:NGuidePlies]);
-    StartIndex = sum(Nsec)+max(cell2mat(AllowedNplies))*2;
+
+% --- Shuffle Loc for balanced
+if Constraints.Balanced
+    ShuffleLoc = Individual(sum(NpatchVar) + NthetaVar + [1:NGuidePlies]);
+    StartIndex = sum(NpatchVar) + NthetaVar*2;
 else
     ShuffleLoc = [];
-    StartIndex = sum(Nsec)+max(cell2mat(AllowedNplies));
+    StartIndex = sum(NpatchVar) + NthetaVar;
 end
+
 
 if ~isempty(find(ShuffleLoc==0,1)), keyboard; end
 
@@ -97,14 +98,16 @@ end
 
 
 ConstraintVector = Constraints.Vector;
-if  ConstraintVector(5)     % if DiscreteAngles
-    if ~ConstraintVector(1)     % if not Damtol
-        GuideAngles = -90 + GuideAngles*Constraints.DeltaAngle;
-    else
-        GuideAngles(2:end) = -90 + GuideAngles(2:end)*Constraints.DeltaAngle;
-    end
-    if ~isempty(find(abs(GuideAngles)>90,1)), error('Angle greater than 90 detected');   end
+% --- Convert to Angles in degree
+if ~ConstraintVector(1)     % if not Damtol
+    GuideAngles = -90 + GuideAngles*Constraints.DeltaAngle;
+else
+    GuideAngles(2:end) = -90 + GuideAngles(2:end)*Constraints.DeltaAngle;
 end
+if ~isempty(find(abs(GuideAngles)>90,1)),
+    error('Angle greater than 90 detected');
+end
+
 
 
 % --- check / enforce constraints for ply Guide 
@@ -130,16 +133,13 @@ end
 
 
 
-% keyboard
+
 % ---
 if 1    % fitness calculation
     
     % Guide
-    try
-        FiberAngles = Convert_dvAngles2FiberAngles(GuideAngles,ShuffleLoc,LamType);
-    catch
-        keyboard
-    end
+    FiberAngles = Convert_dvAngles2FiberAngles(GuideAngles,ShuffleLoc,LamType);
+
     if strcmp(Objectives.Type,'LP')
         LP(:,1)  = Convert_SS2LP(FiberAngles);            % evaluate lamination parameters for the guide
     end
@@ -163,11 +163,7 @@ if 1    % fitness calculation
         ply_angles(DropsLoc(DropsLoc<=length(ply_angles))) = [];  % drop plies
         plyShuffleLoc(DropsLoc(DropsLoc<=length(plyShuffleLoc))) = [];  % drop plies
         
-        try
         FiberAngles      = Convert_dvAngles2FiberAngles(ply_angles,plyShuffleLoc,LamType);
-        catch
-            keyboard
-        end
         SS{index}        = FiberAngles;
         
         if strcmp(Objectives.Type,'LP')

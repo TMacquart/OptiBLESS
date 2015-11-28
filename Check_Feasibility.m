@@ -42,8 +42,7 @@ function [FEASIBLE] = Check_Feasibility(ConstraintVector,GuideAngles,ShuffleLoc,
 FEASIBLE = true;
 
 
-
-if ConstraintVector(8) % check if balanced for indirect constraint handling
+if ConstraintVector(5) % check if balanced for indirect constraint handling
     % guide
     [FiberAngles] = Convert_dvAngles2FiberAngles(GuideAngles,[],LamType);
     UniqueAngle = unique(FiberAngles);
@@ -170,11 +169,13 @@ if (ConstraintVector(7) || ConstraintVector(6)) && ~isempty(DropsIndexes)    % c
     DropsLoc = sort(DropsIndexes);
     
     if ConstraintVector(7) && ~isempty(find(DropsLoc == 1,1)), % covering check first ply is not removed
+        keyboard % this constraints should be removed, it has been replaced by a direct constraints on LB , UB
         FEASIBLE = false;  
         return
     end 
     
     if ConstraintVector(7) && strcmp(LamType,'Generic') && ~isempty(find(DropsLoc == length(GuideAngles),1)), % covering check first ply is not removed
+        keyboard % this constraints should be removed, it has been replaced by a direct constraints on LB , UB
         FEASIBLE = false;
         return
     end
