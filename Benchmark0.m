@@ -112,13 +112,13 @@ for i = 1:NUniqueLam
 end
 
 Objectives.Type        = 'LP';
-Objectives.FitnessFct = @(LP) RMSE_MMaxAE_LP(LP,Objectives);
+Objectives.FitnessFct = @(LP) RMSE_MaxAE_LP(LP,Objectives);
 
 % =========================== Default Options =========================== %
 
 %                        [Damtol  Rule10percent  Disorientation  Contiguity   BalancedIndirect  InernalContinuity  Covering  ];
 Constraints.Vector     = [false       false          false          false         false            false            false       ];
-Constraints.DeltaAngle = 5;
+Constraints.DeltaAngle = 45;
 Constraints.ply_t      = ply_t;      % ply thickness
 Constraints.Balanced   = true;      % Direct Constraint Handling
 Constraints.Sym        = true; 

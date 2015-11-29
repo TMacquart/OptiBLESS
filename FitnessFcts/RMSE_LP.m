@@ -6,7 +6,8 @@ ScalingCoef = reshape(cell2mat(Objectives.Table(2:end,4)),12,size(Objectives.Tab
 Nlam = size(LP2Match,2);
 localFit = zeros(Nlam,1);
 for ilam = 1 : Nlam
-    localFit(ilam) = rms( (LP2Match(:,ilam) - LP(:,ilam)).*ScalingCoef(:,ilam) );
+    Error = (LP2Match(:,ilam) - LP(:,ilam)).*ScalingCoef(:,ilam);
+    localFit(ilam) = rms(Error);
 end
 Fitness = mean(localFit);
 

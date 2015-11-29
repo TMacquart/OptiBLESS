@@ -34,7 +34,6 @@
 clear all; clc; format short g; format compact; close all;
 
 addpath ./FitnessFcts
-addpath ./StiffnessOpt
 
 global Pop
 
@@ -55,78 +54,77 @@ if 0
 end
 
 % --- bottom [ 45   -45    90     0    45    90     0    45] Top
-% with   
-E1   = 13.0e9;
-E2   = 72.0e9;
-G12  = 26.9e9;
-v12  = 0.33;
-tply = 0.000127;  % being the ply thickness
-h    = 8*tply;
+Lp2Match = [
+            0 % V1A
+         0.25 % V2A
+            0 % V3A
+            0 % V4A
+        0.125 % V1B
+       0.1875 % V2B
+         0.25 % V3B
+            0 % V4B
+     0.046875 % V1D
+       0.4375 % V2D
+     -0.46875 % V3D
+           0];% V4D
 
-A2Match ={[
-   1.0874e+11   5.8225e+10  -9.2917e+09
-   5.8225e+10   1.0874e+11  -9.2917e+09
-  -9.2917e+09  -9.2917e+09   2.5255e+10]};
-B2Match ={[
-  -9.7029e+09   4.1122e+08  -6.9687e+09
-   4.1122e+08   8.8804e+09  -6.9687e+09
-  -6.9687e+09  -6.9687e+09   4.1122e+08]};
-D2Match ={[
-   1.0602e+11   5.7454e+10   -1.626e+10
-   5.7454e+10   1.1299e+11   -1.626e+10
-   -1.626e+10   -1.626e+10   2.4484e+10]};
 
-Objectives.mat = [E1 E2 G12 v12 h];
- 
-IndexAStiff = ones(3,3);
-IndexBStiff = ones(3,3);
-IndexDStiff = ones(3,3);
-Objectives.Table   = [{'Laminate #'}     {'Nplies'}   {'A2Match'}  {'B2Match'} {'D2Match'}  {'A Scaling'} {'B Scaling'} {'D Scaling'} ;
-                            {1}          {[6 10]}       A2Match       B2Match     D2Match   {IndexAStiff} {IndexBStiff} {IndexDStiff}];
+Objectives.Type    = 'LP'; 
+ScalingCoef        = ones(12,1); 
+Objectives.Table   = [{'Laminate #'}     {'Nplies'}      {'LP2Match'}     {'Scaling Coefficient'} ;
+                            {1}           {[8 8]}         {Lp2Match(:,1)}  {ScalingCoef} ; ];
+                        
+                        
+Objectives.FitnessFct = @(LP) RMSE_LP(LP,Objectives);
 
-Objectives.Type        = 'ABD'; 
-Objectives.FitnessFct = @(A,B,D) SumRMSABD(A,B,D,Objectives);
 
 % =========================== Default Options =========================== %
 
-%                        [Damtol  Rule10percent  Disorientation  Contiguity   DiscreteAngle  InernalContinuity  Covering];
-Constraints.Vector     = [false       false          false          false         true            false            false];
-Constraints.DeltaAngle = 45;
-Constraints.ply_t      = 0.000127;          % ply thickness
-Constraints.ORDERED    = true;                         
+%                        [Damtol  Rule10percent  Disorientation  Contiguity   BalancedIndirect  InernalContinuity  Covering];
+Constraints.Vector     = [false       false          false          false         false            false            false];
+Constraints.DeltaAngle = 5;
+Constraints.ORDERED    = false;                         
 Constraints.Balanced   = false; 
 Constraints.Sym        = false; 
 
 
 
-
-
 % ---
 GAoptions.Npop    = 100; 	   % Population size
-GAoptions.Ngen    = 500; 	   % Number of generations
-GAoptions.NgenMin = 250; 	   % Minimum number of generation calculated
+GAoptions.Ngen    = 100; 	   % Number of generations
+GAoptions.NgenMin = 100; 	   % Minimum number of generation calculated
 GAoptions.Elitism = 0.01; 	   % Percentage of elite passing to the next Gen.
-GAoptions.PC      = 0.5; 	   % Percentage of crossover
-GAoptions.Plot    = true; 	   % Plot Boolean
+GAoptions.PC      = 0.75; 	   % Percentage of crossover
+GAoptions.Plot    = false; 	   % Plot Boolean
 
 
 
 % ---
-[output_Match]  = RetrieveSS(Objectives,Constraints,GAoptions);
+[Output]  = RetrieveSS(Objectives,Constraints,GAoptions);
 
-display(output_Match)
-display(output_Match.Table)
+display(Output)
+display(Output.Table)
 
-% --- Back from SS 2 ABD
-for i = 1:length(output_Match.SS)
-    [AOpt{i},BOpt{i},DOpt{i}] = Convert_SS2ABD(E1,E2,v12,G12,tply,output_Match.SS{i},true);                       %#ok<SAGROW>
+%% Checking output results are correct
+ScalingCoef = reshape(cell2mat(Objectives.Table(2:end,4)),12,size(Objectives.Table,1)-1);
+
+for i = 2:size(Objectives.Table,1)
+    LP2Match = Objectives.Table{i,3};
+    if sum(abs(LP2Match-Output.Table{i,4}))>1e-10
+        error('non matching LP2Match')
+    end
+    
+    LP = Convert_SS2LP(Output.Table{i,3});
+    if sum(abs(LP-Output.Table{i,5}))>1e-10
+        error('non matching SS and LPOpt')
+    end
+    
+    if abs( rms ( (LP-LP2Match).*ScalingCoef(:,i-1) )-Output.Table{i,7})>1e-10
+        error('non matching RSM')
+    end
+    
+    if abs( norm ((LP-LP2Match).*ScalingCoef(:,i-1))-Output.Table{i,6})>1e-10
+        error('non matching norm')
+    end
+    
 end
-
-A2Match{i}
-AOpt{i}
-
-B2Match{i}
-BOpt{i}
-
-D2Match{i}
-DOpt{i}

@@ -30,84 +30,84 @@
 % of the authors and should not be interpreted as representing official policies,
 % either expressed or implied, of the FreeBSD Project.
 % ----------------------------------------------------------------------- %
+
 clear all; clc; format short g; format compact; close all;
 
-addpath ./StiffnessOpt
 addpath ./FitnessFcts
+addpath ./StiffnessOpt
 
-LpIni = [
-    0.1821	 0.2102	 0.3000   % V1A
-   -0.3643	-0.2871	-0.1732   % V2A
-    0.0667	 0.1539	 0.1000   % V3A
-   -0.1155	-0.1332	-0.1732   % V4A
-    0.0000	 0.0000	 0.0000   % V1B
-    0.0000	 0.0000	 0.0000   % V2B
-    0.0000	 0.0000	 0.0000   % V3B
-    0.0000	 0.0000	 0.0000   % V4B
-    0.1699	 0.1227	-0.0741   % V1D
-   -0.2584	-0.1579	 0.1131   % V2D
-    0.2261	 0.3518	 0.4120   % V3D
-   -0.3177	-0.2444	-0.3811]; % V4D
-E1  = 13.0e9;
-E2  = 72.0e9;
-G12 = 26.9e9;
-v12 = 0.33;
-h   = 0.000127 * 10;
+global Pop
+
+if 0
+    for i=1:length(Pop)
+        MeanNply(i) = mean(Pop{i}(:,1));
+        StdNply(i) = std(Pop{i}(:,1));
+        
+        MeanTheta1(i) = mean(Pop{i}(:,2));
+        StdTheta1(i) = std(Pop{i}(:,2));
+    end
+    figure
+    hold all
+%     plot(MeanTheta1)
+%     plot(StdTheta1)
+    plot(MeanNply)
+    plot(StdNply)
+end
+
+% --- bottom [ 45   -45    90     0    45    90     0    45] Top
+% with   
+E1   = 13.0e9;
+E2   = 72.0e9;
+G12  = 26.9e9;
+v12  = 0.33;
+tply = 0.000127;  % being the ply thickness
+h    = 8*tply;
+
+A2Match ={[
+   1.0874e+11   5.8225e+10  -9.2917e+09
+   5.8225e+10   1.0874e+11  -9.2917e+09
+  -9.2917e+09  -9.2917e+09   2.5255e+10]};
+B2Match ={[
+  -9.7029e+09   4.1122e+08  -6.9687e+09
+   4.1122e+08   8.8804e+09  -6.9687e+09
+  -6.9687e+09  -6.9687e+09   4.1122e+08]};
+D2Match ={[
+   1.0602e+11   5.7454e+10   -1.626e+10
+   5.7454e+10   1.1299e+11   -1.626e+10
+   -1.626e+10   -1.626e+10   2.4484e+10]};
 
 Objectives.mat = [E1 E2 G12 v12 h];
+ 
+IndexAStiff = ones(3,3);
+IndexBStiff = ones(3,3);
+IndexDStiff = ones(3,3);
+Objectives.Table   = [{'Laminate #'}     {'Nplies'}   {'A2Match'}  {'B2Match'} {'D2Match'}  {'A Scaling'} {'B Scaling'} {'D Scaling'} ;
+                            {1}          {[6 10]}       A2Match       B2Match     D2Match   {IndexAStiff} {IndexBStiff} {IndexDStiff}];
 
-% convert lamination parameters into ABD matrices
-for i = 1:size(LpIni,2)
-    [A2Match{i},B2Match{i},D2Match{i}]    = Convert_LP2ABD (E1,E2,v12,G12,h,LpIni(:,i),true);                              %#ok<SAGROW>
-%     Lp2Match{i} = 0;
-    [Lp2Match{i},Abar{i},Bbar{i},Dbar{i}] = Convert_ABD2LP (E1,E2,v12,G12,h,A2Match{i},B2Match{i},D2Match{i},true);     %#ok<SAGROW>
-end
+Objectives.Type        = 'ABD'; 
+Objectives.FitnessFct = @(A,B,D) SumRMSABD(A,B,D,Objectives);
 
-if 1
-    Objectives.Type       = 'ABD';
-    Objectives.FitnessFct = @(A,B,D) SumRMSABD(A,B,D,Objectives);
-    IndexAStiff = ones(3,3);
-    IndexBStiff = ones(3,3);
-    IndexDStiff = ones(3,3);
-    Objectives.Table   = [{'Laminate #'}     {'Nplies'}   {'A2Match'}  {'B2Match'} {'D2Match'}  {'A Scaling'} {'B Scaling'} {'D Scaling'} ;
-        {1}          {[20 20]}       A2Match(1)       B2Match(1)     D2Match(1)   {IndexAStiff} {IndexBStiff} {IndexDStiff}
-        {2}          {[22 22]}       A2Match(2)       B2Match(2)     D2Match(2)   {IndexAStiff} {IndexBStiff} {IndexDStiff}
-        {3}          {[12 12]}       A2Match(3)       B2Match(3)     D2Match(3)   {IndexAStiff} {IndexBStiff} {IndexDStiff}];
-    
-    
-else
-    Objectives.Type       = 'LP';
-    Objectives.FitnessFct = @(LP) SumRMSLP(LP,Objectives);
-    
-    
-    ScalingCoef = [1 1 1 1, 1 1 1 1, 1 1 1 1]';
-    Objectives.Table   = [{'Laminate #'}  {'Nplies [LB UB]'}    {'LP2Match'}     {'Scaling Coefficient'} ;
-                                {1}           {[20 20]}         Lp2Match(1)     {ScalingCoef} ;
-                                {2}           {[22 22]}         Lp2Match(2)     {ScalingCoef} ;
-                                {3}           {[12 12]}         Lp2Match(3)     {ScalingCoef} ; ];
-    
-end
-
-
-           
 % =========================== Default Options =========================== %
 
-%                        [Damtol  Rule10percent  Disorientation  Contiguity   DiscreteAngle  InernalContinuity  Covering];
-Constraints.Vector     = [true       false          false          false         true            false            true];
-Constraints.DeltaAngle = 5;
+%                        [Damtol  Rule10percent  Disorientation  Contiguity   BalancedIndirect  InernalContinuity  Covering];
+Constraints.Vector     = [false       false          false          false         false            false            false];
+Constraints.DeltaAngle = 45;
 Constraints.ply_t      = 0.000127;          % ply thickness
-Constraints.ORDERED    = true;                           
+Constraints.ORDERED    = true;                         
 Constraints.Balanced   = false; 
-Constraints.Sym        = true; 
+Constraints.Sym        = false; 
+
+
+
 
 
 % ---
 GAoptions.Npop    = 100; 	   % Population size
-GAoptions.Ngen    = 200; 	   % Number of generations
-GAoptions.NgenMin = 200; 	   % Minimum number of generation calculated
-GAoptions.Elitism = 0.1; 	   % Percentage of elite passing to the next Gen.
+GAoptions.Ngen    = 500; 	   % Number of generations
+GAoptions.NgenMin = 250; 	   % Minimum number of generation calculated
+GAoptions.Elitism = 0.01; 	   % Percentage of elite passing to the next Gen.
+GAoptions.PC      = 0.5; 	   % Percentage of crossover
 GAoptions.Plot    = true; 	   % Plot Boolean
-GAoptions.PC      = 0.5; 	   % Plot Boolean
 
 
 
@@ -119,7 +119,7 @@ display(output_Match.Table)
 
 % --- Back from SS 2 ABD
 for i = 1:length(output_Match.SS)
-    [AOpt{i},BOpt{i},DOpt{i}] = Convert_SS2ABD(E1,E2,v12,G12,0.000127,output_Match.SS{i},true);                       %#ok<SAGROW>
+    [AOpt{i},BOpt{i},DOpt{i}] = Convert_SS2ABD(E1,E2,v12,G12,tply,output_Match.SS{i},true);                       %#ok<SAGROW>
 end
 
 A2Match{i}

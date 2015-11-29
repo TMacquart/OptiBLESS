@@ -1,3 +1,19 @@
+% =====                                                              ==== 
+%    Use GA to find stacking sequence ply angles matching Lam. Param.     
+%          and varying thickness employing Stacking Sequence Table        
+%
+% [output] = RetrieveSS(Objectives,Constraints,GAoptions)
+%
+% 
+%  The individual of GA is composed of 3 parts:
+%  --------------------------------------------
+%  [ [Nply(1) ... Nply(Npatch)]                                  -- the Number of plies
+%  [ Theta(1) ... Theta(N) ]                                     -- N is the guide Nply
+%  [ (Location of -Theta(1)) ... (Location of -Theta(N)) ]       -- location of balanced angle pairs
+%  [ Drop(1)  ... Drop(M)  ]                                     -- M is the Delta Nply
+% =====                                                              ==== 
+
+
 % ----------------------------------------------------------------------- %
 % Copyright (c) <2015>, <Terence Macquart>
 % All rights reserved.
@@ -28,43 +44,44 @@
 % ----------------------------------------------------------------------- %
 
 
-% =====                                                              ==== %
-%    Use GA to find stacking sequence ply angles matching Lam. Param.     %
-%          and varying thickness employing Stacking Sequence Table        %
-%                       Terence Macquart (09/11/2015)                     %
-%
-%  Blended laminate
-%  ----------------
-%  objective:   match other LP by removing plies while minimising thickness 
-%  constraints implemented: covering, max stoping, continuity, alternation
-%
-% 
-%  The individual of GA is composed of 3 parts:
-%  --------------------------------------------
-%  [ [Nply(1) ... Nply(Npatch)]                   -- the Number of plies
-%  [ Theta(1) ... Theta(N)   nan ... nan]       -- N is the guide Nply
-%  [ Drop(1)  ... Drop(M)    nan ... nan]       -- M is the Delta Nply
-% =====                                                              ==== %
-
 function [output] = RetrieveSS(Objectives,Constraints,GAoptions)
+
+
 %% Treat Inputs  
 [Nvar,NpatchVar,NthetaVar,NdropVar,LamType,LB,UB,AllowedNplies] = FormatInput(Objectives,Constraints);
+% Nvar          - Number of design variables 
+% NpatchVar     - Number of patches with variable number of plies
+% NthetaVar     - Number of fibre angles used to describe the guide laminate
+% NdropVar      - Number of drops from the guide laminate
+% LamType       - Type of laminates
+% LB            - Lower bound of design variables
+% UB            - Upper bound of design variables
+% AllowedNplies - Number of plies allowed for each patches
 
 
 
-%% Set GA
-options  = gaoptimset('PopulationSize' ,GAoptions.Npop,'Generation',GAoptions.Ngen, ...
-    'StallGenLimit',GAoptions.NgenMin,'EliteCount',ceil(GAoptions.Elitism*GAoptions.Npop),...
-    'FitnessLimit' ,1e-5,'TolFun' ,1e-10,'PlotInterval',1,'CrossoverFraction',GAoptions.PC);
+
+
+%% Set GA, see --- doc gaoptimset --- for more option
+options  = gaoptimset('PopulationSize',GAoptions.Npop,...
+                      'Generation',GAoptions.Ngen, ...
+                      'StallGenLimit',GAoptions.NgenMin, ...
+                      'EliteCount',ceil(GAoptions.Elitism*GAoptions.Npop),...
+                      'FitnessLimit' ,1e-5,...
+                      'TolFun' ,1e-10,...
+                      'PlotInterval',1,...
+                      'CrossoverFraction',GAoptions.PC);
+                  
 if GAoptions.Plot
-    options  = gaoptimset(options,'PlotFcns' ,{@GACustomPlot}); %gaplotbestf
+    options  = gaoptimset(options,'PlotFcns' ,{@gaplotbestf});
 end
 
-fct_handle = @(x)Eval_Fitness(x,Objectives,Constraints,NpatchVar,NthetaVar,AllowedNplies,LamType);  % handle of the fitness function becomes constraint
+
+% Handle of the fitness function 
+fct_handle = @(x)Eval_Fitness(x,Objectives,Constraints,NpatchVar,NthetaVar,AllowedNplies,LamType);  
 
 
 
-% keyboard
 %% Generate Ini. Pop.
 for i = 1:5
     try
@@ -77,7 +94,7 @@ for i = 1:5
         end
     end
 end
-%  IniPop(1,:) = [(90+[ 0 -45 45 45 -45   0 45 90  90 0 -45 45 0  -45 45 90 90 -45 0   0])/Constraints.DeltaAngle [5 8 9 15 16 17]]
+%  IniPop(1,:) = [(90+[ 45   -45    90     0    45    90     0    45])/Constraints.DeltaAngle []]
 options = gaoptimset(options,'InitialPopulation' ,IniPop);
 
 
@@ -106,7 +123,7 @@ if strcmp(Objectives.Type,'LP')
         QualIndex2 = rms( (LPMatched(:,j) - LP2Match(:)).*ScalingCoef );
         QualIndex3 = mae( (LPMatched(:,j) - LP2Match(:)).*ScalingCoef );
         QualIndex4 = max( abs((LPMatched(:,j) - LP2Match(:)).*ScalingCoef) );
-        Table      = [Table ;  {j} {length(SS{j})} SS(j) {LP2Match} {LPMatched(:,j)} {QualIndex1} {QualIndex2} {QualIndex3} {QualIndex4}];
+        Table      = [Table ;  {j} {length(SS{j})} SS(j) {LP2Match} {LPMatched(:,j)} {QualIndex1} {QualIndex2} {QualIndex3} {QualIndex4}]; %#ok<AGROW>
     end
 end
 
@@ -140,13 +157,14 @@ if strcmp(Objectives.Type,'ABD')
         QualIndex2D = norm( DScaling(:).*(D_Matched(:) - D2Match(:)) );
         QualIndex3D = rms(  DScaling(:).*(D_Matched(:) - D2Match(:)) );
         
-        Table = [Table ;  {j} {length(SS{j})} SS(j) ...
+        Table = [Table ;  {j} {length(SS{j})} SS(j) ...                                      
                     {A2Match} {A_Matched} {QualIndex1A} {QualIndex2A} {QualIndex3A}...
                     {B2Match} {B_Matched} {QualIndex1B} {QualIndex2B} {QualIndex3B} ...
-                    {D2Match} {D_Matched} {QualIndex1D} {QualIndex2D} {QualIndex3D}];
+                    {D2Match} {D_Matched} {QualIndex1D} {QualIndex2D} {QualIndex3D}];               %#ok<AGROW>
     end
 
 end
+
 
 output.NfctEval  = StandardOutputGA.funccount;
 output.NGen      = StandardOutputGA.generations;
@@ -154,7 +172,6 @@ output.Table     = Table;
 output.xOpt      = xOpt;
 output.fval      = fval;
 
-if ~output.FEASIBLE
-    warning('The SST GA could not find a single feasible solution!')
-end
+
+if ~output.FEASIBLE,    warning('The SST GA could not find a single feasible solution!'); end
 end
