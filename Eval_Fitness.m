@@ -50,7 +50,6 @@ NDropPlies  = cellfun(@length,DropIndexes,'UniformOutput', true); % NUmber of dr
 Ndrop       = length(NDropPlies);                                       % Total number of drops between patches
 
 
-
 %%
 
 ConstraintVector = Constraints.Vector;
@@ -92,7 +91,7 @@ end
 %% fitness calculation
 
 % Guide
-FiberAngles = Convert_dvAngles2FiberAngles(GuideAngles,ShuffleLoc,LamType);
+FiberAngles = Convert_dvAngles2FiberAngles(GuideAngles,[],ShuffleLoc,LamType);
 
 if strcmp(Objectives.Type,'LP')
     LP(:,1)  = Convert_SS2LP(FiberAngles);            % evaluate lamination parameters for the guide
@@ -106,19 +105,11 @@ SS{1} = FiberAngles;
 for iDrop = 1 : Ndrop
     index = iDrop + 1;
     
-    ply_angles = GuideAngles;
-    
     DropsLoc = unique(cell2mat(DropIndexes(1:iDrop)));
-    if max(DropsLoc)>NGuidePlies
-        DropsLoc(DropsLoc>NGuidePlies) = [];
-    end
-    
-    plyShuffleLoc = ShuffleLoc;
-    ply_angles(DropsLoc(DropsLoc<=length(ply_angles))) = [];  % drop plies
-    plyShuffleLoc(DropsLoc(DropsLoc<=length(plyShuffleLoc))) = [];  % drop plies
-    
-    FiberAngles      = Convert_dvAngles2FiberAngles(ply_angles,plyShuffleLoc,LamType);
-    SS{index}        = FiberAngles;
+    DropsLoc(DropsLoc>NGuidePlies) = [];                                    % remove Infeasible Drops (only for variable Nply)
+
+    FiberAngles = Convert_dvAngles2FiberAngles(GuideAngles,DropsLoc,ShuffleLoc,LamType);
+    SS{index}   = FiberAngles;
     
     if strcmp(Objectives.Type,'LP')
         LP(:,index) = Convert_SS2LP(FiberAngles);          % evaluate lamination parameters for the droped laminates
@@ -128,7 +119,7 @@ for iDrop = 1 : Ndrop
     end
 end
 
-
+% keyboard
 
 % revert both sorting at once
 [~,RevertSort]    = sort(SortedLamNumber);

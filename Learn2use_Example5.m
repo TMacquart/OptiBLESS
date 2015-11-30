@@ -35,32 +35,32 @@ clear all; clc; format short g; format compact; close all;
 addpath ./StiffnessOpt
 addpath ./FitnessFcts
 
-% GuideLamDv = [-45 0 45 90 0  -45  45  90  -45  45];    
-% Lam1       = [    0    90 0  -45  45  90  -45  45];   
-% Lam2       = [    0    90 0           90  -45  45];   
+% GuideLamDv = [-45 0 45 90 0 -45  90 45 0 -45 0 45]s;    
+% Lam1       = [-45   45 90 0 -45  90 45 0 -45   45]s;   
+% Lam2       = [-45   45 90 0      90 45 0 -45     ]s;   
 
 Lp2Match = [
     % Guide     % Lam 1     % Lam 2
-        0          0          0             % V1A
+        0.16667    0          0             % V1A
         0          0          0             % V2A
-       -0.2        0          0.33333       % V3A
+        0         -0.2        0             % V3A
         0          0          0             % V4A
-       -0.2       -0.25      -0.22222       % V1B
-        0.16       0.125      0.11111       % V2B
-       -0.24      -0.75      -0.88889       % V3B
+        0          0          0             % V1B
+        0          0          0             % V2B
+        0          0          0             % V3B
         0          0          0             % V4B
-        0.048      0.14062    0.22222       % V1D
-       -0.048      0.14062    0.22222       % V2D
-       -0.488      0.09375    0.037037      % V3D
+        0.13657   -0.084     -0.11719       % V1D
+       -0.12153   -0.114     -0.046875      % V2D
+       -0.013889  -0.248     -0.23438       % V3D      
         0          0          0];           % V4D
-
+    
 
 Objectives.Type   = 'LP';
 ScalingCoef       = [1 1 1 1, 1 1 1 1, 1 1 1 1]';
 Objectives.Table  = [{'Laminate #'}  {'Nplies [LB UB]'}     {'LP2Match'}     {'Scaling Coefficient'} ;
-                            {1}           {[10 10]}         Lp2Match(:,1)     {ScalingCoef} ;
-                            {2}           {[8 8]}           Lp2Match(:,2)     {ScalingCoef} ; 
-                            {3}           {[6 6]}           Lp2Match(:,3)     {ScalingCoef} ; ];
+                            {1}           {2*[12 12]}         Lp2Match(:,1)     {ScalingCoef} ;
+                            {2}           {2*[10 10]}           Lp2Match(:,2)     {ScalingCoef} ; 
+                            {3}           {2*[8 8]}           Lp2Match(:,3)     {ScalingCoef} ; ];
 
 Objectives.FitnessFct = @(LP) RMSE_MaxAE_LP(LP,Objectives);
 
@@ -69,15 +69,15 @@ Objectives.FitnessFct = @(LP) RMSE_MaxAE_LP(LP,Objectives);
 % =========================== Default Options =========================== %
 
 %                        [Damtol  Rule10percent  Disorientation  Contiguity   BalancedIndirect   InernalContinuity  Covering];
-Constraints.Vector     = [false       false          false          false             false            false            false];
+Constraints.Vector     = [true       false          false          false             false            false            true];
 Constraints.DeltaAngle = 45;
 Constraints.ORDERED    = false;                           
 Constraints.Balanced   = true; 
-Constraints.Sym        = false; 
+Constraints.Sym        = true; 
 
 
 % ---
-GAoptions.Npop    = 100; 	   % Population size
+GAoptions.Npop    = 200; 	   % Population size
 GAoptions.Ngen    = 500; 	   % Number of generations
 GAoptions.NgenMin = 500; 	   % Minimum number of generation calculated
 GAoptions.Elitism = 0.075; 	   % Percentage of elite passing to the next Gen.

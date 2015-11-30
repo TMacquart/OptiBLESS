@@ -94,10 +94,13 @@ for i = 1:5
         end
     end
 end
-%  IniPop(1,:) = [(90+[ 45   -45    90     0    45    90     0    45])/Constraints.DeltaAngle []]
+%  IniPop(1,:) = [(90+[-45 0 45 90 0  -45  45  90  -45  45])/Constraints.DeltaAngle [1 3 6 7]]
+% keyboard
+%  IniPop(1,:) = [(90+[-45 0 45 90 0 -45  90 45 0 -45 0 45])/Constraints.DeltaAngle [2 11 6 12]]
 options = gaoptimset(options,'InitialPopulation' ,IniPop);
 
-
+% keyboard
+% [Fval,output]=fct_handle([(90+[-45 0 45 90 0 -45  90 45 0 -45 0 45])/Constraints.DeltaAngle [2 11 6 12]])
 
 %% run GA
 fprintf(strcat('Running GA \n'))

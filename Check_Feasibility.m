@@ -41,7 +41,6 @@ function [FEASIBLE] = Check_Feasibility(ConstraintVector,GuideAngles,ShuffleLoc,
 
 FEASIBLE = true;
 
-
 if ConstraintVector(5) % check if balanced for indirect constraint handling
     % guide
     [FiberAngles] = Convert_dvAngles2FiberAngles(GuideAngles,[],LamType);
@@ -114,19 +113,13 @@ if ConstraintVector(3) % Disorientation
     for iDrop= 0:length(DropsIndexes)
         
         if iDrop == 0
-            [FiberAngles] = Convert_dvAngles2FiberAngles(GuideAngles,ShuffleLoc,LamType);
+            [FiberAngles] = Convert_dvAngles2FiberAngles(GuideAngles,[],ShuffleLoc,LamType);
         else
-            ply_angles    = GuideAngles;
-            plyShuffleLoc = ShuffleLoc;
             DropsLoc = unique(DropsIndexes(1:iDrop));
-            if max(DropsLoc)>NGuidePlies
-                DropsLoc(DropsLoc>NGuidePlies) = [];
-            end
-            
-            ply_angles(DropsLoc(DropsLoc<=length(ply_angles))) = [];            % drop plies
-            plyShuffleLoc(DropsLoc(DropsLoc<=length(plyShuffleLoc))) = [];      % drop plies
-            FiberAngles = Convert_dvAngles2FiberAngles(ply_angles,plyShuffleLoc,LamType);
+            DropsLoc(DropsLoc>NGuidePlies) = [];
+            FiberAngles = Convert_dvAngles2FiberAngles(GuideAngles,DropsLoc,ShuffleLoc,LamType);
         end
+        
         
         for iply = 1:numel(FiberAngles)-1
             if FiberAngles(iply)>=-45 && FiberAngles(iply)<=45

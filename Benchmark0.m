@@ -60,12 +60,12 @@ ply_t = 0.000127;
 
 
 
-% GuideLamDv = [+45 0 -45 0]; % test
+GuideLamDv = [-45 0 45 90 0 -45  90 45 0 -45 0 45];                           % theta 3
 
 %% Balanced Symmetric
 % GuideLamDv = [+45 0 -45 90];                                                   % theta 1
 % GuideLamDv = [+45 0 -45 90 45 0 -45 0];                                        % theta 2
-GuideLamDv = [-45 0 45  90 0  -45  45  90  -45  45];                           % theta 3
+% GuideLamDv = [-45 0 45  90 0  -45  45  90  -45  45];                           % theta 3
 % GuideLamDv = [0 -45 45 45 -45   0 45 90  90 0 -45 45 0  -45 45 90 90 -45 0   0]; % theta 4
 % GuideLam   = [GuideLamDv, fliplr(GuideLamDv)];
 
@@ -81,13 +81,13 @@ GuideLamDv = [-45 0 45  90 0  -45  45  90  -45  45];                           %
 %% Generic 
 % GuideLamDv = [10   -65   -60   -40    65   -40    60   -45    80   -25];                                                              % theta 9
 % GuideLamDv = [-50   -40    25     0   -25    60    20    10    80   -35 50    50   -20    15   -75   -80    10    55    80   -65];    % theta 10
-
+% 
 % GuideLamDv = randi([1 36],1,100)*5-90;
 % Drops = num2cell(randperm(100,50));
 
 %%
 % GuideLamDv = [-90 -45 -45];
-Drops      = [{[4 6 7 8]}] %[{[4 5 6 11 15 17 20]}]%[{[2 3 8]}]; %[2 4 6];
+Drops      = [{[2 11]} {[6 12]}] % [{[4 6 7 8]}] %[{[4 5 6 11 15 17 20]}]%[{[2 3 8]}]; %[2 4 6];
 % GuideLam   = [GuideLamDv, fliplr(GuideLamDv)];
 % GuideLam   = [GuideLamDv, -GuideLamDv];
 % GuideLam   = [GuideLamDv, -GuideLamDv, fliplr([GuideLamDv, -GuideLamDv])]'; % balanced/symetric
@@ -102,25 +102,25 @@ for i = 1:NUniqueLam
         Lam(DropsLoc) = [];   
     end
     
-       Lam   = [Lam, fliplr(Lam)];
+    Lam = [Lam, fliplr(Lam)];
        
 %     Lam = [Lam, -Lam]'; % balanced/symetric 
 %     Lam = [Lam, -Lam, fliplr([Lam, -Lam])]'; % balanced/symetric 
 %     keyboard
     Lp2Match(:,i)    = Convert_SS2LP(Lam);
-    Objectives.Table = [Objectives.Table; [{i} {[1 1]*length(Lam)} {Lp2Match(:,i)} {ScalingCoef}]];
+    Objectives.Table = [Objectives.Table; [{i} {[1 2]*length(Lam)} {Lp2Match(:,i)} {ScalingCoef}]];
 end
 
 Objectives.Type        = 'LP';
 Objectives.FitnessFct = @(LP) RMSE_MaxAE_LP(LP,Objectives);
-
+fr
 % =========================== Default Options =========================== %
 
 %                        [Damtol  Rule10percent  Disorientation  Contiguity   BalancedIndirect  InernalContinuity  Covering  ];
 Constraints.Vector     = [false       false          false          false         false            false            false       ];
 Constraints.DeltaAngle = 45;
 Constraints.ply_t      = ply_t;      % ply thickness
-Constraints.Balanced   = true;      % Direct Constraint Handling
+Constraints.Balanced   = false;      % Direct Constraint Handling
 Constraints.Sym        = true; 
 Constraints.ORDERED    = false;           
 
@@ -131,7 +131,7 @@ GAoptions.Npop    = 200; 	   % Population size
 GAoptions.Ngen    = 500; 	   % Number of generations
 GAoptions.NgenMin = 500; 	   % Minimum number of generation calculated
 GAoptions.Elitism = 0.075; 	   % Percentage of elite passing to the next Gen.
-GAoptions.Plot    = false; 	   % Plot Boolean
+GAoptions.Plot    = true; 	   % Plot Boolean
 GAoptions.PC      = 0.55;
 
 % ---

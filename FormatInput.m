@@ -112,14 +112,23 @@ Nd_state  = length(-90:Constraints.DeltaAngle:90);              % number of disc
 LB = [];
 UB = [];
 
-LB = [LB; cellfun(@min,AllowedNplies(find(NpatchVar)),'UniformOutput', true)];
+LB = [LB; cellfun(@min,AllowedNplies(find(NpatchVar)),'UniformOutput', true)];  % Variable plies
 UB = [UB; cellfun(@max,AllowedNplies(find(NpatchVar)),'UniformOutput', true)];
 
-LB = [LB; 0*ones(NthetaVar,1)];
+LB = [LB; 0*ones(NthetaVar,1)];                                                 % Guide angles
 UB = [UB; (Nd_state-1)*ones(NthetaVar,1)];
 
-LB = [LB; ones(NbalVar,1)];
-UB = [UB; 2*NbalVar*ones(NbalVar,1)];
+if ~Constraints.Vector(1) % Damtol
+    LB = [LB; ones(NbalVar,1)];                                                 % Balanced angles
+    UB = [UB; 2*NbalVar*ones(NbalVar,1)];
+else
+    LB = [LB; 2*ones(NbalVar,1)];                                               % Ensure the First ply is from the guide (+- 45)
+    if ~strcmp(LamType,'Generic')
+        UB = [UB; 2*NbalVar*ones(NbalVar,1)];
+    else
+        UB = [UB; (2*NbalVar-1)*ones(NbalVar,1)];                               % Ensure the last ply is also from the guide (+- 45)
+    end
+end
     
 if Constraints.Vector(7) % covering
     if strcmp(LamType,'Generic')

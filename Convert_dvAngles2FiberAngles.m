@@ -33,16 +33,16 @@
 %                           length staking sequence
 % =====                                                              ==== %
 
-function [FiberAngles] = Convert_dvAngles2FiberAngles(ply_angle,ShuffleLoc,LamType)
-
+function [FiberAngles] = Convert_dvAngles2FiberAngles(GuideAngles,DropsLoc,ShuffleLoc,LamType)
 
 %% Input Check
-if ~isnumeric(ply_angle) || ~isreal(ply_angle) || ~isvector(ply_angle)
-    error('Input angles (ply_angle) must be numeric and real')
+if ~isnumeric(GuideAngles) || ~isreal(GuideAngles) || ~isvector(GuideAngles)
+    error('Input angles (GuideAngles) must be numeric and real')
 end
-if size(ply_angle,2) == 1
-    ply_angle = ply_angle';
+if size(GuideAngles,2) == 1
+    GuideAngles = GuideAngles';
 end
+
 
 StringList = {'Balanced_Sym' 'Sym' 'Balanced' 'Generic'};
 Index      = find(strncmp(LamType,StringList,12),1);
@@ -52,22 +52,37 @@ if isempty(Index),
 end
 
 %% Concatenation
-if strcmp(LamType,'Generic'),        FiberAngles = ply_angle';                          end
-if strcmp(LamType,'Sym'),            FiberAngles = [ply_angle, fliplr(ply_angle)]';     end
+ply_angle = GuideAngles;
+if strcmp(LamType,'Generic'),  
+    ply_angle(DropsLoc) = [];
+    FiberAngles = ply_angle';    
+end
 
+if strcmp(LamType,'Sym'), 
+    ply_angle(DropsLoc) = []; 
+    FiberAngles = [ply_angle, fliplr(ply_angle)]'; 
+end
 
 if strcmp(LamType,'Balanced_Sym') || strcmp(LamType,'Balanced')
-    FiberAngles    = ply_angle;
-    BalancedAngles = [-ply_angle' ShuffleLoc'];
-    BalancedAngles = sortrows(BalancedAngles,2);
+    FiberAngles    = [ply_angle; [1:length(ply_angle)]; [1:length(ply_angle)]];
+    BalancedAngles = [-ply_angle' ShuffleLoc' [1:length(ShuffleLoc)]'];
+    BalancedAngles = sortrows(BalancedAngles,2)';
     
     for j = 1:length(BalancedAngles)
-        if BalancedAngles(j,2)>length(FiberAngles)
-            FiberAngles = [FiberAngles BalancedAngles(j,1)];
+        if BalancedAngles(2,j)>size(FiberAngles,2)
+            FiberAngles = [FiberAngles BalancedAngles(:,j)];
         else
-            FiberAngles = [FiberAngles(1:BalancedAngles(j,2)-1) BalancedAngles(j,1)  FiberAngles(BalancedAngles(j,2):end)];
+            FiberAngles = [FiberAngles(:,1:BalancedAngles(2,j)-1) BalancedAngles(:,j)  FiberAngles(:,BalancedAngles(2,j):end)];
         end
     end
+    
+    for iDrop = 1:length(DropsLoc)
+        NewDropsLoc = find(FiberAngles(3,:)==DropsLoc(iDrop));
+        FiberAngles(:,NewDropsLoc) = [];                                    %#ok<FNDSB> % left for clarity
+    end
+    
+    FiberAngles = FiberAngles(1,:);
+    
     if strcmp(LamType,'Balanced_Sym')
         FiberAngles = [FiberAngles, fliplr([FiberAngles])]';
     end
