@@ -159,7 +159,6 @@ if strcmp(Objectives.Type,'LP')
     output.LP = LP;
 end
 
-output.LamIndex    = RevertedLamNumber;
 output.SS          = SS;
 output.DropIndexes = DropIndexes;
 output.FEASIBLE    = FEASIBLE;

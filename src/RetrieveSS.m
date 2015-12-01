@@ -47,7 +47,7 @@
 function [output] = RetrieveSS(Objectives,Constraints,GAoptions)
 
 
-%% Treat Inputs  
+%% Format Inputs  
 [Nvar,NpatchVar,NthetaVar,NdropVar,LamType,LB,UB,AllowedNplies] = FormatInput(Objectives,Constraints);
 % Nvar          - Number of design variables 
 % NpatchVar     - Number of patches with variable number of plies
@@ -65,16 +65,16 @@ function [output] = RetrieveSS(Objectives,Constraints,GAoptions)
 %% Set GA, see --- doc gaoptimset --- for more option
 options  = gaoptimset('PopulationSize',GAoptions.Npop,...
                       'Generation',GAoptions.Ngen, ...
-                      'StallGenLimit',GAoptions.NgenMin, ...
-                      'EliteCount',ceil(GAoptions.Elitism*GAoptions.Npop),...
-                      'FitnessLimit' ,1e-5,...
-                      'TolFun' ,1e-10,...
-                      'PlotInterval',1,...
-                      'CrossoverFraction',GAoptions.PC);
+                      'StallGenLimit',GAoptions.NgenMin, ...                    % Minimum Number of Generation computed
+                      'EliteCount',ceil(GAoptions.Elitism*GAoptions.Npop),...   % Elitism
+                      'FitnessLimit' ,1e-5,...                                  % Stoping fitness criterion
+                      'TolFun' ,1e-10,...                                       % Stoping change in fitness criterion
+                      'CrossoverFraction',GAoptions.PC, ...                     % crossover fraction
+                      'PlotFcns' ,{GAoptions.PlotFct});                       
                   
-if GAoptions.Plot
-    options  = gaoptimset(options,'PlotFcns' ,{@gaplotbestf});
-end
+% if GAoptions.Plot
+%     options  = gaoptimset(options,'PlotFcns' ,{GAoptions.PlotFct});                  % Plot function used
+% end
 
 
 % Handle of the fitness function 
@@ -90,43 +90,41 @@ for i = 1:5
     catch
         fprintf('Inipop Failed. Retrying ...\n');
         if i == 5
-            error(' Did not manage to generate a feasible initial population. Try relaxing some constraints.')
+            error('Did not manage to generate a feasible initial population. There might be something wrong.')
         end
     end
 end
-%  IniPop(1,:) = [(90+[-45 0 45 90 0  -45  45  90  -45  45])/Constraints.DeltaAngle [1 3 6 7]]
-% keyboard
-%  IniPop(1,:) = [(90+[-45 0 45 90 0 -45  90 45 0 -45 0 45])/Constraints.DeltaAngle [2 11 6 12]]
+%  IniPop(1,:) = [(90+[-45 0 45 90 0  -45  45  90  -45  45])/Constraints.DeltaAngle [1 3 6 7] []]
 options = gaoptimset(options,'InitialPopulation' ,IniPop);
 
-% keyboard
-% [Fval,output]=fct_handle([(90+[-45 0 45 90 0 -45  90 45 0 -45 0 45])/Constraints.DeltaAngle [2 11 6 12]])
+
 
 %% run GA
 fprintf(strcat('Running GA \n'))
-[xOpt,fval,~,StandardOutputGA] = ga(fct_handle,Nvar,[],[],[],[],LB,UB,[],1:Nvar,options);
+
+[xOpt,fval,~,OutputGA] = ga(fct_handle,Nvar,[],[],[],[],LB,UB,[],1:Nvar,options);
+
 display('GA(s) Terminated Successfully')
 
 
 
 %% Format Results
-[~,output] = fct_handle(xOpt);
-
-SS = output.SS;
+[~,output] = fct_handle(xOpt);      % Evaluate the best individual found during GA, returns the output structure
 
 if strcmp(Objectives.Type,'LP')
-    LPMatched = output.LP;
-    Table = [{'Lam #'} {'Nplies SST'} {'Ply Angles'} {'LP2Match'} {'LPOpt'} {'NormE'} {'RMSE'} {'MAE'} {'MaxAE'}];
+    Table     = [{'Lam #'} {'Nplies'} {'Ply Angles'} {'LP2Match'} {'LP Retrieved'} {'NormE'} {'RMSE'} {'MAE'} {'MaxAE'}];
+    LPMatched = output.LP;                                                          % Lamination parameters retrieved by the GA
+    
     for j = 1:length(AllowedNplies)
-        LP2Match    = Objectives.Table{j+1,3};
-        ScalingCoef = Objectives.Table{j+1,4};
+        LP2Match    = Objectives.Table{j+1,3};                                      % Lamination parameters given as objectives 
+        ScalingCoef = Objectives.Table{j+1,4};                                      % Scaling coefficients given as objectives 
         
+        QualIndex1 = norm( (LPMatched(:,j) - LP2Match(:)).*ScalingCoef );           % Norm Error
+        QualIndex2 = rms( (LPMatched(:,j) - LP2Match(:)).*ScalingCoef );            % Root mean square error
+        QualIndex3 = mae( (LPMatched(:,j) - LP2Match(:)).*ScalingCoef );            % Mean absolute error
+        QualIndex4 = max( abs((LPMatched(:,j) - LP2Match(:)).*ScalingCoef) );       % Maximum absolute error
         
-        QualIndex1 = norm( (LPMatched(:,j) - LP2Match(:)).*ScalingCoef );
-        QualIndex2 = rms( (LPMatched(:,j) - LP2Match(:)).*ScalingCoef );
-        QualIndex3 = mae( (LPMatched(:,j) - LP2Match(:)).*ScalingCoef );
-        QualIndex4 = max( abs((LPMatched(:,j) - LP2Match(:)).*ScalingCoef) );
-        Table      = [Table ;  {j} {length(SS{j})} SS(j) {LP2Match} {LPMatched(:,j)} {QualIndex1} {QualIndex2} {QualIndex3} {QualIndex4}]; %#ok<AGROW>
+        Table = [Table ;  {j} {length(output.SS{j})} output.SS(j) {LP2Match} {LPMatched(:,j)} {QualIndex1} {QualIndex2} {QualIndex3} {QualIndex4}]; %#ok<AGROW>
     end
 end
 
@@ -137,16 +135,16 @@ if strcmp(Objectives.Type,'ABD')
             {'B2Match'} {'BOpt'} {'Error % B'} {'Error Norm B'} {'Error RMS B'} ...
             {'D2Match'} {'DOpt'} {'Error % D'} {'Error Norm D'} {'Error RMS D'}];
     for j = 1:length(AllowedNplies)
-        A_Matched = output.A{j};
-        B_Matched = output.B{j};
-        D_Matched = output.D{j};
-        A2Match   = Objectives.Table{j+1,3};
-        B2Match   = Objectives.Table{j+1,4};
-        D2Match   = Objectives.Table{j+1,5};
+        A_Matched = output.A{j};                                            % In-plane stiffness matrix retrieved by the GA
+        B_Matched = output.B{j};                                            % Coupling stiffness matrix gretrieved by the GA
+        D_Matched = output.D{j};                                            % Out-of-plane stiffness matrix retrieved by the GA
+        A2Match   = Objectives.Table{j+1,3};                                % In-plane stiffness matrix given as objectives
+        B2Match   = Objectives.Table{j+1,4};                                % Coupling stiffness matrix given as objectives
+        D2Match   = Objectives.Table{j+1,5};                                % Out-of-plane stiffness matrix given as objectives
         
-        AScaling = Objectives.Table{j+1,6};
-        BScaling = Objectives.Table{j+1,7};
-        DScaling = Objectives.Table{j+1,8};
+        AScaling = Objectives.Table{j+1,6};                                 % In-plane scaling coefficients
+        BScaling = Objectives.Table{j+1,7};                                 % Coupling scaling coefficients
+        DScaling = Objectives.Table{j+1,8};                                 % Out-of-plane scaling coefficients
     
         QualIndex1A = 100*sum(abs(  AScaling(:).*((A_Matched(:) - A2Match(:))./A2Match(:)) ));
         QualIndex2A = norm( AScaling(:).*(A_Matched(:) - A2Match(:)) );
@@ -169,12 +167,14 @@ if strcmp(Objectives.Type,'ABD')
 end
 
 
-output.NfctEval  = StandardOutputGA.funccount;
-output.NGen      = StandardOutputGA.generations;
-output.Table     = Table;
-output.xOpt      = xOpt;
-output.fval      = fval;
+output.NfctEval  = OutputGA.funccount;                                      % Number of function evaluation that have been computed
+output.NGen      = OutputGA.generations;                                    % Number of generation computed
+output.Table     = Table;                                                   % Table sumarising results
+output.xOpt      = xOpt;                                                    % Genotype of the best found individual
+output.fval      = fval;                                                    % Fintess value of the best found individual
 
 
-if ~output.FEASIBLE,    warning('The SST GA could not find a single feasible solution!'); end
+if ~output.FEASIBLE,  
+    warning('Not a single feasible solution has been found!');
+end
 end

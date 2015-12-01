@@ -35,55 +35,53 @@ clear all; clc; format short g; format compact; close all;
 addpath ./src
 addpath ./FitnessFcts
 
+% Enter any Guide laminates and drops to test the code
+GuideLamDv  = [45 15 -5 0 -45 -60 45 90 -75 80 50 20 -10 0 90 45 -45 -20 -40 0];                          
+Drops       = [{[2 5]} {[12 18]} {[10]} {[20 19 1 4 6 7]}]; 
+ScalingCoef = [1 1 1 1, 1 1 1 1, 1 1 1 1]';      % relative importance given to matching the guide laminate LPs integer [1,N], the higher the integer = the more impact on the fit. fct.
 
-% GuideLamDv = [-45 0 45 90 0 -45  90 45 0 -45 0 45]s;    
-% Lam1       = [-45   45 90 0 -45  90 45 0 -45   45]s;   
-% Lam2       = [-45   45 90 0      90 45 0 -45     ]s;   
 
-Lp2Match = [
-    % Guide     % Lam 1     % Lam 2
-        0.16667    0          0             % V1A
-        0          0          0             % V2A
-        0         -0.2        0             % V3A
-        0          0          0             % V4A
-        0          0          0             % V1B
-        0          0          0             % V2B
-        0          0          0             % V3B
-        0          0          0             % V4B
-        0.13657   -0.084     -0.11719       % V1D
-       -0.12153   -0.114     -0.046875      % V2D
-       -0.013889  -0.248     -0.23438       % V3D      
-        0          0          0];           % V4D
+% --- Automated LP2Match calculation (Do Not Change)
+NUniqueLam         = length(Drops)+1;
+Lp2Match           = zeros(12,NUniqueLam);
+Objectives.Table   = [{'Laminate Index'} {'Nplies'} {'LP2Match'} {'Importance'}];
+
+for i = 1:NUniqueLam
+    Lam = GuideLamDv;
+    DropsLoc = cell2mat(Drops(1:i-1));
+    if i ~= 1,  
+        Lam(DropsLoc) = [];   
+    end
     
+    Lp2Match(:,i)    = Convert_SS2LP(Lam);
+    Objectives.Table = [Objectives.Table; [{i} {[1 1]*length(Lam)} {Lp2Match(:,i)} {ScalingCoef}]];
+end    
+% ---
 
-Objectives.Type   = 'LP';
-ScalingCoef       = [1 1 1 1, 1 1 1 1, 1 1 1 1]';
-Objectives.Table  = [{'Laminate #'}  {'Nplies [LB UB]'}     {'LP2Match'}     {'Scaling Coefficient'} ;
-                            {1}           {2*[12 12]}         Lp2Match(:,1)     {ScalingCoef} ;
-                            {2}           {2*[10 10]}           Lp2Match(:,2)     {ScalingCoef} ; 
-                            {3}           {2*[8 8]}           Lp2Match(:,3)     {ScalingCoef} ; ];
-
+Objectives.Type       = 'LP';
 Objectives.FitnessFct = @(LP) RMSE_MaxAE_LP(LP,Objectives);
 
 
-           
 % =========================== Default Options =========================== %
 
 %                        [Damtol  Rule10percent  Disorientation  Contiguity   BalancedIndirect   InernalContinuity  Covering];
-Constraints.Vector     = [true       false          false          false             false            false            true];
-Constraints.DeltaAngle = 45;
+Constraints.Vector     = [false       false          false          false             false            false            false];
+Constraints.DeltaAngle = 5;
 Constraints.ORDERED    = false;                           
-Constraints.Balanced   = true; 
-Constraints.Sym        = true; 
+Constraints.Balanced   = false; 
+Constraints.Sym        = false; 
 
 
 % ---
-GAoptions.Npop    = 200; 	   % Population size
-GAoptions.Ngen    = 500; 	   % Number of generations
-GAoptions.NgenMin = 500; 	   % Minimum number of generation calculated
-GAoptions.Elitism = 0.075; 	   % Percentage of elite passing to the next Gen.
-GAoptions.Plot    = true; 	   % Plot Boolean
-GAoptions.PC      = 0.75; 	   % Plot Boolean
+GAoptions.Npop     = 10;      % Population size
+GAoptions.Ngen     = 25;      % Number of generations
+GAoptions.NgenMin  = 25;      % Minimum number of generation calculated
+GAoptions.Elitism  = 0.075;   % Percentage of elite passing to the next Gen.
+GAoptions.PC       = 0.75;    % Plot Boolean
+
+PlotInterval       = [1];     % Refresh plot every X itterations         
+SaveInterval       = [];      % Save Data every X itterations      
+GAoptions.PlotFct  = @(options,state,flag) GACustomPlot(options,state,flag,PlotInterval,SaveInterval);  % Refresh plot every X itterations
 
 
 

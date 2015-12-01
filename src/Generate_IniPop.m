@@ -177,5 +177,5 @@ while ipop < Npop + 1
     
 end
 
-fprintf(' IniPop Created ... ' )
+fprintf(' IniPop Created ... \n ' )
 end
