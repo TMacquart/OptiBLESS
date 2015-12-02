@@ -1,4 +1,4 @@
-% =====                                                              ==== 
+% =====                                                              ====
 % SS2LP returns the lamination parameters of a given stacking sequence.
 % Ply thickness is assumed constant through the laminate.
 %
@@ -8,12 +8,12 @@
 % The ply angles are defined from bottom (1st element) to top (last element)
 %
 % SS2LP Optional Inputs
-% 'unit' is a string specifying the angles units either 'deg' or 'rad' 
+% 'unit' is a string specifying the angles units either 'deg' or 'rad'
 % 'ply_t' is a real scalar value corresponding the ply thickness
 %
 % SS2LP Example:
 % LP = SS2LP([42 -40  19 -38 -38 18 59 55 -47 -6 -47 32 37 -47 39 -24]','deg', 0.000127)
-% =====                                                              ==== 
+% =====                                                              ====
 
 
 % ----------------------------------------------------------------------- %
@@ -76,49 +76,60 @@ end
 if size(ply_angle,1) == 1
     ply_angle = ply_angle';
 end
-Nplies = length(ply_angle);
+ply_angle = ply_angle*pi/180;
+Nplies    = length(ply_angle);
 
 %% classic sum from -1/2 to 1/2
-if nargin == 1 || nargin == 2  
-    z1 = [-0.5:1/Nplies:0.5-1/Nplies]';
-    z2 = [-0.5+1/Nplies:1/Nplies:0.5]';
-    V1A  = sum(cosd(2*ply_angle).*(z2-z1));
-    V2A  = sum(sind(2*ply_angle).*(z2-z1));
-    V3A  = sum(cosd(4*ply_angle).*(z2-z1));
-    V4A  = sum(sind(4*ply_angle).*(z2-z1));
+if nargin == 1 || nargin == 2
+    z1 = (-0.5:1/Nplies:0.5-1/Nplies)';
+    z2 = (-0.5+1/Nplies:1/Nplies:0.5)';
     
-    V1B  = 4*sum(1/2*cosd(2*ply_angle).*(z2.^2-z1.^2));
-    V2B  = 4*sum(1/2*sind(2*ply_angle).*(z2.^2-z1.^2));
-    V3B  = 4*sum(1/2*cosd(4*ply_angle).*(z2.^2-z1.^2));
-    V4B  = 4*sum(1/2*sind(4*ply_angle).*(z2.^2-z1.^2));
+    Cos2Angle = cos(2*ply_angle);
+    Sin2Angle = sin(2*ply_angle);
+    Cos4Angle = cos(4*ply_angle);
+    Sin4Angle = sin(4*ply_angle);
     
-    V1D  = 12*sum(1/3*cosd(2*ply_angle).*(z2.^3-z1.^3));
-    V2D  = 12*sum(1/3*sind(2*ply_angle).*(z2.^3-z1.^3));
-    V3D  = 12*sum(1/3*cosd(4*ply_angle).*(z2.^3-z1.^3));
-    V4D  = 12*sum(1/3*sind(4*ply_angle).*(z2.^3-z1.^3));
+    DeltaZ  =  z2-z1;
+    DeltaZ2 = (z2.^2-z1.^2);
+    DeltaZ3 = (z2.^3-z1.^3);
+    
+    V1A  = sum(Cos2Angle.*DeltaZ);      % = sum(cos(2*ply_angle).*(z2-z1))
+    V2A  = sum(Sin2Angle.*DeltaZ);      % = sum(sin(2*ply_angle).*(z2-z1));
+    V3A  = sum(Cos4Angle.*DeltaZ);      % = sum(cos(4*ply_angle).*(z2-z1));
+    V4A  = sum(Sin4Angle.*DeltaZ);      % = sum(sin(4*ply_angle).*(z2-z1));
+    
+    V1B  = 2*sum(Cos2Angle.*DeltaZ2);   % = 4*sum(1/2*cos(2*ply_angle).*(z2.^2-z1.^2));
+    V2B  = 2*sum(Sin2Angle.*DeltaZ2);   % = 4*sum(1/2*sin(2*ply_angle).*(z2.^2-z1.^2));
+    V3B  = 2*sum(Cos4Angle.*DeltaZ2);   % = 4*sum(1/2*cos(4*ply_angle).*(z2.^2-z1.^2));
+    V4B  = 2*sum(Sin4Angle.*DeltaZ2);   % = 4*sum(1/2*sin(4*ply_angle).*(z2.^2-z1.^2));
+    
+    V1D  = 4*sum(Cos2Angle.*DeltaZ3);   % = 12*sum(1/3*cos(2*ply_angle).*(z2.^3-z1.^3));
+    V2D  = 4*sum(Sin2Angle.*DeltaZ3);   % = 12*sum(1/3*sin(2*ply_angle).*(z2.^3-z1.^3));
+    V3D  = 4*sum(Cos4Angle.*DeltaZ3);   % = 12*sum(1/3*cos(4*ply_angle).*(z2.^3-z1.^3));
+    V4D  = 4*sum(Sin4Angle.*DeltaZ3);   % = 12*sum(1/3*sin(4*ply_angle).*(z2.^3-z1.^3));
 end
 
 
 %% sum from -N/2 to N/2 (not Used)
-if 0 && nargin == 2 
+if 0 && nargin == 2
     Zi = - Nplies/2 + [0:Nplies];
     z1 = Zi(1:end-1)';
     z2 = Zi(2:end)';
     
-    V1A = 1/Nplies * sum(cosd(2*ply_angle));
-    V2A = 1/Nplies * sum(sind(2*ply_angle));
-    V3A = 1/Nplies * sum(cosd(4*ply_angle));
-    V4A = 1/Nplies * sum(sind(4*ply_angle));
+    V1A = 1/Nplies * sum(cos(2*ply_angle));
+    V2A = 1/Nplies * sum(sin(2*ply_angle));
+    V3A = 1/Nplies * sum(cos(4*ply_angle));
+    V4A = 1/Nplies * sum(sin(4*ply_angle));
     
-    V1B = 2/(Nplies^2) * sum(cosd(2*ply_angle).*(z2.^2-z1.^2));
-    V2B = 2/(Nplies^2) * sum(sind(2*ply_angle).*(z2.^2-z1.^2));
-    V3B = 2/(Nplies^2) * sum(cosd(4*ply_angle).*(z2.^2-z1.^2));
-    V4B = 2/(Nplies^2) * sum(sind(4*ply_angle).*(z2.^2-z1.^2));
+    V1B = 2/(Nplies^2) * sum(cos(2*ply_angle).*(z2.^2-z1.^2));
+    V2B = 2/(Nplies^2) * sum(sin(2*ply_angle).*(z2.^2-z1.^2));
+    V3B = 2/(Nplies^2) * sum(cos(4*ply_angle).*(z2.^2-z1.^2));
+    V4B = 2/(Nplies^2) * sum(sin(4*ply_angle).*(z2.^2-z1.^2));
     
-    V1D = 4/(Nplies^3) * sum(cosd(2*ply_angle).*(z2.^3-z1.^3));
-    V2D = 4/(Nplies^3) * sum(sind(2*ply_angle).*(z2.^3-z1.^3));
-    V3D = 4/(Nplies^3) * sum(cosd(4*ply_angle).*(z2.^3-z1.^3));
-    V4D = 4/(Nplies^3) * sum(sind(4*ply_angle).*(z2.^3-z1.^3));
+    V1D = 4/(Nplies^3) * sum(cos(2*ply_angle).*(z2.^3-z1.^3));
+    V2D = 4/(Nplies^3) * sum(sin(2*ply_angle).*(z2.^3-z1.^3));
+    V3D = 4/(Nplies^3) * sum(cos(4*ply_angle).*(z2.^3-z1.^3));
+    V4D = 4/(Nplies^3) * sum(sin(4*ply_angle).*(z2.^3-z1.^3));
 end
 
 
@@ -133,21 +144,21 @@ if nargin == 3
         z2(i) = z1(i) + ply_t ;
     end
     
-    V1A = 1/Nplies  * sum(cosd(2*ply_angle));
-    V2A = 1/Nplies  * sum(sind(2*ply_angle));
-    V3A = 1/Nplies  * sum(cosd(4*ply_angle));
-    V4A = 1/Nplies  * sum(sind(4*ply_angle));
-    V1B = 4/h^2     * sum(1/2*cosd(2*ply_angle).*(z2.^2-z1.^2));
-    V2B = 4/h^2     * sum(1/2*sind(2*ply_angle).*(z2.^2-z1.^2));
-    V3B = 4/h^2     * sum(1/2*cosd(4*ply_angle).*(z2.^2-z1.^2));
-    V4B = 4/h^2     * sum(1/2*sind(4*ply_angle).*(z2.^2-z1.^2));
-    V1D = 12/h^3    * sum(1/3*cosd(2*ply_angle).*(z2.^3-z1.^3));
-    V2D = 12/h^3    * sum(1/3*sind(2*ply_angle).*(z2.^3-z1.^3));
-    V3D = 12/h^3    * sum(1/3*cosd(4*ply_angle).*(z2.^3-z1.^3));
-    V4D = 12/h^3    * sum(1/3*sind(4*ply_angle).*(z2.^3-z1.^3));
+    V1A = 1/Nplies  * sum(cos(2*ply_angle));
+    V2A = 1/Nplies  * sum(sin(2*ply_angle));
+    V3A = 1/Nplies  * sum(cos(4*ply_angle));
+    V4A = 1/Nplies  * sum(sin(4*ply_angle));
+    V1B = 4/h^2     * sum(1/2*cos(2*ply_angle).*(z2.^2-z1.^2));
+    V2B = 4/h^2     * sum(1/2*sin(2*ply_angle).*(z2.^2-z1.^2));
+    V3B = 4/h^2     * sum(1/2*cos(4*ply_angle).*(z2.^2-z1.^2));
+    V4B = 4/h^2     * sum(1/2*sin(4*ply_angle).*(z2.^2-z1.^2));
+    V1D = 12/h^3    * sum(1/3*cos(2*ply_angle).*(z2.^3-z1.^3));
+    V2D = 12/h^3    * sum(1/3*sin(2*ply_angle).*(z2.^3-z1.^3));
+    V3D = 12/h^3    * sum(1/3*cos(4*ply_angle).*(z2.^3-z1.^3));
+    V4D = 12/h^3    * sum(1/3*sin(4*ply_angle).*(z2.^3-z1.^3));
 end
 
 
 %%
 LP  = [V1A, V2A, V3A, V4A, V1B, V2B, V3B, V4B, V1D, V2D, V3D, V4D]';
-end
+

@@ -30,7 +30,7 @@
 % of the authors and should not be interpreted as representing official policies,
 % either expressed or implied, of the FreeBSD Project.
 % ----------------------------------------------------------------------- %
-clear all; clc; format short g; format compact; close all;
+clear all; clc; format short g; format compact; close all Force; fclose all;
 
 addpath ./src
 addpath ./FitnessFcts
@@ -73,15 +73,16 @@ Constraints.Sym        = false;
 
 
 % ---
-GAoptions.Npop     = 10;      % Population size
-GAoptions.Ngen     = 25;      % Number of generations
-GAoptions.NgenMin  = 25;      % Minimum number of generation calculated
+GAoptions.Npop     = 250;      % Population size
+GAoptions.Ngen     = 5000;     % Number of generations
+GAoptions.NgenMin  = 5000;     % Minimum number of generation calculated
 GAoptions.Elitism  = 0.075;   % Percentage of elite passing to the next Gen.
 GAoptions.PC       = 0.75;    % Plot Boolean
 
-PlotInterval       = [1];     % Refresh plot every X itterations         
-SaveInterval       = [];      % Save Data every X itterations      
-GAoptions.PlotFct  = @(options,state,flag) GACustomPlot(options,state,flag,PlotInterval,SaveInterval);  % Refresh plot every X itterations
+GAoptions.PlotInterval = [10];                  % Refresh plot every X itterations         
+GAoptions.SaveInterval = [];                  % Save Data every X itterations   
+GAoptions.PlotFct      = @gaplotbestf;          % Refresh plot every X itterations
+GAoptions.OutputFct    = @GACustomOutput;
 
 
 

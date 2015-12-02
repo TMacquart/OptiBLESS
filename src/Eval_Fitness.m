@@ -89,23 +89,26 @@ end
 
 
 %% fitness calculation
-
 % Guide
+SS          = cell(1,Ndrop+1);
 FiberAngles = Convert_dvAngles2FiberAngles(GuideAngles,[],ShuffleLoc,LamType);
+SS{1}       = FiberAngles;
 
 if strcmp(Objectives.Type,'LP')
-    LP(:,1)  = Convert_SS2LP(FiberAngles);            % evaluate lamination parameters for the guide
+    LP      = zeros(12,Ndrop+1);
+    LP(:,1) = Convert_SS2LP(FiberAngles);            % evaluate lamination parameters for the guide
 end
 if strcmp(Objectives.Type,'ABD')
     [A{1},B{1},D{1}] = Convert_SS2ABD (Objectives.mat(1),Objectives.mat(2),Objectives.mat(4),Objectives.mat(3),Constraints.ply_t,FiberAngles,true);
 end
-SS{1} = FiberAngles;
 
 % After Drops
+DropsLoc = [];
 for iDrop = 1 : Ndrop
     index = iDrop + 1;
     
-    DropsLoc = unique(cell2mat(DropIndexes(1:iDrop)));
+    DropsLoc = [DropsLoc DropIndexes{iDrop}];
+    DropsLoc = unique(DropsLoc);
     DropsLoc(DropsLoc>NGuidePlies) = [];                                    % remove Infeasible Drops (only for variable Nply)
 
     FiberAngles = Convert_dvAngles2FiberAngles(GuideAngles,DropsLoc,ShuffleLoc,LamType);
@@ -123,7 +126,7 @@ end
 
 % revert both sorting at once
 [~,RevertSort]    = sort(SortedLamNumber);
-RevertedLamNumber = SortedLamNumber(RevertSort);
+% RevertedLamNumber = SortedLamNumber(RevertSort);
 SS = SS(RevertSort);
 
 if strcmp(Objectives.Type,'LP')
@@ -162,7 +165,4 @@ end
 output.SS          = SS;
 output.DropIndexes = DropIndexes;
 output.FEASIBLE    = FEASIBLE;
-
-end
-
 

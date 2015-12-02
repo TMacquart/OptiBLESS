@@ -63,19 +63,23 @@ function [output] = RetrieveSS(Objectives,Constraints,GAoptions)
 
 
 %% Set GA, see --- doc gaoptimset --- for more option
-options  = gaoptimset('PopulationSize',GAoptions.Npop,...
+ options  = gaoptimset('PopulationSize',GAoptions.Npop,...
                       'Generation',GAoptions.Ngen, ...
                       'StallGenLimit',GAoptions.NgenMin, ...                    % Minimum Number of Generation computed
                       'EliteCount',ceil(GAoptions.Elitism*GAoptions.Npop),...   % Elitism
                       'FitnessLimit' ,1e-5,...                                  % Stoping fitness criterion
                       'TolFun' ,1e-10,...                                       % Stoping change in fitness criterion
-                      'CrossoverFraction',GAoptions.PC, ...                     % crossover fraction
-                      'PlotFcns' ,{GAoptions.PlotFct});                       
+                      'CrossoverFraction',GAoptions.PC,...                      % crossover fraction
+                      'PlotInterval',GAoptions.PlotInterval);
                   
-% if GAoptions.Plot
-%     options  = gaoptimset(options,'PlotFcns' ,{GAoptions.PlotFct});                  % Plot function used
-% end
+if ~isempty(GAoptions.SaveInterval)
+    options  = gaoptimset(options,'OutputFcns',{@(options,state,flag)GAoptions.OutputFct(options,state,flag,GAoptions.SaveInterval)});  % Output function used  
+end                                                  
+if ~isempty(GAoptions.PlotInterval)
+    options  = gaoptimset(options,'PlotFcns',{GAoptions.PlotFct});              % Plot function used  
+end
 
+    
 
 % Handle of the fitness function 
 fct_handle = @(x)Eval_Fitness(x,Objectives,Constraints,NpatchVar,NthetaVar,AllowedNplies,LamType);  
@@ -177,4 +181,4 @@ output.fval      = fval;                                                    % Fi
 if ~output.FEASIBLE,  
     warning('Not a single feasible solution has been found!');
 end
-end
+

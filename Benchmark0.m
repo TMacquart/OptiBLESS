@@ -60,7 +60,7 @@ ply_t = 0.000127;
 
 
 
-GuideLamDv = [-45 0 45 90 0 -45  90 45 0 -45 0 45];                           % theta 3
+GuideLamDv = [ 45   -45    90     0    45    90     0    45];                           
 
 %% Balanced Symmetric
 % GuideLamDv = [+45 0 -45 90];                                                   % theta 1
@@ -87,7 +87,7 @@ GuideLamDv = [-45 0 45 90 0 -45  90 45 0 -45 0 45];                           % 
 
 %%
 % GuideLamDv = [-90 -45 -45];
-Drops      = [{[2 11]} {[6 12]}] % [{[4 6 7 8]}] %[{[4 5 6 11 15 17 20]}]%[{[2 3 8]}]; %[2 4 6];
+Drops      = [{}] %[{[2 11]} {[6 12]}] % [{[4 6 7 8]}] %[{[4 5 6 11 15 17 20]}]%[{[2 3 8]}]; %[2 4 6];
 % GuideLam   = [GuideLamDv, fliplr(GuideLamDv)];
 % GuideLam   = [GuideLamDv, -GuideLamDv];
 % GuideLam   = [GuideLamDv, -GuideLamDv, fliplr([GuideLamDv, -GuideLamDv])]'; % balanced/symetric
@@ -102,7 +102,7 @@ for i = 1:NUniqueLam
         Lam(DropsLoc) = [];   
     end
     
-    Lam = [Lam, fliplr(Lam)];
+%     Lam = [Lam, fliplr(Lam)];
        
 %     Lam = [Lam, -Lam]'; % balanced/symetric 
 %     Lam = [Lam, -Lam, fliplr([Lam, -Lam])]'; % balanced/symetric 
