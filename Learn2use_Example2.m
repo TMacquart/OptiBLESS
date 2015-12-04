@@ -36,23 +36,6 @@ clear all; clc; format short g; format compact; close all;
 addpath ./FitnessFcts
 addpath ./StiffnessOpt
 
-global Pop
-
-if 0
-    for i=1:length(Pop)
-        MeanNply(i) = mean(Pop{i}(:,1));
-        StdNply(i) = std(Pop{i}(:,1));
-        
-        MeanTheta1(i) = mean(Pop{i}(:,2));
-        StdTheta1(i) = std(Pop{i}(:,2));
-    end
-    figure
-    hold all
-%     plot(MeanTheta1)
-%     plot(StdTheta1)
-    plot(MeanNply)
-    plot(StdNply)
-end
 
 % --- bottom [ 45   -45    90     0    45    90     0    45] Top
 % with   
@@ -104,22 +87,28 @@ Constraints.Sym        = false;
 % ---
 GAoptions.Npop    = 100; 	   % Population size
 GAoptions.Ngen    = 500; 	   % Number of generations
-GAoptions.NgenMin = 250; 	   % Minimum number of generation calculated
+GAoptions.NgenMin = 500; 	   % Minimum number of generation calculated
 GAoptions.Elitism = 0.01; 	   % Percentage of elite passing to the next Gen.
-GAoptions.PC      = 0.5; 	   % Percentage of crossover
-GAoptions.Plot    = true; 	   % Plot Boolean
+GAoptions.PC      = 0.75; 	   % Percentage of crossover
 
+GAoptions.PlotInterval = [10];                  % Refresh plot every X itterations         
+GAoptions.SaveInterval = [];                  % Save Data every X itterations   
+GAoptions.PlotFct      = @gaplotbestf;          % Refresh plot every X itterations
+GAoptions.OutputFct    = @GACustomOutput;
 
 
 % ---
-[output_Match]  = RetrieveSS(Objectives,Constraints,GAoptions);
+[Output]  = RetrieveSS(Objectives,Constraints,GAoptions);
 
-display(output_Match)
-display(output_Match.Table)
+display(Output)
+display(Output.Table)
 
-% --- Back from SS 2 ABD
-for i = 1:length(output_Match.SS)
-    [AOpt{i},BOpt{i},DOpt{i}] = Convert_SS2ABD(E1,E2,v12,G12,tply,output_Match.SS{i},true);                       %#ok<SAGROW>
+%% Plot
+plotSS(Output)
+
+%% --- Back from SS 2 ABD
+for i = 1:length(Output.SS)
+    [AOpt{i},BOpt{i},DOpt{i}] = Convert_SS2ABD(E1,E2,v12,G12,tply,Output.SS{i},true);                       %#ok<SAGROW>
 end
 
 A2Match{i}

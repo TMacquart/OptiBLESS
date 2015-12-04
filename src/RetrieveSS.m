@@ -135,6 +135,7 @@ end
 
 if strcmp(Objectives.Type,'ABD')
 
+    
     Table = [{'Lam #'} {'Nplies SST'} {'Ply Angles'} {'A2Match'} {'AOpt'} {'Error % A'} {'Error Norm A'} {'Error RMS A'} ...
             {'B2Match'} {'BOpt'} {'Error % B'} {'Error Norm B'} {'Error RMS B'} ...
             {'D2Match'} {'DOpt'} {'Error % D'} {'Error Norm D'} {'Error RMS D'}];
@@ -162,7 +163,7 @@ if strcmp(Objectives.Type,'ABD')
         QualIndex2D = norm( DScaling(:).*(D_Matched(:) - D2Match(:)) );
         QualIndex3D = rms(  DScaling(:).*(D_Matched(:) - D2Match(:)) );
         
-        Table = [Table ;  {j} {length(SS{j})} SS(j) ...                                      
+        Table = [Table ;  {j} {length(output.SS{j})} output.SS(j) ...                                      
                     {A2Match} {A_Matched} {QualIndex1A} {QualIndex2A} {QualIndex3A}...
                     {B2Match} {B_Matched} {QualIndex1B} {QualIndex2B} {QualIndex3B} ...
                     {D2Match} {D_Matched} {QualIndex1D} {QualIndex2D} {QualIndex3D}];               %#ok<AGROW>
@@ -176,7 +177,7 @@ output.NGen      = OutputGA.generations;                                    % Nu
 output.Table     = Table;                                                   % Table sumarising results
 output.xOpt      = xOpt;                                                    % Genotype of the best found individual
 output.fval      = fval;                                                    % Fintess value of the best found individual
-
+output.LamType   = LamType;
 
 if ~output.FEASIBLE,  
     warning('Not a single feasible solution has been found!');

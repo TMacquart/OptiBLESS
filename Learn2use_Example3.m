@@ -34,6 +34,7 @@ clear all; clc; format short g; format compact; close all;
 
 addpath ./StiffnessOpt
 addpath ./FitnessFcts
+addpath ./VisualGUI
 
 % GuideLamDv = [-45 0 45 90 0  -45  45  90  -45  45];    
 % Lam1       = [    0    90 0  -45  45  90  -45  45];   
@@ -81,9 +82,12 @@ GAoptions.Npop    = 100; 	   % Population size
 GAoptions.Ngen    = 500; 	   % Number of generations
 GAoptions.NgenMin = 500; 	   % Minimum number of generation calculated
 GAoptions.Elitism = 0.075; 	   % Percentage of elite passing to the next Gen.
-GAoptions.Plot    = true; 	   % Plot Boolean
 GAoptions.PC      = 0.75; 	   % Plot Boolean
 
+GAoptions.PlotInterval = [10];                  % Refresh plot every X itterations         
+GAoptions.SaveInterval = [];                  % Save Data every X itterations   
+GAoptions.PlotFct      = @gaplotbestf;          % Refresh plot every X itterations
+GAoptions.OutputFct    = @GACustomOutput;
 
 
 % ---
@@ -91,3 +95,7 @@ GAoptions.PC      = 0.75; 	   % Plot Boolean
 
 display(Output)
 display(Output.Table)
+
+%% Plot
+plotSS(Output,3)
+

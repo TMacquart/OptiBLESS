@@ -52,6 +52,7 @@ if 0
 end
 
 addpath ./FitnessFcts
+addpath ./src
 
 % --- Creating a real SS to match
 Objectives.Table   = [{'Laminate Index'} {'Nplies'} {'LP2Match'} {'Importance'}];
@@ -66,7 +67,7 @@ GuideLamDv = [ 45   -45    90     0    45    90     0    45];
 % GuideLamDv = [+45 0 -45 90];                                                   % theta 1
 % GuideLamDv = [+45 0 -45 90 45 0 -45 0];                                        % theta 2
 % GuideLamDv = [-45 0 45  90 0  -45  45  90  -45  45];                           % theta 3
-% GuideLamDv = [0 -45 45 45 -45   0 45 90  90 0 -45 45 0  -45 45 90 90 -45 0   0]; % theta 4
+GuideLamDv = [0 -45 45 45 -45   0 45 90  90 0 -45 45 0  -45 45 90 90 -45 0   0]; % theta 4
 % GuideLam   = [GuideLamDv, fliplr(GuideLamDv)];
 
 %% Symmetric 
@@ -87,7 +88,7 @@ GuideLamDv = [ 45   -45    90     0    45    90     0    45];
 
 %%
 % GuideLamDv = [-90 -45 -45];
-Drops      = [{}] %[{[2 11]} {[6 12]}] % [{[4 6 7 8]}] %[{[4 5 6 11 15 17 20]}]%[{[2 3 8]}]; %[2 4 6];
+Drops      = [{2 4 6 7 8}]%[{[1 3]}] %[{[2 11]} {[6 12]}] % [{[4 6 7 8]}] %[{[4 5 6 11 15 17 20]}]%[{[2 3 8]}]; %[2 4 6];
 % GuideLam   = [GuideLamDv, fliplr(GuideLamDv)];
 % GuideLam   = [GuideLamDv, -GuideLamDv];
 % GuideLam   = [GuideLamDv, -GuideLamDv, fliplr([GuideLamDv, -GuideLamDv])]'; % balanced/symetric
@@ -102,23 +103,24 @@ for i = 1:NUniqueLam
         Lam(DropsLoc) = [];   
     end
     
-%     Lam = [Lam, fliplr(Lam)];
+     Lam = [Lam, fliplr(Lam)];
        
 %     Lam = [Lam, -Lam]'; % balanced/symetric 
-%     Lam = [Lam, -Lam, fliplr([Lam, -Lam])]'; % balanced/symetric 
+%     Lam = [Lam, -Lam, fliplr([Lam, -Laplm])]'; % balanced/symetric 
 %     keyboard
     Lp2Match(:,i)    = Convert_SS2LP(Lam);
-    Objectives.Table = [Objectives.Table; [{i} {[1 2]*length(Lam)} {Lp2Match(:,i)} {ScalingCoef}]];
+    Objectives.Table = [Objectives.Table; [{i} {[1 1]*length(Lam)} {Lp2Match(:,i)} {ScalingCoef}]];
 end
 
 Objectives.Type        = 'LP';
-Objectives.FitnessFct = @(LP) RMSE_MaxAE_LP(LP,Objectives);
-fr
+% Objectives.FitnessFct = @(LP) RMSE_MaxAE_LP(LP,Objectives);
+Objectives.FitnessFct = @(LP) RMSE_LP(LP,Objectives);
+
 % =========================== Default Options =========================== %
 
 %                        [Damtol  Rule10percent  Disorientation  Contiguity   BalancedIndirect  InernalContinuity  Covering  ];
-Constraints.Vector     = [false       false          false          false         false            false            false       ];
-Constraints.DeltaAngle = 45;
+Constraints.Vector     = [false       false          true          false         false            false            false       ];
+Constraints.DeltaAngle = 5;
 Constraints.ply_t      = ply_t;      % ply thickness
 Constraints.Balanced   = false;      % Direct Constraint Handling
 Constraints.Sym        = true; 
@@ -127,16 +129,20 @@ Constraints.ORDERED    = false;
 
 
 % ---
-GAoptions.Npop    = 200; 	   % Population size
+GAoptions.Npop    = 100; 	   % Population size
 GAoptions.Ngen    = 500; 	   % Number of generations
 GAoptions.NgenMin = 500; 	   % Minimum number of generation calculated
 GAoptions.Elitism = 0.075; 	   % Percentage of elite passing to the next Gen.
-GAoptions.Plot    = true; 	   % Plot Boolean
-GAoptions.PC      = 0.55;
+GAoptions.PC      = 0.75;
+
+GAoptions.PlotInterval = [10];                  % Refresh plot every X itterations         
+GAoptions.SaveInterval = [];                  % Save Data every X itterations   
+GAoptions.PlotFct      = @gaplotbestf;          % Refresh plot every X itterations
+GAoptions.OutputFct    = @GACustomOutput;
 
 % ---
 Nrun = 1
-output_Match = cell(1,Nrun);
+Output = cell(1,Nrun);
 feasible     = zeros(1,Nrun);
 fval         = zeros(1,Nrun);
 MeanRMS      = zeros(1,Nrun);
@@ -147,17 +153,17 @@ MeanNorm     = zeros(1,Nrun);
 
 for i = 1:Nrun
     display(i)
-    [output_Match{i}] = RetrieveSS(Objectives,Constraints,GAoptions);
-    feasible(i)       = output_Match{i}.FEASIBLE;
-    fval(i)           = output_Match{i}.fval;
+    [Output{i}] = RetrieveSS(Objectives,Constraints,GAoptions);
+    feasible(i)       = Output{i}.FEASIBLE;
+    fval(i)           = Output{i}.fval;
     
-    MeanNormE(i)      = mean(cell2mat(output_Match{i}.Table(2:end,end-3)));
-    MeanRMSE(i)       = mean(cell2mat(output_Match{i}.Table(2:end,end-2)));
-    MeanMAE(i)        = mean(cell2mat(output_Match{i}.Table(2:end,end-1)));
-    MeanMaxAE(i)      = mean(cell2mat(output_Match{i}.Table(2:end,end)));
+    MeanNormE(i)      = mean(cell2mat(Output{i}.Table(2:end,end-3)));
+    MeanRMSE(i)       = mean(cell2mat(Output{i}.Table(2:end,end-2)));
+    MeanMAE(i)        = mean(cell2mat(Output{i}.Table(2:end,end-1)));
+    MeanMaxAE(i)      = mean(cell2mat(Output{i}.Table(2:end,end)));
     
-    NFctEval(i)       = output_Match{i}.NfctEval;  
-    Ngens(i)          = output_Match{i}.NGen; 
+    NFctEval(i)       = Output{i}.NfctEval;  
+    Ngens(i)          = Output{i}.NGen; 
     display(fval(i))
 end
 
@@ -198,3 +204,8 @@ for i = 2:size(Objectives.Table,1)
         error('non matching norm')
     end
 end
+
+
+%% Plot
+addpath ./VisualGUI
+plotSS(Output{1})

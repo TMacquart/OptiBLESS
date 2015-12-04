@@ -34,24 +34,8 @@
 clear all; clc; format short g; format compact; close all;
 
 addpath ./FitnessFcts
+addpath ./VisualGUI
 
-global Pop
-
-if 0
-    for i=1:length(Pop)
-        MeanNply(i) = mean(Pop{i}(:,1));
-        StdNply(i) = std(Pop{i}(:,1));
-        
-        MeanTheta1(i) = mean(Pop{i}(:,2));
-        StdTheta1(i) = std(Pop{i}(:,2));
-    end
-    figure
-    hold all
-%     plot(MeanTheta1)
-%     plot(StdTheta1)
-    plot(MeanNply)
-    plot(StdNply)
-end
 
 % --- bottom [ 45   -45    90     0    45    90     0    45] Top
 Lp2Match = [
@@ -95,7 +79,11 @@ GAoptions.Ngen    = 100; 	   % Number of generations
 GAoptions.NgenMin = 100; 	   % Minimum number of generation calculated
 GAoptions.Elitism = 0.01; 	   % Percentage of elite passing to the next Gen.
 GAoptions.PC      = 0.75; 	   % Percentage of crossover
-GAoptions.Plot    = false; 	   % Plot Boolean
+
+GAoptions.PlotInterval = [10];                  % Refresh plot every X itterations         
+GAoptions.SaveInterval = [];                  % Save Data every X itterations   
+GAoptions.PlotFct      = @gaplotbestf;          % Refresh plot every X itterations
+GAoptions.OutputFct    = @GACustomOutput;
 
 
 
@@ -104,6 +92,9 @@ GAoptions.Plot    = false; 	   % Plot Boolean
 
 display(Output)
 display(Output.Table)
+
+%% Plot
+plotSS(Output)
 
 %% Checking output results are correct
 ScalingCoef = reshape(cell2mat(Objectives.Table(2:end,4)),12,size(Objectives.Table,1)-1);

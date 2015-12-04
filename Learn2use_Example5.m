@@ -82,9 +82,12 @@ GAoptions.Npop    = 200; 	   % Population size
 GAoptions.Ngen    = 500; 	   % Number of generations
 GAoptions.NgenMin = 500; 	   % Minimum number of generation calculated
 GAoptions.Elitism = 0.075; 	   % Percentage of elite passing to the next Gen.
-GAoptions.Plot    = true; 	   % Plot Boolean
 GAoptions.PC      = 0.75; 	   % Plot Boolean
 
+GAoptions.PlotInterval = [];                  % Refresh plot every X itterations         
+GAoptions.SaveInterval = [];                  % Save Data every X itterations   
+GAoptions.PlotFct      = @gaplotbestf;          % Refresh plot every X itterations
+GAoptions.OutputFct    = @GACustomOutput;
 
 
 % ---
@@ -92,3 +95,6 @@ GAoptions.PC      = 0.75; 	   % Plot Boolean
 
 display(Output)
 display(Output.Table)
+
+%% Plot
+plotSS(Output,2)

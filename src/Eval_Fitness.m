@@ -99,6 +99,9 @@ if strcmp(Objectives.Type,'LP')
     LP(:,1) = Convert_SS2LP(FiberAngles);            % evaluate lamination parameters for the guide
 end
 if strcmp(Objectives.Type,'ABD')
+    A = cell(Ndrop+1,1);
+    B = cell(Ndrop+1,1);
+    D = cell(Ndrop+1,1);
     [A{1},B{1},D{1}] = Convert_SS2ABD (Objectives.mat(1),Objectives.mat(2),Objectives.mat(4),Objectives.mat(3),Constraints.ply_t,FiberAngles,true);
 end
 
