@@ -99,8 +99,11 @@ for i = 1:5
     end
 end
 %  IniPop(1,:) = [(90+[-45 0 45 90 0  -45  45  90  -45  45])/Constraints.DeltaAngle [1 3 6 7] []]
-options = gaoptimset(options,'InitialPopulation' ,IniPop);
 
+%  IniPop(1,:) = [40*ones(1,18) zeros(1,70)]
+
+% keyboard
+options = gaoptimset(options,'InitialPopulation' ,IniPop);
 
 
 %% run GA
@@ -130,6 +133,8 @@ if strcmp(Objectives.Type,'LP')
         
         Table = [Table ;  {j} {length(output.SS{j})} output.SS(j) {LP2Match} {LPMatched(:,j)} {QualIndex1} {QualIndex2} {QualIndex3} {QualIndex4}]; %#ok<AGROW>
     end
+    
+    output.Table     = Table;                                                   % Table sumarising results
 end
 
 
@@ -168,13 +173,14 @@ if strcmp(Objectives.Type,'ABD')
                     {B2Match} {B_Matched} {QualIndex1B} {QualIndex2B} {QualIndex3B} ...
                     {D2Match} {D_Matched} {QualIndex1D} {QualIndex2D} {QualIndex3D}];               %#ok<AGROW>
     end
-
+    
+    output.Table     = Table;                                                   % Table sumarising results
 end
+
 
 
 output.NfctEval  = OutputGA.funccount;                                      % Number of function evaluation that have been computed
 output.NGen      = OutputGA.generations;                                    % Number of generation computed
-output.Table     = Table;                                                   % Table sumarising results
 output.xOpt      = xOpt;                                                    % Genotype of the best found individual
 output.fval      = fval;                                                    % Fintess value of the best found individual
 output.LamType   = LamType;

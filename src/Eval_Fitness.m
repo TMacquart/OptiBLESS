@@ -125,11 +125,9 @@ for iDrop = 1 : Ndrop
     end
 end
 
-% keyboard
 
 % revert both sorting at once
 [~,RevertSort]    = sort(SortedLamNumber);
-% RevertedLamNumber = SortedLamNumber(RevertSort);
 SS = SS(RevertSort);
 
 if strcmp(Objectives.Type,'LP')
@@ -143,7 +141,7 @@ if strcmp(Objectives.Type,'ABD')
     fitness = Objectives.FitnessFct(A,B,D);
 end
 if strcmp(Objectives.Type,'SS')
-    fitness = Objectives.FitnessFct(SS);
+    [fitness,output] = Objectives.FitnessFct(SS);
 end
 
 

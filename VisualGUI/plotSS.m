@@ -12,14 +12,18 @@ Map(:,3) = -90:180/(size(Map,1)-1):90;
 
 % Reconstruct Stacking Sequences
 NUniqueLam  = length(Output.SS);
+NPliesLam   = cellfun(@length,Output.SS);
+[NGuide,GuideIndex] = max(NPliesLam);
+GuideAngles = num2cell(Output.SS{GuideIndex});
+
 
 for i = 1:NUniqueLam
-    if i == 1
-        SS{1} = num2cell(Output.SS{1});    
+    if i == GuideIndex || NPliesLam(i) == NGuide 
+        SS{i} = GuideAngles;    
     else 
         index = 1;
-        for j=1:length(SS{1})
-            if SS{1}{j} == Output.SS{i}(index)
+        for j=1:NGuide
+            if index<=NPliesLam(i) && GuideAngles{j} == Output.SS{i}(index)
                 SS{i}{j} = Output.SS{i}(index);
                 index = index +1;
             else
