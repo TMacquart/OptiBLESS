@@ -8,12 +8,11 @@ clear all; close all force; clc; format short g; format compact;
 addpath ./FitnessFcts
 addpath ./src
 addpath ./VisualGUI
-addpath ./HorseShoeOpt
 addpath ./StiffnessOpt
 
 Objectives.Table   = [{'Laminate #'}  {'Nplies [LB UB]'}];
 for i=1:18
-    Objectives.Table = [Objectives.Table; {i}  {[20 40]}];
+    Objectives.Table = [Objectives.Table; {i}  {[10 40]}];
 end
                         
 % ---
@@ -29,6 +28,70 @@ if 1    % Problem definition
     Parameters.v12         = 0.32;
     Parameters.ply_t       = 0.0075;
     Parameters.ply_tMax    = 0.0075 *100;
+    Parameters.rho         = 0.056999; % density (lb/inch^3) == 1577.727kg/m^3
+    
+    NormD = [12 18 20 24]/12;
+    if 1
+        PatchXYZ{1}.X = [0  1.5 1.5  0];
+        PatchXYZ{1}.Y = [-2 -2  0    0];
+        
+        PatchXYZ{2}.X = 1.5+[0  1.5 1.5  0];
+        PatchXYZ{2}.Y = [-2 -2  0    0];
+        
+        PatchXYZ{3}.X = 3+[0  1.6667 1.6667  0];
+        PatchXYZ{3}.Y = [-1 -1  0    0];
+        
+        PatchXYZ{4}.X = 4.6667+[0  1.6667 1.6667  0];
+        PatchXYZ{4}.Y = [-1 -1  0    0];
+        
+        PatchXYZ{5}.X = 6.3334+[0  1.6667 1.6667  0];
+        PatchXYZ{5}.Y = [-1 -1  0    0];
+        
+        PatchXYZ{6}.X = 3+[0  1.6667 1.6667  0];
+        PatchXYZ{6}.Y = [-2 -2  -1    -1];
+        
+        PatchXYZ{7}.X = 4.6667+[0  1.6667 1.6667  0];
+        PatchXYZ{7}.Y = [-2 -2  -1    -1];
+        
+        PatchXYZ{8}.X = 6.3334+[0  1.6667 1.6667  0];
+        PatchXYZ{8}.Y = [-2 -2  -1    -1];
+        
+        PatchXYZ{9}.X = [0  1.5 1.5  0];
+        PatchXYZ{9}.Y = [-4 -4  -2    -2];
+        
+        PatchXYZ{10}.X = 1.5+[0  1.5 1.5  0];
+        PatchXYZ{10}.Y = [-4 -4  -2    -2];
+        
+        PatchXYZ{11}.X = [0  1.5 1.5  0];
+        PatchXYZ{11}.Y = [-6 -6  -4    -4];
+        
+        PatchXYZ{12}.X = 1.5+[0  1.5 1.5  0];
+        PatchXYZ{12}.Y = [-6 -6  -4    -4];
+        
+        
+        PatchXYZ{13}.X = 3+[0  1.6667 1.6667  0];
+        PatchXYZ{13}.Y = -4+[-1 -1  0    0];
+        
+        PatchXYZ{14}.X = 4.6667+[0  1.6667 1.6667  0];
+        PatchXYZ{14}.Y = -4+[-1 -1  0    0];
+        
+        PatchXYZ{15}.X = 6.3334+[0  1.6667 1.6667  0];
+        PatchXYZ{15}.Y = -4+[-1 -1  0    0];
+        
+        PatchXYZ{16}.X = 3+[0  1.6667 1.6667  0];
+        PatchXYZ{16}.Y = -4+[-2 -2  -1    -1];
+        
+        PatchXYZ{17}.X = 4.6667+[0  1.6667 1.6667  0];
+        PatchXYZ{17}.Y = -4+[-2 -2  -1    -1];
+        
+        PatchXYZ{18}.X = 6.3334+[0  1.6667 1.6667  0];
+        PatchXYZ{18}.Y = -4+[-2 -2  -1    -1];
+        
+    end
+    
+    for i=1:18
+        PatchXYZ{i}.Z = [0 0 0 0];
+    end
     
     Parameters.mMax = 1;
     Parameters.nMax = 1;
@@ -53,35 +116,27 @@ if 1    % Problem definition
         0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 1
         0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 1 0];
     
-    
-    % --- for gradients
-    v21 = Parameters.v12*Parameters.E2/Parameters.E1;
-    Q11 = Parameters.E1/(1-Parameters.v12*v21);
-    Q22 = Parameters.E2/(1-Parameters.v12*v21);
-    Q12 = Parameters.v12*Parameters.E2/(1-Parameters.v12*v21);
-    Q66 = Parameters.G12;
-
 end
 
 
 Objectives.Type       = 'SS'; 
-Objectives.FitnessFct = @(SS)  EvaluationFct(SS,Parameters);
+Objectives.FitnessFct = @(SS)  HS_EvaluationFct(SS,Parameters);
 
 
 % ---
 Constraints.Vector     = [false       false          false          false         false            false            false];
-Constraints.DeltaAngle = 45;
+Constraints.DeltaAngle = 15;
 Constraints.ORDERED    = false;                         
-Constraints.Balanced   = true; 
+Constraints.Balanced   = false; 
 Constraints.Sym        = true; 
 
 
 % ---
-GAoptions.Npop    = 100; 	   % Population size
-GAoptions.Ngen    = 500; 	   % Number of generations
-GAoptions.NgenMin = 500; 	   % Minimum number of generation calculated
+GAoptions.Npop    = 250; 	   % Population size
+GAoptions.Ngen    = 5000; 	   % Number of generations
+GAoptions.NgenMin = 5000; 	   % Minimum number of generation calculated
 GAoptions.Elitism = 0.05; 	   % Percentage of elite passing to the next Gen.
-GAoptions.PC      = 0.75; 	   
+GAoptions.PC      = 0.5; 	   
 
 GAoptions.PlotInterval = [10];                  % Refresh plot every X itterations         
 GAoptions.SaveInterval = [];                  % Save Data every X itterations   
@@ -93,4 +148,10 @@ GAoptions.OutputFct    = @GACustomOutput;
 [Output] = RetrieveSS(Objectives,Constraints,GAoptions);
 
 % --- 
-plotSS(Output,2)
+plotSS(Output,3,PatchXYZ)
+
+
+% ---
+Parameters.mMax = 2;
+Parameters.nMax = 2;
+[Fitness2,output2] = HS_EvaluationFct(Output.SS,Parameters)

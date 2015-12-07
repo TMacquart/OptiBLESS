@@ -34,6 +34,7 @@
 clear all; clc; format short g; format compact; close all;
 
 addpath ./FitnessFcts
+addpath ./src
 
 % ---
 Lp2Match = [
@@ -59,7 +60,7 @@ Objectives.Table   = [{'Laminate #'}  {'Nplies [LB UB]'}    {'LP2Match'}     {'S
 
                         
 Objectives.Type       = 'LP'; 
-Objectives.FitnessFct = @(LP) RMSE_MMaxAE_LP(LP,Objectives);
+Objectives.FitnessFct = @(LP) RMSE_MaxAE_LP(LP,Objectives);
 
 % =========================== Default Options =========================== %
 
@@ -78,8 +79,12 @@ GAoptions.Npop    = 100; 	   % Population size
 GAoptions.Ngen    = 250; 	   % Number of generations
 GAoptions.NgenMin = 250; 	   % Minimum number of generation calculated
 GAoptions.Elitism = 0.05; 	   % Percentage of elite passing to the next Gen.
-GAoptions.Plot    = true; 	   % Plot Boolean
 GAoptions.PC      = 0.5; 	   
+
+GAoptions.PlotInterval = [10];                  % Refresh plot every X itterations         
+GAoptions.SaveInterval = [];                  % Save Data every X itterations   
+GAoptions.PlotFct      = @gaplotbestf;          % Refresh plot every X itterations
+GAoptions.OutputFct    = @GACustomOutput;
 
 
 % ---

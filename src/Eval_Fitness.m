@@ -137,13 +137,21 @@ SS = SS(RevertSort);
 if strcmp(Objectives.Type,'LP')
     LP = LP(:,RevertSort);
     fitness = Objectives.FitnessFct(LP);
+    
+    output.LP = LP;
 end
+
 if strcmp(Objectives.Type,'ABD')
     A = A(RevertSort);
     B = B(RevertSort);
     D = D(RevertSort);
     fitness = Objectives.FitnessFct(A,B,D);
+    
+    output.A  = A;
+    output.B  = B;
+    output.D  = D;
 end
+
 if strcmp(Objectives.Type,'SS')
     [fitness,output] = Objectives.FitnessFct(SS);
 end
@@ -157,15 +165,6 @@ if ~FEASIBLE  % add penalty if not FEASIBLE
 end
 
 
-
-if strcmp(Objectives.Type,'ABD')
-    output.A  = A;
-    output.B  = B;
-    output.D  = D;
-end
-if strcmp(Objectives.Type,'LP')
-    output.LP = LP;
-end
 
 output.SS          = SS;
 output.DropIndexes = DropIndexes;

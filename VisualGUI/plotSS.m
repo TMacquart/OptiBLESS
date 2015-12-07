@@ -8,7 +8,12 @@ zlabel('Ply #')
 hold all
 
 Map = colormap(pmkmp(19,'CubicYF'));
-Map(:,3) = -90:180/(size(Map,1)-1):90;
+caxis([-90 90])
+colormap(Map); 
+h = colorbar;
+set(h, 'ticks', [-90:10:90])
+set(h, 'ylim', [-90 90])
+
 
 % Reconstruct Stacking Sequences
 NUniqueLam  = length(Output.SS);
@@ -94,9 +99,6 @@ if Dim == 3 % 3D
     view(3)
 end
 
-h=colorbar;
-set(h, 'ylim', [-90 90])
-set(h, 'ticks', [-90:10:90])
 b = uicontrol('Parent',Fig,'Style','slider','units','normalized','Position',[0.9,0.125,0.025,0.75],...
               'value',length(SS{j}), 'min',0, 'max',length(SS{j}),'Callback', @(es,ed) setOpacity(es,ed,Fig,F));
           
