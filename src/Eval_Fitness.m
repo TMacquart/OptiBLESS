@@ -41,7 +41,11 @@ function [fitness,output] = Eval_Fitness (Individual,Objectives,Constraints,Npat
 
 
 FEASIBLE  = true; 
-LamNumber = cell2mat(Objectives.Table(2:end,1));
+Nlam      = size(Objectives.Table,1)-1;
+LamNumber = int8(zeros(Nlam,1));
+for j=1:Nlam
+    LamNumber(j) = Objectives.Table{j+1,1}; 
+end
 
 
 [SortedLamNumber,GuideAngles,ShuffleLoc,DropIndexes] = Convert_Genotype(Individual,LamNumber,Constraints,NpatchVar,NthetaVar,AllowedNplies);

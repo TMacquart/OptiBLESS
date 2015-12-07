@@ -68,12 +68,12 @@ GuideLamDv = [ 45   -45    90     0    45    90     0    45];
 % GuideLamDv = [+45 0 -45 90 45 0 -45 0];                                        % theta 2
 % GuideLamDv = [-45 0 45  90 0  -45  45  90  -45  45];                           % theta 3
 GuideLamDv = [0 -45 45 45 -45   0 45 90  90 0 -45 45 0  -45 45 90 90 -45 0   0]; % theta 4
-% GuideLam   = [GuideLamDv, fliplr(GuideLamDv)];
+
 
 %% Symmetric 
 % GuideLamDv = [45   -15    30   -55    40   -80   -40   -80   -70    60];                                                              % theta 5
 % GuideLamDv = [40   -30    85   -80   -10   -20    50    55   -55     0  -5    30    40    50   -40    35    30   -60   -65     0];    % theta 6
-% GuideLam   = [GuideLamDv, fliplr(GuideLamDv)];
+
 
 %% Balanced
 % GuideLamDv = [0 30 -40 -30 85 -85 40 -70 70 0];                                                                                       % theta 7
@@ -88,7 +88,7 @@ GuideLamDv = [0 -45 45 45 -45   0 45 90  90 0 -45 45 0  -45 45 90 90 -45 0   0];
 
 %%
 % GuideLamDv = [-90 -45 -45];
-Drops      = [{2 4 6 7 8}]%[{[1 3]}] %[{[2 11]} {[6 12]}] % [{[4 6 7 8]}] %[{[4 5 6 11 15 17 20]}]%[{[2 3 8]}]; %[2 4 6];
+Drops        =  [{4}] %[{[7 8 9 15 16 17]}] %[{[2 11]} {[6 12]}] % [{[4 6 7 8]}] %[{[4 5 6 11 15 17 20]}]%[{[2 3 8]}]; %[2 4 6];
 % GuideLam   = [GuideLamDv, fliplr(GuideLamDv)];
 % GuideLam   = [GuideLamDv, -GuideLamDv];
 % GuideLam   = [GuideLamDv, -GuideLamDv, fliplr([GuideLamDv, -GuideLamDv])]'; % balanced/symetric
@@ -103,23 +103,21 @@ for i = 1:NUniqueLam
         Lam(DropsLoc) = [];   
     end
     
-     Lam = [Lam, fliplr(Lam)];
+    Lam = [Lam, fliplr(Lam)];
        
-%     Lam = [Lam, -Lam]'; % balanced/symetric 
-%     Lam = [Lam, -Lam, fliplr([Lam, -Laplm])]'; % balanced/symetric 
-%     keyboard
     Lp2Match(:,i)    = Convert_SS2LP(Lam);
     Objectives.Table = [Objectives.Table; [{i} {[1 1]*length(Lam)} {Lp2Match(:,i)} {ScalingCoef}]];
 end
 
 Objectives.Type        = 'LP';
-% Objectives.FitnessFct = @(LP) RMSE_MaxAE_LP(LP,Objectives);
-Objectives.FitnessFct = @(LP) RMSE_LP(LP,Objectives);
+Objectives.FitnessFct = @(LP) RMSE_MaxAE_LP(LP,Objectives);
+% Objectives.FitnessFct = @(LP) RMSE_LP(LP,Objectives);
+
 
 % =========================== Default Options =========================== %
 
 %                        [Damtol  Rule10percent  Disorientation  Contiguity   BalancedIndirect  InernalContinuity  Covering  ];
-Constraints.Vector     = [false       false          true          false         false            false            false       ];
+Constraints.Vector     = [false       false          false          false         false            false            false       ];
 Constraints.DeltaAngle = 5;
 Constraints.ply_t      = ply_t;      % ply thickness
 Constraints.Balanced   = false;      % Direct Constraint Handling
@@ -133,16 +131,16 @@ GAoptions.Npop    = 100; 	   % Population size
 GAoptions.Ngen    = 500; 	   % Number of generations
 GAoptions.NgenMin = 500; 	   % Minimum number of generation calculated
 GAoptions.Elitism = 0.075; 	   % Percentage of elite passing to the next Gen.
-GAoptions.PC      = 0.75;
+GAoptions.PC      = 0.80;
 
-GAoptions.PlotInterval = [10];                  % Refresh plot every X itterations         
+GAoptions.PlotInterval = [];                  % Refresh plot every X itterations         
 GAoptions.SaveInterval = [];                  % Save Data every X itterations   
 GAoptions.PlotFct      = @gaplotbestf;          % Refresh plot every X itterations
 GAoptions.OutputFct    = @GACustomOutput;
 
 % ---
-Nrun = 1
-Output = cell(1,Nrun);
+Nrun = 100
+output_Match = cell(1,Nrun);
 feasible     = zeros(1,Nrun);
 fval         = zeros(1,Nrun);
 MeanRMS      = zeros(1,Nrun);
@@ -169,15 +167,15 @@ end
 
 fr
 if 0
-    NormMAE = [[-0.01:0.01:0.1] [0.12 0.14 0.16 0.18 0.2 0.3 0.4 0.5]]
+    Range = [[-0.01:0.01:0.1] [0.12 0.14 0.16 0.18 0.2 0.3 0.4 0.5]]
     figure(2)
-    hist(MeanMAE,NormMAE)
-    [N1,X] = hist(MeanMAE,NormMAE);
-    [N2,X] = hist(MeanMaxAE,NormMAE);
+    hist(MeanMAE,Range)
+    [N1,X] = hist(MeanMAE,Range);
+    [N2,X] = hist(MeanMaxAE,Range);
     [N1' N2'  X']
 
     
-    [[1:Nrun]' fval' NFctEval' Ngens' MeanNorm']
+    [[1:Nrun]' fval' MeanNormE' MeanRMSE' MeanMAE' MeanMaxAE']
 end
 
 % output_Match = output_Match{1}

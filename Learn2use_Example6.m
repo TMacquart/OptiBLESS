@@ -59,8 +59,8 @@ end
 % ---
 
 Objectives.Type       = 'LP';
-Objectives.FitnessFct = @(LP) RMSE_MaxAE_LP(LP,Objectives);
-
+% Objectives.FitnessFct = @(LP) RMSE_MaxAE_LP(LP,Objectives);
+Objectives.FitnessFct = @(LP) RMSE_LP(LP,Objectives);
 
 % =========================== Default Options =========================== %
 
@@ -73,9 +73,9 @@ Constraints.Sym        = false;
 
 
 % ---
-GAoptions.Npop     = 250;      % Population size
-GAoptions.Ngen     = 5000;     % Number of generations
-GAoptions.NgenMin  = 5000;     % Minimum number of generation calculated
+GAoptions.Npop     = 150;      % Population size
+GAoptions.Ngen     = 2000;     % Number of generations
+GAoptions.NgenMin  = 2000;     % Minimum number of generation calculated
 GAoptions.Elitism  = 0.075;   % Percentage of elite passing to the next Gen.
 GAoptions.PC       = 0.75;    % Plot Boolean
 

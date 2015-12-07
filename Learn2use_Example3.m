@@ -85,7 +85,7 @@ GAoptions.Elitism = 0.075; 	   % Percentage of elite passing to the next Gen.
 GAoptions.PC      = 0.75; 	   % Plot Boolean
 
 GAoptions.PlotInterval = [10];                  % Refresh plot every X itterations         
-GAoptions.SaveInterval = [];                  % Save Data every X itterations   
+GAoptions.SaveInterval = [];                    % Save Data every X itterations   
 GAoptions.PlotFct      = @gaplotbestf;          % Refresh plot every X itterations
 GAoptions.OutputFct    = @GACustomOutput;
 
@@ -97,5 +97,25 @@ display(Output)
 display(Output.Table)
 
 %% Plot
-plotSS(Output,3)
+ScalingCoef = reshape(cell2mat(Objectives.Table(2:end,4)),12,size(Objectives.Table,1)-1);
 
+for i = 2:size(Objectives.Table,1)
+    LP2Match = Objectives.Table{i,3};
+    if sum(abs(LP2Match-Output.Table{i,4}))>1e-10
+        error('non matching LP2Match')
+    end
+    
+    LP = Convert_SS2LP(Output.Table{i,3});
+    if sum(abs(LP-Output.Table{i,5}))>1e-10
+        error('non matching SS and LPOpt')
+    end
+    
+    if abs( rms ( (LP-LP2Match).*ScalingCoef(:,i-1) )-Output.Table{i,7})>1e-10
+        error('non matching RSM')
+    end
+    
+    if abs( norm ((LP-LP2Match).*ScalingCoef(:,i-1))-Output.Table{i,6})>1e-10
+        error('non matching norm')
+    end
+    
+end

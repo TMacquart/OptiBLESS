@@ -41,42 +41,10 @@ function [FEASIBLE] = Check_Feasibility(ConstraintVector,GuideAngles,ShuffleLoc,
 
 FEASIBLE = true;
 
-if ConstraintVector(5) % check if balanced for indirect constraint handling
-    % guide
-    [FiberAngles] = Convert_dvAngles2FiberAngles(GuideAngles,[],LamType);
-    UniqueAngle = unique(FiberAngles);
-    UniqueAngle(abs(UniqueAngle)==90) = [];
-    UniqueAngle(UniqueAngle==0)       = [];
-    for j=1:length(UniqueAngle)
-        if length(find(UniqueAngle(j)==FiberAngles)) ~= length(find(-UniqueAngle(j)==FiberAngles))
-            FEASIBLE = false;
-            return
-        end
-    end
-    
-    % guideDroped laminates
-    for iDrop=1:length(DropsIndexes)
-        ply_angles = GuideAngles;
-        DropsLoc = unique(DropsIndexes(1:iDrop));
-        if max(DropsLoc)>NGuidePlies
-            DropsLoc(DropsLoc>NGuidePlies) = [];
-        end
-        
-        ply_angles(DropsLoc(DropsLoc<=length(ply_angles))) = [];  % drop plies
-        FiberAngles      = Convert_dvAngles2FiberAngles(ply_angles,[],LamType);
-        UniqueAngle = unique(FiberAngles);
-        UniqueAngle(abs(UniqueAngle)==90) = [];
-        UniqueAngle(UniqueAngle==0)       = [];
-        
-        for j=1:length(UniqueAngle)
-            if length(find(UniqueAngle(j)==FiberAngles)) ~= length(find(-UniqueAngle(j)==FiberAngles))
-                FEASIBLE = false;
-                return
-            end
-        end
-    end
-end
-
+if (length(DropsIndexes) ~= length(unique(DropsIndexes))),
+    FEASIBLE = false; % penalise GA individual with non-unique ply drops
+    return
+end 
 
 if length(DropsIndexes) ~= sum(NDropPlies)
     FEASIBLE = false; 
@@ -88,13 +56,6 @@ if max(DropsIndexes)>length(GuideAngles)
     FEASIBLE = false; 
     return
 end 
-
-
-if (length(DropsIndexes) ~= length(unique(DropsIndexes))),
-    FEASIBLE = false; % penalise GA individual with non-unique ply drops
-    return
-end 
-
 
 if ConstraintVector(1)
     if abs(GuideAngles(1)) ~= 45
@@ -183,5 +144,44 @@ if (ConstraintVector(7) || ConstraintVector(6)) && ~isempty(DropsIndexes)    % c
         end
     end
 end
+
+
+
+if ConstraintVector(5) % check if balanced for indirect constraint handling
+    % guide
+    [FiberAngles] = Convert_dvAngles2FiberAngles(GuideAngles,[],LamType);
+    UniqueAngle = unique(FiberAngles);
+    UniqueAngle(abs(UniqueAngle)==90) = [];
+    UniqueAngle(UniqueAngle==0)       = [];
+    for j=1:length(UniqueAngle)
+        if length(find(UniqueAngle(j)==FiberAngles)) ~= length(find(-UniqueAngle(j)==FiberAngles))
+            FEASIBLE = false;
+            return
+        end
+    end
+    
+    % guideDroped laminates
+    for iDrop=1:length(DropsIndexes)
+        ply_angles = GuideAngles;
+        DropsLoc = unique(DropsIndexes(1:iDrop));
+        if max(DropsLoc)>NGuidePlies
+            DropsLoc(DropsLoc>NGuidePlies) = [];
+        end
+        
+        ply_angles(DropsLoc(DropsLoc<=length(ply_angles))) = [];  % drop plies
+        FiberAngles      = Convert_dvAngles2FiberAngles(ply_angles,[],LamType);
+        UniqueAngle = unique(FiberAngles);
+        UniqueAngle(abs(UniqueAngle)==90) = [];
+        UniqueAngle(UniqueAngle==0)       = [];
+        
+        for j=1:length(UniqueAngle)
+            if length(find(UniqueAngle(j)==FiberAngles)) ~= length(find(-UniqueAngle(j)==FiberAngles))
+                FEASIBLE = false;
+                return
+            end
+        end
+    end
+end
+
 
 end
