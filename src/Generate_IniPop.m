@@ -1,3 +1,24 @@
+% =====                                                                ==== 
+%                         Creates Initial Population                      
+%                                                                         
+% Recommended to use this function rather than the Random GA inipop.                            
+%
+% [IniPop] = Generate_IniPop (nvar,Npop,NpatchVar,NthetaVar,NdropVar,Constraints,AllowedNplies,LamType)
+%
+%
+% nvar          : total # a design variables 
+% Npop          : Size of the initial population
+% NpatchVar     : Number of patches with variable number of plies
+% NthetaVar     : Number of fibre angles used to describe the guide laminate
+% NdropVar      : Vector containing the # of plies to drop per section
+% Constraints   : Input Structure containing manufacturing constraints 
+% AllowedNplies : Number of plies allowed for each laminate
+% LamType       : Laminate type (e.g. balanced, symmetric, ...)
+%
+%
+% IniPop        : Initial population matrix
+% =====                                                                ====
+
 % ----------------------------------------------------------------------- %
 % Copyright (c) <2015>, <Terence Macquart>
 % All rights reserved.
@@ -28,100 +49,86 @@
 % ----------------------------------------------------------------------- %
 
 
-% =====                                                              ==== 
-%            Creates Initial Population of Ply angles                     %
-%                                                                         %
-% Recommended for heavily constrained problems                            %
-%
-% Requires 4 inputs
-% nvar       : # a design variables = half (the # of plies + # of drops)
-% Npop       : Size of the initial population
-% NDropPlies : Vector containing the # of plies to drop per section
-% EDoutput   : true or false, enable/disable EuclideanDist calculation
-%
-% Returns up to 3 outputs 
-% IniPop        : Initial population matrix ( Stacking Sequence )
-% IniPopLP      : Initial population LP     
-% EuclideanDist : Euclidean Distance between the LP of each Section
-% =====                                                              ====
+function [IniPop] = Generate_IniPop (nvar,Npop,NpatchVar,NthetaVar,NdropVar,Constraints,AllowedNplies,LamType)
 
-function [IniPop,IniPopLP,EuclideanDist] = Generate_IniPop (nvar,Npop,NpatchVar,NthetaVar,NdropVar,Constraints,AllowedNplies,LamType)
 
-% keyboard
-
+% Initialisation
 IniPop = zeros(Npop,nvar);
-
-fprintf(' Creating IniPop ... \n ' )
+display(' Creating IniPop ... ' )
 ConstraintVector = Constraints.Vector;
 DeltaAngle       = Constraints.DeltaAngle;
-
-EuclideanDist = cell(Npop,1);
-IniPopLP      = cell(Npop,1);
 ipop          = 1 ;
 NTried        = 0;
 
-while ipop < Npop + 1
 
+
+% Loop until IniPop is complete
+while ipop < Npop + 1
+    
+    %%  Variable number of plies
     NpliesPerLam = zeros(1,length(AllowedNplies));
     for iply = 1:length(AllowedNplies)
-        NpliesPerLam(iply) = AllowedNplies{iply}(randi([1 length(AllowedNplies{iply})],1,1));
+        NpliesPerLam(iply) = AllowedNplies{iply}(randi([1 length(AllowedNplies{iply})]));
     end
-    NpliesPerLam  = sort(NpliesPerLam,'descend'); 
-    NPliesGuide   = max(NpliesPerLam); 
+    [NpliesPerLam,SortIndex] = sort(NpliesPerLam,'descend');
+    NPliesGuide = max(NpliesPerLam);
     
     GuideAngles = zeros(1,NthetaVar); % some non-coded genes are included
     
-    % ---
-    if 1 % enforce constraints on IniPop - Build the angles step by step
-        
-        if ConstraintVector(1)                                              % Damtol
-            A = [-1 1];
-            GuideAngles(1) = 45*A(ceil(2*rand)); % 1st ply is +- 45
-            if strcmp(LamType,'Generic')
-                GuideAngles(end) = 45*A(ceil(2*rand)); % Last ply is +- 45
-            end
-        else
-            GuideAngles(1)   = randi([0 length(0:DeltaAngle:180)-1],1,1)*DeltaAngle -90;
-            GuideAngles(end) = randi([0 length(0:DeltaAngle:180)-1],1,1)*DeltaAngle -90;
+
+    %% Damtol
+    if ConstraintVector(1)
+        A = [-1 1];
+        GuideAngles(1) = 45*A(ceil(2*rand)); % 1st ply is +- 45
+        if strcmp(LamType,'Generic')
+            GuideAngles(end) = 45*A(ceil(2*rand)); % Last ply is +- 45
         end
-        
-        
-        for iAngle = 2 : NthetaVar - 1 % NPliesGuide-1
-            if ConstraintVector(3)
-                if ConstraintVector(4)
-                    A = [(-45 + 40*rand) (5 + 40*rand)];
-                    AddedAngle = GuideAngles(iAngle-1) + A(ceil(2*rand));
-                else
-                    AddedAngle = GuideAngles(iAngle-1) + (-45 + 90*rand);
-                end
-            else
-                if ConstraintVector(4)
-                    A = [(-90 + 85*rand) (5 + 85*rand)];
-                    AddedAngle = GuideAngles(iAngle-1) + A(ceil(2*rand));
-                else
-                    AddedAngle = randi([0 length(0:DeltaAngle:180)-1],1,1)*DeltaAngle-90; % no constraint - full range (use randi for uniform PDF)
-                end
-            end
-            if AddedAngle>90,    AddedAngle = AddedAngle - 180;   end
-            if AddedAngle<-90,   AddedAngle = AddedAngle + 180;   end
-            
-            GuideAngles(iAngle) = AddedAngle;
-        end                                     % Stack plies according to constraints activated
-        
-        if ConstraintVector(2) % 10% rule
-            [GuideAngles] = Enforce_10PercentRule(GuideAngles);
-        end
-        
-        GuideAngles = round((GuideAngles)/DeltaAngle)*DeltaAngle; % Convert to Angles in degree
+    else
+        GuideAngles(1)   = randi([0 length(0:DeltaAngle:180)-1],1,1)*DeltaAngle -90;
+        GuideAngles(end) = randi([0 length(0:DeltaAngle:180)-1],1,1)*DeltaAngle -90;
     end
     
-
+    
+    %% Disorientation and Contiguity
+    for iAngle = 2 : NthetaVar - 1 % NPliesGuide-1
+        if ConstraintVector(3)
+            if ConstraintVector(4)
+                A = [(-45 + 40*rand) (5 + 40*rand)];
+                AddedAngle = GuideAngles(iAngle-1) + A(ceil(2*rand));
+            else
+                AddedAngle = GuideAngles(iAngle-1) + (-45 + 90*rand);
+            end
+        else
+            if ConstraintVector(4)
+                A = [(-90 + 85*rand) (5 + 85*rand)];
+                AddedAngle = GuideAngles(iAngle-1) + A(ceil(2*rand));
+            else
+                AddedAngle = randi([0 length(0:DeltaAngle:180)-1],1,1)*DeltaAngle-90; % no constraint - full range (use randi for uniform PDF)
+            end
+        end
+        if AddedAngle>90,    AddedAngle = AddedAngle - 180;   end
+        if AddedAngle<-90,   AddedAngle = AddedAngle + 180;   end
+        
+        GuideAngles(iAngle) = AddedAngle;
+    end                                     % Stack plies according to constraints activated
+    
+    
+    %% 10% rule
+    if ConstraintVector(2)
+        [GuideAngles] = Enforce_10PercentRule(GuideAngles);
+    end
+    
+    %% 
+    GuideAngles = round((GuideAngles)/DeltaAngle)*DeltaAngle; % round up Angles to discrete value
+    
+    
     ShuffleLoc = randperm(NthetaVar*2,NthetaVar); % not used if not balanced
     if ~isempty(find(ShuffleLoc==0,1)), keyboard; end
     
     FEASIBLE = true;
     
-    NdropPlies = NdropVar; 
+    %% Drop Locations
+    NdropPlies = NdropVar;
     if NdropPlies>0
         DropsIndexes = Generate_DropIndexes (GuideAngles,NdropPlies,ConstraintVector,LamType);
         if isempty(DropsIndexes)
@@ -131,25 +138,25 @@ while ipop < Npop + 1
         DropsIndexes = [];
     end
     
-
-    if FEASIBLE 
+    %% Feasibility check
+    if FEASIBLE
         NGuideDropPlies = NPliesGuide-min(NpliesPerLam);
         [FEASIBLE] = Check_Feasibility(ConstraintVector,GuideAngles(1:NPliesGuide),ShuffleLoc(1:NPliesGuide),DropsIndexes(1:NGuideDropPlies),NPliesGuide,NGuideDropPlies,LamType);
     end
     
-
-        % Convert to Angles in degree
-        if ~ConstraintVector(1)
-            GuideAngles = round((90+GuideAngles)/DeltaAngle);
+    
+    %% Convert Angles in degree into the discrete corresponding values
+    if ~ConstraintVector(1)
+        GuideAngles = round((90+GuideAngles)/DeltaAngle);
+    else
+        if strcmp(LamType,'Generic')
+            GuideAngles(2:end-1) = round((90+GuideAngles(2:end-1))/DeltaAngle);
         else
-            if strcmp(LamType,'Generic')
-                GuideAngles(2:end-1) = round((90+GuideAngles(2:end-1))/DeltaAngle);
-            else
-                GuideAngles(2:end) = round((90+GuideAngles(2:end))/DeltaAngle);
-            end
+            GuideAngles(2:end) = round((90+GuideAngles(2:end))/DeltaAngle);
         end
-
-        
+    end
+    
+    
     if ConstraintVector(1) % make the first ply a discrete value with only 2 possible state
         if (GuideAngles(1) == -45), GuideAngles(1) = 1; end
         if (GuideAngles(1) == 45),  GuideAngles(1) = 2; end
@@ -159,17 +166,19 @@ while ipop < Npop + 1
         end
     end
     
-
+    %% Add to population
     if FEASIBLE
+        NpliesPerLam = NpliesPerLam(SortIndex);
         if Constraints.Balanced
-            IniPop(ipop,:) = [NpliesPerLam(find(NpatchVar)) GuideAngles ShuffleLoc DropsIndexes];
+            IniPop(ipop,:) = [NpliesPerLam(NpatchVar) GuideAngles ShuffleLoc DropsIndexes];
         else
-            IniPop(ipop,:) = [NpliesPerLam(find(NpatchVar)) GuideAngles DropsIndexes];
+            IniPop(ipop,:) = [NpliesPerLam(NpatchVar) GuideAngles DropsIndexes];
         end
         ipop = ipop + 1;
     end
     
     
+    %% Stop if too hard to create the initial populations
     NTried = NTried + 1;
     if  NTried == 10000 && ipop<2
         error('Hard Constrained Problem. Difficulties Generating IniPop')
@@ -177,5 +186,5 @@ while ipop < Npop + 1
     
 end
 
-fprintf(' IniPop Created ... \n ' )
+display(' IniPop Created ... ' )
 end

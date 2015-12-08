@@ -1,5 +1,6 @@
 % =====                                                              ==== %
 %                Used to format input structures for the GA               %
+%                       and output usefull quantities
 %
 % [Nvar,NpatchVar,NthetaVar,NdropVar,LamType,LB,UB,AllowedNplies]  = FormatInput(Objectives,Constraints)
 %
@@ -51,7 +52,7 @@ function [Nvar,NpatchVar,NthetaVar,NdropVar,LamType,LB,UB,AllowedNplies]  = Form
 NplyIni = cell2mat(Objectives.Table(2:end,2));
 
 if Constraints.Sym  && Constraints.Balanced,
-    DeltaNPly = 4;                  % The allowed ply numbers are multiple of DeltaNPly
+    DeltaNPly = 4;                  % The allowed ply numbers are multiple of DeltaNPly (i.e. 4, 8, 12, ...)
     LamType   = 'Balanced_Sym';     % Type of Laminate
 end
 
@@ -71,7 +72,9 @@ if  ~Constraints.Sym && ~Constraints.Balanced,
 end
 
 Nplies    = round(NplyIni/DeltaNPly)*DeltaNPly;                    % Upper and lower Number of plies allowed for each patch
-NthetaVar = max(Nplies(:))/DeltaNPly;                              % Max number of variable angles
+NthetaVar = max(Nplies(:))/DeltaNPly;                              % Max number of variable angles (without counting Symmetric and balanced design variables)
+
+
 
 %% NdropVar
 [MaxNplies,rowIndMax] = max(Nplies(:,2)); 
@@ -81,8 +84,10 @@ if ~isempty(NpliesTemp),
     NdropVar = (MaxNplies-min(NpliesTemp(:)))/DeltaNPly;           % Max number of guide drops variable
     clear NpliesTemp
 else
-    NdropVar = 0;
+    NdropVar = 0;                                                  % special case for single laminate
 end
+
+
 
 %%
 if Constraints.Balanced
@@ -91,6 +96,8 @@ else
     NbalVar = 0;
 end
 
+
+
 %% NpatchVar and AllowedNplies
 AllowedNplies = cell(size(NplyIni,1),1);
 for i=1:size(NplyIni,1)
@@ -98,28 +105,33 @@ for i=1:size(NplyIni,1)
 end
 
 
-Nrange = cellfun(@max,AllowedNplies,'UniformOutput', true) - cellfun(@min,AllowedNplies,'UniformOutput', true); % max ply - min ply per lam.
-NpatchVar = zeros(length(Nrange),1);
+Nrange    = cellfun(@max,AllowedNplies,'UniformOutput', true) - cellfun(@min,AllowedNplies,'UniformOutput', true); % max ply - min ply per lam.
+NpatchVar = boolean(zeros(length(Nrange),1));
 NpatchVar(Nrange>0)=1; % number of variable thickness lam.
 
 
 
 %% Genotype Upper and Lower Bounds (LB and UB)
 
-Nvar      = sum(NpatchVar) + NthetaVar + NbalVar + NdropVar;
-Nd_state  = length(-90:Constraints.DeltaAngle:90);              % number of discrete state for variable angles
+Nvar      = sum(NpatchVar) + NthetaVar + NbalVar + NdropVar;                    % total number of design variables
+Nd_state  = length(-90:Constraints.DeltaAngle:90);                              % number of discrete state for variable angles
 
 LB = [];
 UB = [];
 
-LB = [LB; cellfun(@min,AllowedNplies(find(NpatchVar)),'UniformOutput', true)];  % Variable plies
-UB = [UB; cellfun(@max,AllowedNplies(find(NpatchVar)),'UniformOutput', true)];
+% Bounds for Variable number of plies
+LB = [LB; cellfun(@min,AllowedNplies(NpatchVar),'UniformOutput', true)];  
+UB = [UB; cellfun(@max,AllowedNplies(NpatchVar),'UniformOutput', true)];
 
-LB = [LB; 0*ones(NthetaVar,1)];                                                 % Guide angles
+
+ % Bounds for Guide angles
+LB = [LB; 0*ones(NthetaVar,1)];                                                
 UB = [UB; (Nd_state-1)*ones(NthetaVar,1)];
 
+
+% Bounds for Balanced angles
 if ~Constraints.Vector(1) % Damtol
-    LB = [LB; ones(NbalVar,1)];                                                 % Balanced angles
+    LB = [LB; ones(NbalVar,1)];                                                 
     UB = [UB; 2*NbalVar*ones(NbalVar,1)];
 else
     LB = [LB; 2*ones(NbalVar,1)];                                               % Ensure the First ply is from the guide (+- 45)
@@ -129,13 +141,14 @@ else
         UB = [UB; (2*NbalVar-1)*ones(NbalVar,1)];                               % Ensure the last ply is also from the guide (+- 45)
     end
 end
-    
+
+
+% Bounds for Drop ply locations
 if Constraints.Vector(7) % covering
+    LB = [LB; 2*ones(NdropVar,1)];                                              % remove the first
     if strcmp(LamType,'Generic')
-        LB = [LB; 2*ones(NdropVar,1)];                  % remove the first
-        UB = [UB; (NthetaVar-1)*ones(NdropVar,1)];      % remove the last
+        UB = [UB; (NthetaVar-1)*ones(NdropVar,1)];                              % remove the last
     else
-        LB = [LB; 2*ones(NdropVar,1)];                  % remove the first
         UB = [UB; NthetaVar*ones(NdropVar,1)];
     end
 else

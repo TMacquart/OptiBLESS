@@ -1,9 +1,9 @@
 % =====                                                              ==== 
-%    Use GA to find stacking sequence ply angles matching Lam. Param.     
-%          and varying thickness employing Stacking Sequence Table        
+%   Use GA to optimise stacking sequence ply angles, Drops and Number of      
+%     plies. Direct and Indirect Optimisation Framework can be used        
 %
 % [output] = RetrieveSS(Objectives,Constraints,GAoptions)
-%
+%  
 % 
 %  The individual of GA is composed of 3 parts:
 %  --------------------------------------------
@@ -50,7 +50,7 @@ function [output] = RetrieveSS(Objectives,Constraints,GAoptions)
 %% Format Inputs  
 [Nvar,NpatchVar,NthetaVar,NdropVar,LamType,LB,UB,AllowedNplies] = FormatInput(Objectives,Constraints);
 % Nvar          - Number of design variables 
-% NpatchVar     - Number of patches with variable number of plies
+% NpatchVar     - Patches with variable number of plies (set to 1 if variable)
 % NthetaVar     - Number of fibre angles used to describe the guide laminate
 % NdropVar      - Number of drops from the guide laminate
 % LamType       - Type of laminates
@@ -60,14 +60,12 @@ function [output] = RetrieveSS(Objectives,Constraints,GAoptions)
 
 
 
-
-
 %% Set GA, see --- doc gaoptimset --- for more option
  options  = gaoptimset('PopulationSize',GAoptions.Npop,...
                       'Generation',GAoptions.Ngen, ...
                       'StallGenLimit',GAoptions.NgenMin, ...                    % Minimum Number of Generation computed
                       'EliteCount',ceil(GAoptions.Elitism*GAoptions.Npop),...   % Elitism
-                      'FitnessLimit' ,1e-5,...                                  % Stoping fitness criterion
+                      'FitnessLimit' ,1e-6,...                                  % Stoping fitness criterion
                       'TolFun' ,1e-10,...                                       % Stoping change in fitness criterion
                       'CrossoverFraction',GAoptions.PC,...                      % crossover fraction
                       'PlotInterval',GAoptions.PlotInterval);
@@ -86,7 +84,7 @@ fct_handle = @(x)Eval_Fitness(x,Objectives,Constraints,NpatchVar,NthetaVar,Allow
 
 
 
-%% Generate Ini. Pop.
+%% Generate Initial Population
 for i = 1:5
     try
         [IniPop] = Generate_IniPop (Nvar,GAoptions.Npop,NpatchVar,NthetaVar,NdropVar,Constraints,AllowedNplies,LamType);
@@ -99,25 +97,33 @@ for i = 1:5
     end
 end
 %  IniPop(1,:) = [(90+[-45 0 45 90 0  -45  45  90  -45  45])/Constraints.DeltaAngle [1 3 6 7] []]
-
 %  IniPop(1,:) = [40*ones(1,18) zeros(1,70)]
-
 % keyboard
 options = gaoptimset(options,'InitialPopulation' ,IniPop);
 
 
 %% run GA
-fprintf(strcat('Running GA \n'))
+display('Running GA')
 
 [xOpt,fval,~,OutputGA] = ga(fct_handle,Nvar,[],[],[],[],LB,UB,[],1:Nvar,options);
 
 display('GA(s) Terminated Successfully')
 
 
+[~,output]       = fct_handle(xOpt);                                        % Evaluate the best individual found during GA, returns the output structure
+output.NfctEval  = OutputGA.funccount;                                      % Number of function evaluation that have been computed
+output.NGen      = OutputGA.generations;                                    % Number of generation computed
+output.xOpt      = xOpt;                                                    % Genotype of the best found individual
+output.fval      = fval;                                                    % Fintess value of the best found individual
+output.LamType   = LamType;
 
-%% Format Results
-[~,output] = fct_handle(xOpt);      % Evaluate the best individual found during GA, returns the output structure
+if ~output.FEASIBLE,  
+    warning('The optimal solution found is not feasible!');
+end
 
+
+
+%% Add output Lamination Parameter Results
 if strcmp(Objectives.Type,'LP')
     Table     = [{'Lam #'} {'Nplies'} {'Ply Angles'} {'LP2Match'} {'LP Retrieved'} {'NormE'} {'RMSE'} {'MAE'} {'MaxAE'}];
     LPMatched = output.LP;                                                          % Lamination parameters retrieved by the GA
@@ -138,6 +144,8 @@ if strcmp(Objectives.Type,'LP')
 end
 
 
+
+%% Add output Stiffness Results
 if strcmp(Objectives.Type,'ABD')
 
     
@@ -179,13 +187,4 @@ end
 
 
 
-output.NfctEval  = OutputGA.funccount;                                      % Number of function evaluation that have been computed
-output.NGen      = OutputGA.generations;                                    % Number of generation computed
-output.xOpt      = xOpt;                                                    % Genotype of the best found individual
-output.fval      = fval;                                                    % Fintess value of the best found individual
-output.LamType   = LamType;
-
-if ~output.FEASIBLE,  
-    warning('Not a single feasible solution has been found!');
-end
 

@@ -54,8 +54,8 @@ Lp2Match = [
 
 ScalingCoef = [1 0 1 0, 0 0 0 0, 0 0 0 0]'; 
 Objectives.Table   = [{'Laminate #'}  {'Nplies [LB UB]'}    {'LP2Match'}     {'Scaling Coefficient'} ;
-                            {1}           {[28 28]}         {Lp2Match(:,1)}     {ScalingCoef} ;
-                            {2}           {[30 30]}         {Lp2Match(:,2)}     {ScalingCoef} ;
+                            {1}           {[26 26]}         {Lp2Match(:,1)}     {ScalingCoef} ;
+                            {2}           {[24 28]}         {Lp2Match(:,2)}     {ScalingCoef} ;
                             {3}           {[16 16]}         {Lp2Match(:,3)}     {ScalingCoef} ; ];
 
                         

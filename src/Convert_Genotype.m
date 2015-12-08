@@ -53,20 +53,20 @@ if Constraints.ORDERED
     NpliesperLam = sort(NpliesperLam,'descend');                            % repair to ensure thickness is ordered
     SortIndex    = 1:length(NpliesperLam);
     if find(diff(NpliesperLam)>0,1)
-        keyboard
+        keyboard % should never happen
     end
 else
     [NpliesperLam,SortIndex] = sort(NpliesperLam,'descend');
 end
 
-SortedLamNumber = LamNumber(SortIndex);                                       % after 2nd sorting
-NGuidePlies    = max(NpliesperLam);                                           % number of plies in the guide laminate (take half for Sym.)
-NDropPlies     = abs(diff(NpliesperLam));                                     % number of ply drops
-GuideAngles    = Individual(sum(NpatchVar) + [1:NGuidePlies]);
+SortedLamNumber = LamNumber(SortIndex);                                        % after 2nd sorting
+NGuidePlies     = max(NpliesperLam);                                           % number of plies in the guide laminate (take half for Sym.)
+NDropPlies      = abs(diff(NpliesperLam));                                     % number of ply drops between each laminates
+GuideAngles     = Individual(sum(NpatchVar) + [1:NGuidePlies]);                % Extract variable fibre angles of the guide
 
 
 
-%% --- Shuffle Loc for balanced
+%% --- Shuffle Location (i.e. location of angles pairs) for balanced Lam.
 if Constraints.Balanced
     ShuffleLoc = Individual(sum(NpatchVar) + NthetaVar + [1:NGuidePlies]);
     StartIndex = sum(NpatchVar) + NthetaVar*2;
@@ -79,7 +79,7 @@ end
 
 %% --- organise ply drop sequences
 Ndrop = length(NDropPlies);
-DropIndexes = cell(1,Ndrop);
+DropIndexes = cell(1,Ndrop);                                                   % matrix of drops plies bundled together
 
 for iDrop = 1 : Ndrop
     DropIndexesTEMP     = Individual(StartIndex + [1:NDropPlies(iDrop)]);

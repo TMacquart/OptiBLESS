@@ -1,3 +1,8 @@
+% =====                                                              ==== %
+%               Converts the ply angle design variable in the full
+%                           length staking sequence
+% =====                                                              ==== %
+
 % ----------------------------------------------------------------------- %
 % Copyright (c) <2015>, <Terence Macquart>
 % All rights reserved.
@@ -28,11 +33,6 @@
 % ----------------------------------------------------------------------- %
 
 
-% =====                                                              ==== %
-%               Converts the ply angle design variable in the full
-%                           length staking sequence
-% =====                                                              ==== %
-
 function [FiberAngles] = Convert_dvAngles2FiberAngles(GuideAngles,DropsLoc,ShuffleLoc,LamType)
 
 %% Input Check
@@ -58,11 +58,14 @@ if strcmp(LamType,'Generic'),
     FiberAngles = ply_angle';    
 end
 
+
 if strcmp(LamType,'Sym'), 
     ply_angle(DropsLoc) = []; 
     FiberAngles = [ply_angle, fliplr(ply_angle)]'; 
 end
 
+
+% For Balanced Lam. need to reconstruct SS by inserting ply angle (+-)pairs
 if strcmp(LamType,'Balanced_Sym') || strcmp(LamType,'Balanced')
     FiberAngles    = [ply_angle; [1:length(ply_angle)]; [1:length(ply_angle)]];
     BalancedAngles = [-ply_angle' ShuffleLoc' [1:length(ShuffleLoc)]'];

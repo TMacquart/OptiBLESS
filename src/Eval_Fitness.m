@@ -39,6 +39,7 @@
 
 function [fitness,output] = Eval_Fitness (Individual,Objectives,Constraints,NpatchVar,NthetaVar,AllowedNplies,LamType)
 
+ConstraintVector = Constraints.Vector;
 
 FEASIBLE  = true; 
 Nlam      = size(Objectives.Table,1)-1;
@@ -47,17 +48,14 @@ for j=1:Nlam
     LamNumber(j) = Objectives.Table{j+1,1}; 
 end
 
-
 [SortedLamNumber,GuideAngles,ShuffleLoc,DropIndexes] = Convert_Genotype(Individual,LamNumber,Constraints,NpatchVar,NthetaVar,AllowedNplies);
 NGuidePlies = length(GuideAngles);
 NDropPlies  = cellfun(@length,DropIndexes,'UniformOutput', true); % NUmber of dropped between each patch
 Ndrop       = length(NDropPlies);                                       % Total number of drops between patches
 
 
-%%
 
-ConstraintVector = Constraints.Vector;
-% --- Convert to Angles in degree
+%% --- Convert discrete values into Angles in degree
 if ~ConstraintVector(1)     % if not Damtol
     GuideAngles = -90 + GuideAngles*Constraints.DeltaAngle;
 else
@@ -69,7 +67,7 @@ end
 
 
 
-% --- check / enforce constraints for ply Guide 
+%% --- check / enforce constraints for ply Guide 
 if ConstraintVector(1) % if Damtol, first angle is +- 45
     R = [-1 1];
     GuideAngles(1) = 45*R(GuideAngles(1));
@@ -82,7 +80,7 @@ if ConstraintVector(1) % if Damtol, first angle is +- 45
     end
 end
 
-if ConstraintVector(2)                                                  % 10% rule (0,90,45)
+if ConstraintVector(2)                                                      % 10% rule (0,90,+-45)
     [GuideAngles] = Enforce_10PercentRule(GuideAngles);
 end
 
