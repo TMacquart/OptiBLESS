@@ -49,7 +49,7 @@
 % ----------------------------------------------------------------------- %
 
 
-function [IniPop] = Generate_IniPop (nvar,Npop,NpatchVar,NthetaVar,NdropVar,Constraints,AllowedNplies,LamType)
+function [IniPop] = Generate_IniPop (nvar,Npop,NpatchVar,NthetaVar,NdropVar,Constraints,AllowedNplies,LamType,fct_handle)
 
 
 % Initialisation
@@ -166,15 +166,31 @@ while ipop < Npop + 1
         end
     end
     
-    %% Add to population
+
+    
+    %% Final check and Add to population
     if FEASIBLE
+
         NpliesPerLam = NpliesPerLam(SortIndex);
         if Constraints.Balanced
-            IniPop(ipop,:) = [NpliesPerLam(NpatchVar) GuideAngles ShuffleLoc DropsIndexes];
+            Individual = [NpliesPerLam(NpatchVar) GuideAngles ShuffleLoc DropsIndexes];
         else
-            IniPop(ipop,:) = [NpliesPerLam(NpatchVar) GuideAngles DropsIndexes];
+            Individual = [NpliesPerLam(NpatchVar) GuideAngles DropsIndexes];
         end
-        ipop = ipop + 1;
+        
+        if Constraints.UserFct % Check based on user function = user fitness fct
+            [~,output] = fct_handle(Individual);
+%             display(output.NViolatedConst)
+            if output.NViolatedConst<=1
+                IniPop(ipop,:) = Individual;
+                ipop   = ipop + 1 %#ok<NOPRT>
+                NTried = 0;
+            end
+        else
+            IniPop(ipop,:) = Individual;
+            ipop = ipop + 1;
+        end
+        
     end
     
     

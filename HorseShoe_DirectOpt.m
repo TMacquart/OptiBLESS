@@ -38,11 +38,43 @@ clear all; close all force; clc; format short g; format compact;
 addpath ./FitnessFcts
 addpath ./src
 addpath ./GUI
-% addpath ./StiffnessOpt
+addpath ./StiffnessOpt
 
-Objectives.Table   = [{'Laminate #'}  {'Nplies [LB UB]'}];
-for i=1:18
-    Objectives.Table = [Objectives.Table; {i}  {[10 40]}];
+Optimisation = 0; % 0=direct, 1=indirect
+
+
+if Optimisation ==0
+    Objectives.Table   = [{'Laminate #'}  {'Nplies [LB UB]'}];
+    for i=1:18
+        Objectives.Table = [Objectives.Table; {i}  {[18 48]}];
+    end
+else
+    Table =[ % Nply  V1D     V3D
+                32	0.208	-0.843 
+                28	0.092	-0.714
+                20	-0.722	0.054
+                18	-0.582	-0.228
+                16	-0.477	-0.235
+                22	-0.469	-0.335
+                18	-0.582	-0.228
+                24	-0.597	-0.252
+                38	0.192	-0.657
+                34	0.308	-0.776
+                30	-0.241	-0.816
+                28	0.092	-0.714
+                22	-0.469	-0.335
+                18	-0.582	-0.228
+                24	-0.597	-0.252
+                30	-0.241	-0.816
+                18	-0.582	-0.228
+                22	-0.469	-0.335];
+    
+            ScalingCoef = [0 0 0 0, 0 0 0 0, 1 0 1 0]';
+            Objectives.Table   = [{'Laminate Index'} {'Nplies [LB UB]'} {'LP2Match'} {'Importance'}];
+            for i=1:18
+                Lp2Match(:,i) = [zeros(8,1); Table(i,2); 0; Table(i,3);0 ];
+                Objectives.Table = [Objectives.Table; {i}  {[1 1]*Table(i,1)} {Lp2Match(:,i)}  ScalingCoef];
+            end
 end
                         
 % ---
@@ -149,22 +181,27 @@ if 1    % Problem definition
 end
 
 
-Objectives.Type       = 'SS'; 
-Objectives.FitnessFct = @(SS)  HS_EvaluationFct(SS,Parameters);
-
+if Optimisation ==0
+    Objectives.Type       = 'SS';
+    Objectives.FitnessFct = @(SS)  HS_EvaluationFct(SS,Parameters);
+else
+    Objectives.Type       = 'LP';
+    Objectives.FitnessFct = @(LP)  RMSE_LP(LP,Objectives);
+end
 
 % ---
+%                        [Damtol  Rule10percent  Disorientation  Contiguity   BalancedIndirect  InernalContinuity  Covering];
 Constraints.Vector     = [false       false          false          false         false            false            false];
 Constraints.DeltaAngle = 15;
 Constraints.ORDERED    = false;                         
-Constraints.Balanced   = false; 
+Constraints.Balanced   = true; 
 Constraints.Sym        = true; 
-
+Constraints.UserFct    = true;
 
 % ---
-GAoptions.Npop    = 100; 	   % Population size
-GAoptions.Ngen    = 500; 	   % Number of generations
-GAoptions.NgenMin = 500; 	   % Minimum number of generation calculated
+GAoptions.Npop    = 200; 	   % Population size
+GAoptions.Ngen    = 10000; 	   % Number of generations
+GAoptions.NgenMin = 10000; 	   % Minimum number of generation calculated
 GAoptions.Elitism = 0.05; 	   % Percentage of elite passing to the next Gen.
 GAoptions.PC      = 0.75; 	   
 
@@ -178,7 +215,7 @@ GAoptions.OutputFct    = @GACustomOutput;
 [Output] = RetrieveSS(Objectives,Constraints,GAoptions);
 
 % --- 
-plotSS(Output,3,PatchXYZ)
+plotSS(Output,PatchXYZ)
 
 
 % ---

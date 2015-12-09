@@ -6,6 +6,7 @@ clear all; clc; format short g; format compact; close all;
 
 addpath ./FitnessFcts
 addpath ./GUI
+addpath ./src
 
 
 %% === Objective
@@ -28,9 +29,14 @@ Lp2Match = [
 
 
 Objectives.Type    = 'LP'; 
+
+
 ScalingCoef        = ones(12,1); 
+
+
 Objectives.Table   = [{'Laminate #'}     {'Nplies'}      {'LP2Match'}     {'Scaling Coefficient'} ;
                             {1}           {[8 8]}         {Lp2Match(:,1)}  {ScalingCoef} ; ];
+                        
                         
 Objectives.FitnessFct = @(LP) RMSE_LP(LP,Objectives);
 
@@ -44,7 +50,7 @@ Constraints.DeltaAngle = 45;
 Constraints.ORDERED    = false;                         
 Constraints.Balanced   = false; 
 Constraints.Sym        = false; 
-
+Constraints.UserFct    = false;
 
 
 %% === Options 
@@ -55,7 +61,7 @@ GAoptions.Elitism = 0.01; 	   % Percentage of elite passing to the next Gen.
 GAoptions.PC      = 0.75; 	   % Percentage of crossover
 
 GAoptions.PlotInterval = [10];                  % Refresh plot every X itterations         
-GAoptions.SaveInterval = [2];                    % Save Data every X itterations   
+GAoptions.SaveInterval = [2];                   % Save Data every X itterations   
 GAoptions.PlotFct      = @gaplotbestf;          % Refresh plot every X itterations
 GAoptions.OutputFct    = @GACustomOutput;
 
@@ -70,7 +76,7 @@ display(Output.Table)
 
 
 %% === Plot
-plotSS(Output,2)
+plotSS(Output)
 
 
 

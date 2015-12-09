@@ -34,7 +34,7 @@ clear all; clc; format short g; format compact; close all;
 
 addpath ./StiffnessOpt
 addpath ./FitnessFcts
-addpath ./VisualGUI
+addpath ./GUI
 
 % GuideLamDv = [-45 0 45 90 0  -45  45  90  -45  45];    
 % Lam1       = [    0    90 0  -45  45  90  -45  45];   
@@ -63,7 +63,7 @@ Objectives.Table  = [{'Laminate #'}  {'Nplies [LB UB]'}     {'LP2Match'}     {'S
                             {2}           {[8 8]}           Lp2Match(:,2)     {ScalingCoef} ; 
                             {3}           {[6 6]}           Lp2Match(:,3)     {ScalingCoef} ; ];
 
-Objectives.FitnessFct = @(LP) RMSE_MaxAE_LP(LP,Objectives);
+Objectives.FitnessFct = @(LP) RMSE_LP(LP,Objectives);
 
 
            
@@ -75,7 +75,7 @@ Constraints.DeltaAngle = 45;
 Constraints.ORDERED    = false;                           
 Constraints.Balanced   = true; 
 Constraints.Sym        = false; 
-
+Constraints.UserFct    = false;
 
 % ---
 GAoptions.Npop    = 100; 	   % Population size
@@ -96,7 +96,12 @@ GAoptions.OutputFct    = @GACustomOutput;
 display(Output)
 display(Output.Table)
 
+
 %% Plot
+plotSS(Output)
+
+
+%% Ouput Check (Optional Validation)
 ScalingCoef = reshape(cell2mat(Objectives.Table(2:end,4)),12,size(Objectives.Table,1)-1);
 
 for i = 2:size(Objectives.Table,1)

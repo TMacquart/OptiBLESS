@@ -35,15 +35,16 @@ clear all; clc; format short g; format compact; close all;
 
 addpath ./FitnessFcts
 addpath ./StiffnessOpt
+addpath ./src
+addpath ./GUI
 
-
-% --- bottom [ 45   -45    90     0    45    90     0    45] Top
-% with   
+% --- bottom [ 45   -45    90     0    45    90     0    45] Top   
 E1   = 13.0e9;
 E2   = 72.0e9;
 G12  = 26.9e9;
 v12  = 0.33;
-tply = 0.000127;  % being the ply thickness
+
+tply = 0.000127;  % ply thickness
 h    = 8*tply;
 
 A2Match ={[
@@ -64,13 +65,18 @@ Objectives.mat = [E1 E2 G12 v12 h];
 IndexAStiff = ones(3,3);
 IndexBStiff = ones(3,3);
 IndexDStiff = ones(3,3);
-Objectives.Table   = [{'Laminate #'}     {'Nplies'}   {'A2Match'}  {'B2Match'} {'D2Match'}  {'A Scaling'} {'B Scaling'} {'D Scaling'} ;
-                            {1}          {[6 10]}       A2Match       B2Match     D2Match   {IndexAStiff} {IndexBStiff} {IndexDStiff}];
 
-Objectives.Type        = 'ABD'; 
+
+Objectives.Table   = [{'Laminate #'}     {'Nplies'}   {'A2Match'}  {'B2Match'} {'D2Match'}  {'A Scaling'} {'B Scaling'} {'D Scaling'} ;
+                            {1}          {[8 8]}       A2Match       B2Match     D2Match   {IndexAStiff} {IndexBStiff} {IndexDStiff}];
+
+                        
+Objectives.Type        = 'ABD';
+
 Objectives.FitnessFct = @(A,B,D) SumRMSABD(A,B,D,Objectives);
 
-% =========================== Default Options =========================== %
+
+%% =========================== Default Options =========================== %
 
 %                        [Damtol  Rule10percent  Disorientation  Contiguity   BalancedIndirect  InernalContinuity  Covering];
 Constraints.Vector     = [false       false          false          false         false            false            false];

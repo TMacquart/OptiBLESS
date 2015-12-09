@@ -87,7 +87,7 @@ fct_handle = @(x)Eval_Fitness(x,Objectives,Constraints,NpatchVar,NthetaVar,Allow
 %% Generate Initial Population
 for i = 1:5
     try
-        [IniPop] = Generate_IniPop (Nvar,GAoptions.Npop,NpatchVar,NthetaVar,NdropVar,Constraints,AllowedNplies,LamType);
+        [IniPop] = Generate_IniPop (Nvar,GAoptions.Npop,NpatchVar,NthetaVar,NdropVar,Constraints,AllowedNplies,LamType,fct_handle);
         break; 
     catch
         fprintf('Inipop Failed. Retrying ...\n');
@@ -96,8 +96,8 @@ for i = 1:5
         end
     end
 end
-%  IniPop(1,:) = [(90+[-45 0 45 90 0  -45  45  90  -45  45])/Constraints.DeltaAngle [1 3 6 7] []]
-%  IniPop(1,:) = [40*ones(1,18) zeros(1,70)]
+% IniPop(1,:) = [(90+[-45 0 45 90 0  -45  45  90  -45  45])/Constraints.DeltaAngle [1 3 6 7] []]
+% IniPop(1,:) = [40*ones(1,18) zeros(1,70)]
 % keyboard
 options = gaoptimset(options,'InitialPopulation' ,IniPop);
 

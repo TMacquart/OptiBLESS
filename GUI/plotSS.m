@@ -38,7 +38,7 @@
 % ----------------------------------------------------------------------- %
 
 
-function [] = plotSS(Output,Dim,PatchXYZ,varargin)
+function [] = plotSS(Output,PatchXYZ,varargin)
 
 
 [~,GuideIndex] = max(cellfun(@length,Output.SS));
@@ -58,7 +58,7 @@ caxis([-90 90])
 colormap(Map); 
 
 
-Axis2 = axes('Position',[0.6,0.075,0.3,0.85],'XTick',[0:1:length(Output.SS)]);
+Axis2 = axes('Position',[0.6,0.075,0.3,0.85],'XTick',[0:1:length(Output.SS)],'xlim', [0 length(Output.SS)+1]);
 xlabel('Patch #')
 zlabel('Ply #')
 hold all
@@ -103,7 +103,7 @@ if strcmp(Output.LamType,'Sym') || strcmp(Output.LamType,'Balanced_Sym')
 end
 
 
-if nargin~=3 % no location data have been given
+if nargin~=2 % no location data have been given
     for i=1:NUniqueLam
         PatchXYZ{i}.X = i+[-1 0 0 -1];
         PatchXYZ{i}.Y = [0 0 1 1];
