@@ -1,7 +1,7 @@
 % =====                                                                ====
-%     Average of the Root Mean Square Error between lamination paramters
+%     Average of the Max Absolute Error between lamination paramters
 % 
-% Fitness = RMSE_LP(LP,Objectives)
+% Fitness = MaxAE_LP(LP,Objectives)
 % =====                                                                ====
 
 % ----------------------------------------------------------------------- %
@@ -33,7 +33,7 @@
 % either expressed or implied, of the FreeBSD Project.
 % ----------------------------------------------------------------------- %
 
-function Fitness = RMSE_LP(LP,Objectives)
+function Fitness = MaxAE_LP(LP,Objectives)
 
 LP2Match    = reshape(cell2mat(Objectives.Table(2:end,3)),12,size(Objectives.Table,1)-1);
 ScalingCoef = reshape(cell2mat(Objectives.Table(2:end,4)),12,size(Objectives.Table,1)-1);
@@ -41,8 +41,8 @@ ScalingCoef = reshape(cell2mat(Objectives.Table(2:end,4)),12,size(Objectives.Tab
 Nlam = size(LP2Match,2);
 localFit = zeros(Nlam,1);
 for ilam = 1 : Nlam
-    Error = (LP2Match(:,ilam) - LP(:,ilam)).*ScalingCoef(:,ilam);
-    localFit(ilam) = rms(Error);
+    Error          = (LP2Match(:,ilam) - LP(:,ilam)).*ScalingCoef(:,ilam);
+    localFit(ilam) = max(abs(Error));
 end
 Fitness = localFit/Nlam;
 

@@ -1,7 +1,8 @@
 % =====                                                                ====
-%     Average of the Root Mean Square Error between lamination paramters
+%               Average Norm Error between lamination paramters
+%
 % 
-% Fitness = RMSE_LP(LP,Objectives)
+% Fitness = MeanNormLP(LP,Objectives)
 % =====                                                                ====
 
 % ----------------------------------------------------------------------- %
@@ -33,7 +34,7 @@
 % either expressed or implied, of the FreeBSD Project.
 % ----------------------------------------------------------------------- %
 
-function Fitness = RMSE_LP(LP,Objectives)
+function Fitness = MeanNormE_LP(LP,Objectives)
 
 LP2Match    = reshape(cell2mat(Objectives.Table(2:end,3)),12,size(Objectives.Table,1)-1);
 ScalingCoef = reshape(cell2mat(Objectives.Table(2:end,4)),12,size(Objectives.Table,1)-1);
@@ -42,8 +43,8 @@ Nlam = size(LP2Match,2);
 localFit = zeros(Nlam,1);
 for ilam = 1 : Nlam
     Error = (LP2Match(:,ilam) - LP(:,ilam)).*ScalingCoef(:,ilam);
-    localFit(ilam) = rms(Error);
+    localFit(ilam) = norm( Error );
 end
-Fitness = localFit/Nlam;
+Fitness = sum(localFit)/Nlam;
 
 end
