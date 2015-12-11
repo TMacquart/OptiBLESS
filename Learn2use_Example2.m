@@ -47,25 +47,31 @@ v12  = 0.33;
 tply = 0.000127;  % ply thickness
 h    = 8*tply;
 
+% --- Stacking sequence corresponding stiffness matrices
+
 A2Match ={[
    1.0874e+11   5.8225e+10  -9.2917e+09
    5.8225e+10   1.0874e+11  -9.2917e+09
   -9.2917e+09  -9.2917e+09   2.5255e+10]};
+
 B2Match ={[
   -9.7029e+09   4.1122e+08  -6.9687e+09
    4.1122e+08   8.8804e+09  -6.9687e+09
   -6.9687e+09  -6.9687e+09   4.1122e+08]};
+
 D2Match ={[
    1.0602e+11   5.7454e+10   -1.626e+10
    5.7454e+10   1.1299e+11   -1.626e+10
    -1.626e+10   -1.626e+10   2.4484e+10]};
+
+% --- ( you can used [A,B,D]=Convert_SS2ABD(E1,E2,v12,G12,tply,[ 45  -45    90     0    45    90     0    45],true) 
+% --- to convert a stacking sequence into lamination parameters)
 
 Objectives.mat = [E1 E2 G12 v12 h];
  
 IndexAStiff = ones(3,3);
 IndexBStiff = ones(3,3);
 IndexDStiff = ones(3,3);
-
 
 Objectives.Table   = [{'Laminate #'}     {'Nplies'}   {'A2Match'}  {'B2Match'} {'D2Match'}  {'A Scaling'} {'B Scaling'} {'D Scaling'} ;
                             {1}          {[8 8]}       A2Match       B2Match     D2Match   {IndexAStiff} {IndexBStiff} {IndexDStiff}];

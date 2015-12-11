@@ -11,8 +11,9 @@ addpath ./src
 
 %% === Objective
 
-% --- Corresponding Staking Sequence
+% --- Staking Sequence 
 % --- Bottom ply [ 45   -45    90     0    45    90     0    45] Top ply
+% --- Corresponding Lamination parameters 
 Lp2Match = [
             0 % V1A
          0.25 % V2A
@@ -27,6 +28,8 @@ Lp2Match = [
      -0.46875 % V3D
            0];% V4D
 
+% --- ( you can used Convert_SS2LP([ 45  -45    90     0    45    90     0    45]) 
+% --- to convert a stacking sequence into lamination parameters)
 
 Objectives.Type    = 'LP'; 
 
@@ -44,7 +47,7 @@ Objectives.FitnessFct = @(LP) RMSE_LP(LP,Objectives);
 %                        [Damtol  Rule10percent  Disorientation  Contiguity   BalancedIndirect  InernalContinuity  Covering];
 Constraints.Vector     = [false       false          false          false         false            false            false];
 Constraints.DeltaAngle = 45;
-Constraints.ORDERED    = false;                         
+Constraints.ORDERED    = true;                         
 Constraints.Balanced   = false; 
 Constraints.Sym        = false; 
 

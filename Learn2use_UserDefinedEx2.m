@@ -73,7 +73,7 @@ Objectives.Table   = [{'Laminate #'}     {'Nplies'}   {'A2Match'}  {'B2Match'} {
                         
 Objectives.Type       = 'ABD';
 Objectives.UserFct    = true;
-Objectives.FitnessFct = @(A,B,D) UserDefined_ABDFitness(A,B,D);
+Objectives.FitnessFct = @(A,B,D) UserDefined_ABDFitness(A,B,D);             % you must program the fitness function according to your need
 
 
 %% =========================== Default Options =========================== %
