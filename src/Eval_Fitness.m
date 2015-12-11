@@ -39,6 +39,7 @@
 
 function [fitness,output] = Eval_Fitness (Individual,Objectives,Constraints,NpatchVar,NthetaVar,AllowedNplies,LamType)
 
+
 ConstraintVector = Constraints.Vector;
 
 FEASIBLE  = true; 
@@ -133,9 +134,12 @@ end
 SS = SS(RevertSort);
 
 if strcmp(Objectives.Type,'LP')
-    LP = LP(:,RevertSort);
-    fitness = Objectives.FitnessFct(LP);
-    
+    LP        = LP(:,RevertSort);
+    if ~Objectives.UserFct
+        fitness          = Objectives.FitnessFct(LP);                       % Default Fitness Function (Do not Change)
+    else
+        [fitness,output] = Objectives.FitnessFct(LP);                       % User Fitness Function Calls
+    end
     output.LP = LP;
 end
 
@@ -143,7 +147,12 @@ if strcmp(Objectives.Type,'ABD')
     A = A(RevertSort);
     B = B(RevertSort);
     D = D(RevertSort);
-    fitness = Objectives.FitnessFct(A,B,D);
+    
+    if ~Objectives.UserFct
+        fitness = Objectives.FitnessFct(A,B,D);                             % Default Fitness Function (Do not Change)
+    else
+        [fitness,output] = Objectives.FitnessFct(A,B,D);                    % User Fitness Function Calls
+    end
     
     output.A  = A;
     output.B  = B;
@@ -151,8 +160,9 @@ if strcmp(Objectives.Type,'ABD')
 end
 
 if strcmp(Objectives.Type,'SS')
-    [fitness,output] = Objectives.FitnessFct(SS);
+    [fitness,output] = Objectives.FitnessFct(SS);                           % User Fitness Function Calls
 end
+
 
 
 if ~FEASIBLE  % add penalty if not FEASIBLE

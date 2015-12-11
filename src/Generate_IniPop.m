@@ -49,7 +49,7 @@
 % ----------------------------------------------------------------------- %
 
 
-function [IniPop] = Generate_IniPop (nvar,Npop,NpatchVar,NthetaVar,NdropVar,Constraints,AllowedNplies,LamType,fct_handle)
+function [IniPop] = Generate_IniPop (nvar,Npop,NpatchVar,NthetaVar,NdropVar,Constraints,Objectives,AllowedNplies,LamType,fct_handle)
 
 
 % Initialisation
@@ -178,12 +178,13 @@ while ipop < Npop + 1
             Individual = [NpliesPerLam(NpatchVar) GuideAngles DropsIndexes];
         end
         
-        if Constraints.UserFct % Check based on user function = user fitness fct
+        if Objectives.UserFct % Check based on user function = user fitness fct
             [~,output] = fct_handle(Individual);
 %             display(output.NViolatedConst)
             if output.NViolatedConst<=1
+                display(ipop)
                 IniPop(ipop,:) = Individual;
-                ipop   = ipop + 1 %#ok<NOPRT>
+                ipop   = ipop + 1;
                 NTried = 0;
             end
         else

@@ -32,7 +32,7 @@
 % ----------------------------------------------------------------------- %
 clear all; clc; format short g; format compact; close all;
 
-addpath ./StiffnessOpt
+addpath ./src
 addpath ./FitnessFcts
 addpath ./GUI
 
@@ -63,8 +63,12 @@ Objectives.Table  = [{'Laminate #'}  {'Nplies [LB UB]'}     {'LP2Match'}     {'S
                             {2}           {[8 8]}           Lp2Match(:,2)     {ScalingCoef} ; 
                             {3}           {[6 6]}           Lp2Match(:,3)     {ScalingCoef} ; ];
 
+Objectives.UserFct    = false;                        
 Objectives.FitnessFct = @(LP) RMSE_LP(LP,Objectives);
 
+% you can also try other fitness functions
+% Objectives.FitnessFct = @(LP) MeanNormE_LP(LP,Objectives); 
+% Objectives.FitnessFct = @(LP) MaxAE_LP(LP,Objectives);
 
            
 % =========================== Default Options =========================== %
@@ -75,7 +79,7 @@ Constraints.DeltaAngle = 45;
 Constraints.ORDERED    = false;                           
 Constraints.Balanced   = true; 
 Constraints.Sym        = false; 
-Constraints.UserFct    = false;
+
 
 % ---
 GAoptions.Npop    = 100; 	   % Population size

@@ -65,13 +65,13 @@ function [output] = RetrieveSS(Objectives,Constraints,GAoptions)
                       'Generation',GAoptions.Ngen, ...
                       'StallGenLimit',GAoptions.NgenMin, ...                    % Minimum Number of Generation computed
                       'EliteCount',ceil(GAoptions.Elitism*GAoptions.Npop),...   % Elitism
-                      'FitnessLimit' ,1e-6,...                                  % Stoping fitness criterion
+                      'FitnessLimit' ,1e-5,...                                  % Stoping fitness criterion
                       'TolFun' ,1e-10,...                                       % Stoping change in fitness criterion
                       'CrossoverFraction',GAoptions.PC,...                      % crossover fraction
                       'PlotInterval',GAoptions.PlotInterval);
                   
 if ~isempty(GAoptions.SaveInterval)
-    options  = gaoptimset(options,'OutputFcns',{@(options,state,flag)GAoptions.OutputFct(options,state,flag,GAoptions.SaveInterval)});  % Output function used  
+    options  = gaoptimset(options,'OutputFcns',{@(options,state,flag)GAoptions.OutputFct(options,state,flag,GAoptions.SaveInterval,Objectives.Type)});  % Output function used  
 end                                                  
 if ~isempty(GAoptions.PlotInterval)
     options  = gaoptimset(options,'PlotFcns',{GAoptions.PlotFct});              % Plot function used  
@@ -82,12 +82,10 @@ end
 % Handle of the fitness function 
 fct_handle = @(x)Eval_Fitness(x,Objectives,Constraints,NpatchVar,NthetaVar,AllowedNplies,LamType);  
 
-
-
 %% Generate Initial Population
 for i = 1:5
     try
-        [IniPop] = Generate_IniPop (Nvar,GAoptions.Npop,NpatchVar,NthetaVar,NdropVar,Constraints,AllowedNplies,LamType,fct_handle);
+        [IniPop] = Generate_IniPop (Nvar,GAoptions.Npop,NpatchVar,NthetaVar,NdropVar,Constraints,Objectives,AllowedNplies,LamType,fct_handle);
         break; 
     catch
         fprintf('Inipop Failed. Retrying ...\n');
@@ -105,6 +103,7 @@ options = gaoptimset(options,'InitialPopulation' ,IniPop);
 %% run GA
 display('Running GA')
 
+% fct_handle(IniPop(1,:))
 [xOpt,fval,~,OutputGA] = ga(fct_handle,Nvar,[],[],[],[],LB,UB,[],1:Nvar,options);
 
 display('GA(s) Terminated Successfully')

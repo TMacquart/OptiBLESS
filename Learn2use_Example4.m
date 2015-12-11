@@ -62,7 +62,7 @@ Objectives.Table  = [{'Laminate #'}  {'Nplies [LB UB]'}     {'LP2Match'}     {'S
                             {2}           {2*[8 8]}           Lp2Match(:,2)     {ScalingCoef} ; 
                             {3}           {2*[6 6]}           Lp2Match(:,3)     {ScalingCoef} ; ];
 
-Objectives.FitnessFct = @(LP) RMSE_MaxAE_LP(LP,Objectives);
+Objectives.FitnessFct = @(LP) RMSE_LP(LP,Objectives);
 
 
            

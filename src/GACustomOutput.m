@@ -41,7 +41,7 @@
 % ----------------------------------------------------------------------- %
 
 
-function [state,options,optchanged] = GACustomOutput(options,state,flag,SaveInterval)
+function [state,options,optchanged] = GACustomOutput(options,state,flag,SaveInterval,ObjType)
 
 optchanged = false;
 persistent fileID ButtonHandle     
@@ -62,7 +62,16 @@ end
 
 Scores = [state.Generation min(state.Score) mean(state.Score) max(state.Score)];
 if ~isempty(SaveInterval) && rem(state.Generation,SaveInterval) == 0
-    fprintf(fileID,'%3.0f \t %1.6f \t %1.6f \t %1.6f \n',Scores);
+    if strcmp(ObjType,'lp')
+        fprintf(fileID,'%3.0f \t %1.6f \t %1.6f \t %1.6f \n',Scores);
+        
+    elseif strcmp(ObjType,'ABD')
+        fprintf(fileID,'%3.0f \t %1.5E \t %1.5E \t %1.5E \n',Scores);
+        
+    else % User Function 
+        fprintf(fileID,'%3.0f \t %1.5E \t %1.5E \t %1.5E \n',Scores); % Change here if needed for user function output precision in txt file.
+        
+    end
 end
 
 

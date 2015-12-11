@@ -72,8 +72,8 @@ Objectives.Table   = [{'Laminate #'}     {'Nplies'}   {'A2Match'}  {'B2Match'} {
 
                         
 Objectives.Type       = 'ABD';
-Objectives.UserFct    = false;
-Objectives.FitnessFct = @(A,B,D) RMSE_ABD(A,B,D,Objectives);
+Objectives.UserFct    = true;
+Objectives.FitnessFct = @(A,B,D) UserDefined_ABDFitness(A,B,D);
 
 
 %% =========================== Default Options =========================== %

@@ -1,7 +1,14 @@
 % =====                                                                ====
+%     Example of user defined function using RMSE_LP as fitness function 
 %     Average of the Root Mean Square Error between lamination paramters
 % 
-% Fitness = RMSE_LP(LP,Objectives)
+% In addition to Fitness, user defined fitness function must also return an
+% output structure which must at least contain 1 field corresponding to the
+% number of violated constraints (i.e. output.NViolatedConst). This is used
+% during initial population generation to check the feasibility of initial
+% individuals.
+% 
+% [Fitness,output]  = UserDefined_RMSE_LP(LP,Objectives)
 % =====                                                                ====
 
 % ----------------------------------------------------------------------- %
@@ -33,7 +40,7 @@
 % either expressed or implied, of the FreeBSD Project.
 % ----------------------------------------------------------------------- %
 
-function Fitness = RMSE_LP(LP,Objectives)
+function [Fitness,output] = UserDefined_RMSE_LP(LP,Objectives)
 
 LP2Match    = reshape(cell2mat(Objectives.Table(2:end,3)),12,size(Objectives.Table,1)-1);
 ScalingCoef = reshape(cell2mat(Objectives.Table(2:end,4)),12,size(Objectives.Table,1)-1);
@@ -46,4 +53,5 @@ for ilam = 1 : Nlam
 end
 Fitness = sum(localFit)/Nlam;
 
+output.NViolatedConst = 0; % used only for Initial Population
 end

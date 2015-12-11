@@ -30,13 +30,21 @@ Lp2Match = [
 
 Objectives.Type    = 'LP'; 
 
+
 ScalingCoef        = ones(12,1); 
+
 
 Objectives.Table   = [{'Laminate #'}     {'Nplies'}      {'LP2Match'}     {'Scaling Coefficient'} ;
                             {1}           {[8 8]}         {Lp2Match(:,1)}  {ScalingCoef} ; ];
+                    
                         
-Objectives.UserFct    = false;                        
-Objectives.FitnessFct = @(LP) RMSE_LP(LP,Objectives);
+% --- CHANGE HERE --- CHANGE HERE --- CHANGE HERE                           
+% --- those 2 lines are the only line that have been changed compared to Learn2use_Example1   
+% --- you may also want to have a look at the UserDefined_RMSE_LP.m file 
+Objectives.UserFct    = true;    % this specify that you are using your own function for fitness calculations                      
+Objectives.FitnessFct = @(LP) UserDefined_RMSE_LP(LP,Objectives);
+% Objectives.FitnessFct = @(LP) UserDefined_LPFitness(LP); % for a more general function try (you will need to complete the fitness calculation)
+
 
 
 %% === Constraints 
@@ -74,29 +82,3 @@ display(Output.Table)
 
 %% === Plot
 plotSS(Output)
-
-
-
-%% === Checking output results are correct
-ScalingCoef = reshape(cell2mat(Objectives.Table(2:end,4)),12,size(Objectives.Table,1)-1);
-
-for i = 2:size(Objectives.Table,1)
-    LP2Match = Objectives.Table{i,3};
-    if sum(abs(LP2Match-Output.Table{i,4}))>1e-10
-        error('non matching LP2Match')
-    end
-    
-    LP = Convert_SS2LP(Output.Table{i,3});
-    if sum(abs(LP-Output.Table{i,5}))>1e-10
-        error('non matching SS and LPOpt')
-    end
-    
-    if abs( rms ( (LP-LP2Match).*ScalingCoef(:,i-1) )-Output.Table{i,7})>1e-10
-        error('non matching RSM')
-    end
-    
-    if abs( norm ((LP-LP2Match).*ScalingCoef(:,i-1))-Output.Table{i,6})>1e-10
-        error('non matching norm')
-    end
-    
-end

@@ -1,7 +1,7 @@
 % =====                                                                ====
-%     Average of the Root Mean Square Error between lamination paramters
+%     Average of the Root Mean Square Error between Stiffness paramters
 % 
-% Fitness = RMSE_LP(LP,Objectives)
+% Fitness = RMSE_ABD(A,B,D,Objectives)
 % =====                                                                ====
 
 % ----------------------------------------------------------------------- %
@@ -33,17 +33,20 @@
 % either expressed or implied, of the FreeBSD Project.
 % ----------------------------------------------------------------------- %
 
-function Fitness = RMSE_LP(LP,Objectives)
+function Fitness = RMSE_ABD(A,B,D,Objectives)
 
-LP2Match    = reshape(cell2mat(Objectives.Table(2:end,3)),12,size(Objectives.Table,1)-1);
-ScalingCoef = reshape(cell2mat(Objectives.Table(2:end,4)),12,size(Objectives.Table,1)-1);
-
-Nlam = size(LP2Match,2);
+Nlam = size(A,2);
 localFit = zeros(Nlam,1);
 for ilam = 1 : Nlam
-    Error = (LP2Match(:,ilam) - LP(:,ilam)).*ScalingCoef(:,ilam);
-    localFit(ilam) = rms(Error);
+    
+    AScaling = Objectives.Table{ilam+1,6};
+    BSacling = Objectives.Table{ilam+1,7};
+    DScaling = Objectives.Table{ilam+1,8};
+    
+    localFit(ilam) = rms( AScaling(:).*(A{ilam}(:) - Objectives.Table{ilam+1,3}(:)) ) ...
+                   + rms( BSacling(:).*(B{ilam}(:) - Objectives.Table{ilam+1,4}(:)) ) ...
+                   + rms( DScaling(:).*(D{ilam}(:) - Objectives.Table{ilam+1,5}(:)) );
 end
-Fitness = sum(localFit)/Nlam;
+Fitness = sum(localFit)/Nlam; %
 
 end

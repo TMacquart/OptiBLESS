@@ -38,7 +38,7 @@ clear all; close all force; clc; format short g; format compact;
 addpath ./FitnessFcts
 addpath ./src
 addpath ./GUI
-addpath ./StiffnessOpt
+addpath ./src/StiffnessOpt
 
 Optimisation = 0; % 0=direct, 1=indirect
 
@@ -181,6 +181,7 @@ if 1    % Problem definition
 end
 
 
+Objectives.UserFct    = true;
 if Optimisation ==0
     Objectives.Type       = 'SS';
     Objectives.FitnessFct = @(SS)  HS_EvaluationFct(SS,Parameters);
@@ -196,10 +197,10 @@ Constraints.DeltaAngle = 15;
 Constraints.ORDERED    = false;                         
 Constraints.Balanced   = true; 
 Constraints.Sym        = true; 
-Constraints.UserFct    = true;
+
 
 % ---
-GAoptions.Npop    = 200; 	   % Population size
+GAoptions.Npop    = 5; 	   % Population size
 GAoptions.Ngen    = 10000; 	   % Number of generations
 GAoptions.NgenMin = 10000; 	   % Minimum number of generation calculated
 GAoptions.Elitism = 0.05; 	   % Percentage of elite passing to the next Gen.
