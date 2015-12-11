@@ -80,7 +80,7 @@ plotSS(Output)
 
 
 
-%% === Checking output results are correct
+%% === Checking output results are correct (Optional)
 ScalingCoef = reshape(cell2mat(Objectives.Table(2:end,4)),12,size(Objectives.Table,1)-1);
 
 for i = 2:size(Objectives.Table,1)

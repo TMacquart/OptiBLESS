@@ -1,6 +1,6 @@
 function [Fitness,output] = UserDefined_LPFitness (LP)
 
-keyboard
+keyboard % you need to complete according to your need
 
 % Add your fitness calculation as a function of the input Lamination
 % Parameters returned by the GA.

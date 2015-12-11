@@ -1,8 +1,10 @@
 function [Fitness,output] = UserDefined_SSFitness(SS) % function Fitness = UserDefined_SSFitness(SS,INPUT1,...,INPUTN)
 
+keyboard % you need to complete according to your need
+
 % Add your fitness calculation as a function of the input Stacking Sequence
 % returned by the GA
-Fitness = 
+% Fitness = COMPLETE HERE
 
 
 % The output structure can contain any data you whish the code to output.
@@ -11,7 +13,7 @@ Fitness =
 % calculations, for instance:
 % Fitness =  Fitness * NviolatedConstraints
 
-output.NViolatedConst =     % set to 0 if no constraint is calculated (this field is compulsory) 
+% output.NViolatedConst = COMPLETE HERE     % set to 0 if no constraint is calculated (this field is compulsory) 
 % output.YourFIELD  =         % optional output
 
 

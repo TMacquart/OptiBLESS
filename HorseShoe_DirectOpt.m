@@ -1,5 +1,8 @@
 % ===                                                                   === 
-%                        HorseShoe Blending Example                       
+%                  18-Panel HorseShoe Blending Benchmark Example 
+%
+% This is an advanced blending example for which significant amount of
+% results are available in the litterature.
 % ===                                                                   === 
 
 
@@ -40,42 +43,14 @@ addpath ./src
 addpath ./GUI
 addpath ./src/StiffnessOpt
 
-Optimisation = 0; % 0=direct, 1=indirect
 
+%% Objective
 
-if Optimisation ==0
-    Objectives.Table   = [{'Laminate #'}  {'Nplies [LB UB]'}];
-    for i=1:18
-        Objectives.Table = [Objectives.Table; {i}  {[18 48]}];
-    end
-else
-    Table =[ % Nply  V1D     V3D
-                32	0.208	-0.843 
-                28	0.092	-0.714
-                20	-0.722	0.054
-                18	-0.582	-0.228
-                16	-0.477	-0.235
-                22	-0.469	-0.335
-                18	-0.582	-0.228
-                24	-0.597	-0.252
-                38	0.192	-0.657
-                34	0.308	-0.776
-                30	-0.241	-0.816
-                28	0.092	-0.714
-                22	-0.469	-0.335
-                18	-0.582	-0.228
-                24	-0.597	-0.252
-                30	-0.241	-0.816
-                18	-0.582	-0.228
-                22	-0.469	-0.335];
-    
-            ScalingCoef = [0 0 0 0, 0 0 0 0, 1 0 1 0]';
-            Objectives.Table   = [{'Laminate Index'} {'Nplies [LB UB]'} {'LP2Match'} {'Importance'}];
-            for i=1:18
-                Lp2Match(:,i) = [zeros(8,1); Table(i,2); 0; Table(i,3);0 ];
-                Objectives.Table = [Objectives.Table; {i}  {[1 1]*Table(i,1)} {Lp2Match(:,i)}  ScalingCoef];
-            end
+Objectives.Table   = [{'Laminate #'}  {'Nplies [LB UB]'}];
+for i=1:18
+    Objectives.Table = [Objectives.Table; {i}  {[18 48]}];
 end
+
                         
 % ---
 if 1    % Problem definition
@@ -93,7 +68,7 @@ if 1    % Problem definition
     Parameters.rho         = 0.056999; % density (lb/inch^3) == 1577.727kg/m^3
     
     NormD = [12 18 20 24]/12;
-    if 1
+    if 1 % Geometry for the plot
         PatchXYZ{1}.X = [0  1.5 1.5  0];
         PatchXYZ{1}.Y = [-2 -2  0    0];
         
@@ -158,39 +133,16 @@ if 1    % Problem definition
     Parameters.mMax = 1;
     Parameters.nMax = 1;
     
-    Parameters.connectivity = [
-        0 1 0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0
-        1 0 1 0 0 1 0 0 1 1 0 0 0 0 0 0 0 0
-        0 1 0 1 0 1 1 0 0 0 0 0 0 0 0 0 0 0
-        0 0 1 0 1 1 1 1 0 0 0 0 0 0 0 0 0 0
-        0 0 0 1 0 0 1 1 0 0 0 0 0 0 0 0 0 0
-        0 1 1 1 0 0 1 0 0 0 0 0 0 0 0 0 0 0
-        0 0 1 1 1 1 0 1 0 0 0 0 0 0 0 0 0 0
-        0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0
-        1 1 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0
-        1 1 0 0 0 0 0 0 1 0 1 1 0 0 0 0 0 0
-        0 0 0 0 0 0 0 0 1 1 0 1 0 0 0 0 0 0
-        0 0 0 0 0 0 0 0 1 1 1 0 1 0 0 1 0 0
-        0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 1 1 0
-        0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 1 1 1
-        0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 1 1
-        0 0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 1 0
-        0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 1
-        0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 1 0];
-    
 end
 
 
 Objectives.UserFct    = true;
-if Optimisation ==0
-    Objectives.Type       = 'SS';
-    Objectives.FitnessFct = @(SS)  HS_EvaluationFct(SS,Parameters);
-else
-    Objectives.Type       = 'LP';
-    Objectives.FitnessFct = @(LP)  RMSE_LP(LP,Objectives);
-end
+Objectives.Type       = 'SS';
+Objectives.FitnessFct = @(SS)  HS_EvaluationFct(SS,Parameters);
 
-% ---
+
+
+%% Constraints
 %                        [Damtol  Rule10percent  Disorientation  Contiguity   BalancedIndirect  InernalContinuity  Covering];
 Constraints.Vector     = [false       false          false          false         false            false            false];
 Constraints.DeltaAngle = 15;
@@ -199,7 +151,8 @@ Constraints.Balanced   = true;
 Constraints.Sym        = true; 
 
 
-% ---
+
+%% Options
 GAoptions.Npop    = 5; 	   % Population size
 GAoptions.Ngen    = 10000; 	   % Number of generations
 GAoptions.NgenMin = 10000; 	   % Minimum number of generation calculated
@@ -212,14 +165,16 @@ GAoptions.PlotFct      = @gaplotbestf;          % Refresh plot every X itteratio
 GAoptions.OutputFct    = @GACustomOutput;
 
 
-% ---
+
+%% Run
 [Output] = RetrieveSS(Objectives,Constraints,GAoptions);
 
-% --- 
+
+%% PLot 
 plotSS(Output,PatchXYZ)
 
 
-% ---
+%% Check the final solutions
 Parameters.mMax = 2;
 Parameters.nMax = 2;
 [Fitness2,output2] = HS_EvaluationFct(Output.SS,Parameters)

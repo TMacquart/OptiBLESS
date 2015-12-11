@@ -1,6 +1,8 @@
 % =====                                                              ==== 
 %  This file contains the typical default inputs that can be set. 
 %  Copy and paste the part that you need into another file to help you start. 
+%  
+%         Note that this File will not successfully run by default.
 % =====                                                              ==== 
 
 clear all; clc; format short g; format compact; close all;
@@ -10,11 +12,13 @@ addpath ./GUI
 addpath ./src
 addpath ./src/StiffnessOpt
 
+
+
 %% === Objective
 % The default fitness function pre-coded in SSORT require the objective structure. 
 % The objective structure mostly contains data about fitness calculation.
 % There are 3 different objective structures depending on the type of
-% fitness function that you will be using. 
+% fitness functions that you will be using. 
 %  It can either be a fitness function based on:
 %           - Lamination parameters ('LP')
 %           - Stiffness Matrices ('ABD')
@@ -22,8 +26,6 @@ addpath ./src/StiffnessOpt
 
 
 % =================== Objectives.Table for Lamination Parameters (LP)
-
-% --- The Table regroups the most important parameters
 
 % Laminate #           : Laminate ID defining a particular patch (should be unique for each row) 
 % Nplies [LB, UB]      : Lower and Upper number of plies allowed for this patch 
@@ -36,12 +38,19 @@ Objectives.Table   = [{'Laminate #'}      {'Nplies [LB,UB]'}        {'LP2Match'}
                         { }                  { }                           { }                      { }           ]; % you may have as many line as desired
 
 
+                    
                         
 % =================== Objectives.Table for Stiffness Matrices (ABD)
 
 Objectives.Table   = [{'Laminate #'}     {'Nplies'}          {'A2Match'}     {'B2Match'}     {'D2Match'}     {'A Scaling'}  {'B Scaling'}   {'D Scaling'} ;
 %                       {Integer}    {[Integer  Integer]}  {[3x3 Matrix]}   {[3x3 Matrix]}  {[3x3 Matrix]}   {[3x3 Matrix]} {[3x3 Matrix]}  {[3x3 Matrix]}; 
                            { }                { }               { }              { }            { }              { }            { }             { }];
+
+% A2Match   : In-plane stiffness matrice parameters that are desired for this patch                         
+% A Scaling : Coefficient use to quantify the relative importance of each of the in-plane
+%             stiffness matrice parameters that are desired for this patch   
+
+
 
 
 % =================== Objectives.Table for Stacking Sequence (SS) and
@@ -52,42 +61,39 @@ Objectives.Table   = [{'Laminate #'}      {'Nplies [LB,UB]'}    ;
                          { }                      { }            ];
                      
                    
-% --- Objectives Type                        
-%       The objective Type defines what kind of fitness function you are using. 
-Objectives.Type = 'LP';  % Either ('LP'), ('ABD') or ('SS')      
+Objectives.Type = 'LP';          % The objective Type defines what kind of fitness function you are using.  Either ('LP'), ('ABD') or ('SS')      
+
+Objectives.UserFct = false;      % set to true if your are not using one of the default fitness function provided with the toolbox 
+
+Objectives.FitnessFct = @(LP) RMSE_LP(LP,Objectives);    % Enter your fitness function (stored in the FitnessFcts folder)
 
 
-Objectives.UserFct = false;   % set to true if your are not using one of the default fitness function provided with the toolbox 
-
-Objectives.FitnessFct = @(LP) RMSE_LP(LP,Objectives); % Enter your fitness function (stored in the FitnessFcts folder)
 
 
 %% === Constraints 
 
-% Constraints.Vector is a Vector of Boolean use to activate / deactivate constraints
+% Constraints.Vector is a Vector of Boolean use to activate / deactivate
+% composite design guidelines.
 
 %                       [Damtol  Rule10percent  Disorientation  Contiguity   BalancedIndirect  InernalContinuity  Covering];
 Constraints.Vector     = [false       false          false          false         false            false            false];
 
-% {Symmetry}.           Stacking sequence is mirrored about the mid-plane.
-% {Balance}.            All fibre angles, except 0$^{\circ}$ and 90$^{\circ}$, occur in $\pm$ pairs. 
-% {Damtol}.             Damage Tolerance,  $\pm$45$^{\circ}$ plies are used for the upper and lower laminate plies.
-% {Rule10percent}.      A minimum of 10\% of plies in each of the 0$^{\circ}$, ±45$^{\circ}$ and 90$^{\circ}$ is enforced.
-% {Disorientation}.     The change of angles between two consecutive plies should not exceed 45$^{\circ}$.
-% {Contiguity}.         The change of angles between two consecutive plies should not be below 5$^{\circ}$.
-% {DiscreteAngle}.      Discrete fibre angles are used (possible values are set with  \textit{$\Delta$Angle}).  
+% {Damtol}.             Damage Tolerance,  +-45 plies are used for the upper and lower laminate plies.
+% {Rule10percent}.      A minimum of 10% of plies in each of the 0, ±45 and 90 is enforced.
+% {Disorientation}.     The change of angles between two consecutive plies should not exceed 45
+% {Contiguity}.         The change of angles between two consecutive plies should not be below 5
+% {DiscreteAngle}.      Discrete fibre angles are used (possible values are set with Constraints.DeltaAngle (below)
 % {InernalContinuity}.  One ply must be kept spanning the entire structure every three plies.
 % {Covering}.           Covering plies on the lower and upper surfaces of the laminate cannot be dropped. 
 
 
+Constraints.DeltaAngle = 45;       % Possible ply angles values are defined as -90:Constraints.DeltaAngle:90
 
-Constraints.DeltaAngle = 45;       % Possible ply angles are defined as -90:Constraints.DeltaAngle:90
+Constraints.ORDERED    = false;    % If laminates are given in descending order in Objective table, this order will be kept if set to true (keep false in most cases)
 
-Constraints.ORDERED    = false;    % If laminate are given in descending order in Objective table, this order will be kept if set to true 
+Constraints.Balanced   = false;    % All fibre angles, including 0 and 90 (current limitation), occur in pairs if set to true
 
-Constraints.Balanced   = false;    % All fibre angles, including 0 and 90 (current limitation), occur in pairs if se to true
-
-Constraints.Sym        = false;    % Stacking sequence is mirrored about the mid-plane. if se to true
+Constraints.Sym        = false;    % Stacking sequence is mirrored about the mid-plane if set to true
 
 
 
@@ -106,12 +112,12 @@ GAoptions.OutputFct    = @GACustomOutput;
 
 
 %% === Run
-[Output]  = RetrieveSS(Objectives,Constraints,GAoptions);
+[Output]  = RetrieveSS(Objectives,Constraints,GAoptions); % This is the function you need to call to start the optimisation (always in this format)
 
-display(Output)
-display(Output.Table)
+display(Output)             % Display general output structure
+display(Output.Table)       % Display summary of the results
 
 
 
 %% === Plot
-plotSS(Output)
+plotSS(Output)              % Call the GUI
