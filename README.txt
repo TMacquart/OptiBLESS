@@ -2,7 +2,7 @@
 
 Overview
 ---------
-The Stacking Sequence Optimisation and Retrieval Toolbox (SSORT) is a simple MATLAB tool-box allowing you to optimise composite laminate stacking sequences.
+The Stacking Sequence Optimisation and Retrieval Toolbox (SSORT) is a simple MATLAB toolbox allowing you to optimise composite laminate stacking sequences.
 SSORT can either be used to directly optimise stacking sequence for a given problem or to retrieve stacking sequence matching intermediate parameters such
 as lamination parameters or stiffness matrices. The code is easily accesible to everybody who posseses a basic understanding 
 in classical laminate theory and optimisation. 
@@ -13,7 +13,7 @@ working of the code itself are not available at the moment (possibly will be in 
 
 Requirement
 -----------
-- MATLAB 2014.b or more recent
+- MATLAB 2015.b or more recent (can run with previous version but without plots)
 - MATLAB Optimisation toolbox (GA and fmincon)
 
 

@@ -153,9 +153,9 @@ Constraints.Sym        = true;
 
 
 %% Options
-GAoptions.Npop    = 5; 	   % Population size
-GAoptions.Ngen    = 10000; 	   % Number of generations
-GAoptions.NgenMin = 10000; 	   % Minimum number of generation calculated
+GAoptions.Npop    = 20; 	   % Population size
+GAoptions.Ngen    = 100; 	   % Number of generations
+GAoptions.NgenMin = 100; 	   % Minimum number of generation calculated
 GAoptions.Elitism = 0.05; 	   % Percentage of elite passing to the next Gen.
 GAoptions.PC      = 0.75; 	   
 

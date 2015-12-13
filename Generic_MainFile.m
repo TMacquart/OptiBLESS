@@ -31,7 +31,7 @@ addpath ./src/StiffnessOpt
 % Nplies [LB, UB]      : Lower and Upper number of plies allowed for this patch 
 % LP2Match             : Lamination parameters that are desired for this patch
 % Scaling Coefficients : Coefficient use to quantify the relative matching importance 
-%                        of each lamination parameter (if no preference use a vector of ones)
+%                        of each lamination parameter (if no preference, use a vector of ones)
 
 Objectives.Table   = [{'Laminate #'}      {'Nplies [LB,UB]'}        {'LP2Match'}         {'Scaling Coefficients'} ;
 %                      {Integer}        {[Integer  Integer]}     {(12x1 LP Vector)}     {12x1 Real Coefficient Vector};  
@@ -41,6 +41,7 @@ Objectives.Table   = [{'Laminate #'}      {'Nplies [LB,UB]'}        {'LP2Match'}
                     
                         
 % =================== Objectives.Table for Stiffness Matrices (ABD)
+% A similar one is used for Stiffness matching optimisation
 
 Objectives.Table   = [{'Laminate #'}     {'Nplies'}          {'A2Match'}     {'B2Match'}     {'D2Match'}     {'A Scaling'}  {'B Scaling'}   {'D Scaling'} ;
 %                       {Integer}    {[Integer  Integer]}  {[3x3 Matrix]}   {[3x3 Matrix]}  {[3x3 Matrix]}   {[3x3 Matrix]} {[3x3 Matrix]}  {[3x3 Matrix]}; 

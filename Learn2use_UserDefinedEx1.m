@@ -43,8 +43,9 @@ Objectives.Table   = [{'Laminate #'}     {'Nplies'}      {'LP2Match'}     {'Scal
 % --- you may also want to have a look at the UserDefined_RMSE_LP.m file 
 Objectives.UserFct    = true;    % this specify that you are using your own function for fitness calculations                      
 Objectives.FitnessFct = @(LP) UserDefined_RMSE_LP(LP,Objectives);
-% Objectives.FitnessFct = @(LP) UserDefined_LPFitness(LP); % for a more general function try (you will need to complete the fitness calculation)
 
+% --- for a more general function try (note that you will need to complete the fitness calculation)
+% Objectives.FitnessFct = @(LP) UserDefined_LPFitness(LP); 
 
 
 %% === Constraints 

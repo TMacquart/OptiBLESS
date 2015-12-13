@@ -74,8 +74,8 @@ Objectives.FitnessFct = @(LP) RMSE_LP(LP,Objectives);
 % =========================== Default Options =========================== %
 
 %                        [Damtol  Rule10percent  Disorientation  Contiguity   BalancedIndirect   InernalContinuity  Covering];
-Constraints.Vector     = [false       false          false          false             false            false            false];
-Constraints.DeltaAngle = 45;
+Constraints.Vector     = [false       false          false          false             false            false           false];
+Constraints.DeltaAngle = 5;
 Constraints.ORDERED    = false;                           
 Constraints.Balanced   = true; 
 Constraints.Sym        = false; 
