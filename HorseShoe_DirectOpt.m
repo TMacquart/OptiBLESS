@@ -48,7 +48,7 @@ addpath ./src/StiffnessOpt
 
 Objectives.Table   = [{'Laminate #'}  {'Nplies [LB UB]'}];
 for i=1:18
-    Objectives.Table = [Objectives.Table; {i}  {[18 48]}];
+    Objectives.Table = [Objectives.Table; {i}  {[28 48]}];
 end
 
                         
@@ -144,8 +144,8 @@ Objectives.FitnessFct = @(SS)  HS_EvaluationFct(SS,Parameters);
 
 %% Constraints
 %                        [Damtol  Rule10percent  Disorientation  Contiguity   BalancedIndirect  InernalContinuity  Covering];
-Constraints.Vector     = [false       false          false          false         false            false            false];
-Constraints.DeltaAngle = 15;
+Constraints.Vector     = [false       false          true          false         false            false            false];
+Constraints.DeltaAngle = 5;
 Constraints.ORDERED    = false;                         
 Constraints.Balanced   = true; 
 Constraints.Sym        = true; 
@@ -153,7 +153,7 @@ Constraints.Sym        = true;
 
 
 %% Options
-GAoptions.Npop    = 20; 	   % Population size
+GAoptions.Npop    = 2; 	   % Population size
 GAoptions.Ngen    = 100; 	   % Number of generations
 GAoptions.NgenMin = 100; 	   % Minimum number of generation calculated
 GAoptions.Elitism = 0.05; 	   % Percentage of elite passing to the next Gen.

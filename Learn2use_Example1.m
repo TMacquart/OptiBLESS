@@ -33,10 +33,10 @@ Lp2Match = [
 
 Objectives.Type    = 'LP'; 
 
-ScalingCoef        = ones(12,1); 
+ScalingCoef        = ones(12,1); % alpha 
 
-Objectives.Table   = [{'Laminate #'}     {'Nplies'}      {'LP2Match'}     {'Scaling Coefficient'} ;
-                            {1}           {[8 8]}         {Lp2Match(:,1)}  {ScalingCoef} ; ];
+Objectives.Table   = [{'Laminate #'}     {'Nplies [LB UB]'}      {'LP2Match'}     {'Scaling Coefficient'} ;
+                            {1}           {[8 8]}               {Lp2Match(:,1)}    {ScalingCoef} ; ];
                         
 Objectives.UserFct    = false;                        
 Objectives.FitnessFct = @(LP) RMSE_LP(LP,Objectives);
@@ -46,8 +46,8 @@ Objectives.FitnessFct = @(LP) RMSE_LP(LP,Objectives);
 
 %                        [Damtol  Rule10percent  Disorientation  Contiguity   BalancedIndirect  InernalContinuity  Covering];
 Constraints.Vector     = [false       false          false          false         false            false            false];
-Constraints.DeltaAngle = 45;
-Constraints.ORDERED    = true;                         
+Constraints.DeltaAngle = 45;      %-90:Constraints.DeltaAngle:90
+Constraints.ORDERED    = false;                          
 Constraints.Balanced   = false; 
 Constraints.Sym        = false; 
 
