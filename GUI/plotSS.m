@@ -94,7 +94,6 @@ for i = 1:NUniqueLam
     end
 end
 
-
 if strcmp(Output.LamType,'Sym') || strcmp(Output.LamType,'Balanced_Sym')
     HalfNum = length(SS{1})/2;
     for i = 1:NUniqueLam

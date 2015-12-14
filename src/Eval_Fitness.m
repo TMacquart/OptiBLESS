@@ -133,6 +133,17 @@ end
 [~,RevertSort]    = sort(SortedLamNumber);
 SS = SS(RevertSort);
 
+
+% --- check individual ply continuity (only if structure geometry is given)
+keyboard
+
+if FEASIBLE && isfield(Constraints,'PatchXYZ') && ~isempty(Constraints.PatchXYZ)
+   FEASIBLE = CheckContinuity(SS,Constraints.PatchXYZ); 
+end
+ 
+% ---
+
+
 if strcmp(Objectives.Type,'LP')
     LP        = LP(:,RevertSort);
     if ~Objectives.UserFct

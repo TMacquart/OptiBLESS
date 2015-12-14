@@ -197,12 +197,12 @@ Constraints.DeltaAngle = 15;
 Constraints.ORDERED    = false;                         
 Constraints.Balanced   = true; 
 Constraints.Sym        = true; 
-
+Constraints.PatchXYZ   = PatchXYZ;
 
 % ---
 GAoptions.Npop    = 5; 	   % Population size
-GAoptions.Ngen    = 10000; 	   % Number of generations
-GAoptions.NgenMin = 10000; 	   % Minimum number of generation calculated
+GAoptions.Ngen    = 10; 	   % Number of generations
+GAoptions.NgenMin = 10; 	   % Minimum number of generation calculated
 GAoptions.Elitism = 0.05; 	   % Percentage of elite passing to the next Gen.
 GAoptions.PC      = 0.75; 	   
 
