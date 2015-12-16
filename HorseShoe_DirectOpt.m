@@ -199,10 +199,23 @@ Constraints.Balanced   = true;
 Constraints.Sym        = true; 
 Constraints.PatchXYZ   = PatchXYZ;
 
+
+% --- Format Geometric Input
+if isfield(Constraints,'PatchXYZ') && ~isfield(Constraints,'PatchConnectivity') 
+    PatchConnectivity = Format_GeometricInput(Constraints.PatchXYZ);
+    display(PatchConnectivity)
+    UserInput = input(' Please check the Patch Connectivity matrix. Do you want to continue? [Y/N]: ','s');
+    if ~strcmp(UserInput,'Y')
+        error('Stopped by user. If the automatic Patch Connectivity matrix is incorrect you can input it directly as Constraints.PatchConnectivity')
+    end
+    Constraints.PatchConnectivity = PatchConnectivity;
+end
+
+
 % ---
-GAoptions.Npop    = 5; 	   % Population size
-GAoptions.Ngen    = 10; 	   % Number of generations
-GAoptions.NgenMin = 10; 	   % Minimum number of generation calculated
+GAoptions.Npop    = 25; 	   % Population size
+GAoptions.Ngen    = 250; 	   % Number of generations
+GAoptions.NgenMin = 250; 	   % Minimum number of generation calculated
 GAoptions.Elitism = 0.05; 	   % Percentage of elite passing to the next Gen.
 GAoptions.PC      = 0.75; 	   
 
@@ -217,6 +230,10 @@ GAoptions.OutputFct    = @GACustomOutput;
 
 % --- 
 plotSS(Output,PatchXYZ)
+
+fr
+
+NGeoConstraints = CheckContinuity(Output.SS,Constraints.PatchConnectivity)
 
 
 % ---

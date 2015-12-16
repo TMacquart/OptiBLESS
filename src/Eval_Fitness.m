@@ -135,12 +135,11 @@ SS = SS(RevertSort);
 
 
 % --- check individual ply continuity (only if structure geometry is given)
-keyboard
-
-if FEASIBLE && isfield(Constraints,'PatchXYZ') && ~isempty(Constraints.PatchXYZ)
-   FEASIBLE = CheckContinuity(SS,Constraints.PatchXYZ); 
+if isfield(Constraints,'PatchConnectivity') 
+    NGeoConstraints = CheckContinuity(SS,Constraints.PatchConnectivity);
+else
+    NGeoConstraints = 0;
 end
- 
 % ---
 
 
@@ -174,13 +173,13 @@ if strcmp(Objectives.Type,'SS')
     [fitness,output] = Objectives.FitnessFct(SS);                           % User Fitness Function Calls
 end
 
-
+fitness = fitness * (1+NGeoConstraints);
 
 if ~FEASIBLE  % add penalty if not FEASIBLE
     if isnan(fitness) || isinf(fitness) || ~isreal(fitness)
         error('Non appropriate Fitness (i.e. NaN,inf or complex) has been detected')
     end
-    fitness = fitness * 4 ;
+    fitness = fitness * 4;
 end
 
 

@@ -167,7 +167,6 @@ while ipop < Npop + 1
     end
     
 
-    
     %% Final check and Add to population
     if FEASIBLE
 
@@ -178,20 +177,28 @@ while ipop < Npop + 1
             Individual = [NpliesPerLam(NpatchVar) GuideAngles DropsIndexes];
         end
         
-        if Objectives.UserFct % Check based on user function = user fitness fct
-            [~,output] = fct_handle(Individual);
-%             display(output.NViolatedConst)
-            if output.NViolatedConst<=1
-                display(ipop)
-                IniPop(ipop,:) = Individual;
-                ipop   = ipop + 1;
-                NTried = 0;
-            end
+%         keyboard
+        [~,output] = fct_handle(Individual);
+        if isfield(Constraints,'PatchConnectivity') 
+            NGeoConstraints = CheckContinuity(output.SS,Constraints.PatchConnectivity);
         else
-            IniPop(ipop,:) = Individual;
-            ipop = ipop + 1;
+            NGeoConstraints = 0;
         end
+%         display(NGeoConstraints)
         
+        if output.FEASIBLE
+            if Objectives.UserFct % Check based on user function = user fitness fct
+                if output.NViolatedConst<=1
+                    display(ipop)
+                    IniPop(ipop,:) = Individual;
+                    ipop   = ipop + 1;
+                    NTried = 0;
+                end
+            else
+                IniPop(ipop,:) = Individual;
+                ipop = ipop + 1;
+            end
+        end
     end
     
     

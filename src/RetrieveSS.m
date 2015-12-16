@@ -59,7 +59,6 @@ function [output] = RetrieveSS(Objectives,Constraints,GAoptions)
 % AllowedNplies - Number of plies allowed for each patches
 
 
-
 %% Set GA, see --- doc gaoptimset --- for more option
  options  = gaoptimset('PopulationSize',GAoptions.Npop,...
                       'Generation',GAoptions.Ngen, ...
@@ -81,6 +80,7 @@ end
 
 % Handle of the fitness function 
 fct_handle = @(x)Eval_Fitness(x,Objectives,Constraints,NpatchVar,NthetaVar,AllowedNplies,LamType);  
+
 
 %% Generate Initial Population
 for i = 1:5

@@ -1,135 +1,81 @@
-function FEASIBLE = CheckContinuity(SS,PatchXYZ)
+function NGeoConstraints = CheckContinuity(SS,PatchConnectivity)
 
-FEASIBLE = true;
-
-% Reconstruct Stacking Sequences
+% Reconstruct Stacking Sequences in cell format
 NUniqueLam  = length(SS);
+NPatch      = NUniqueLam; % always true??
+
+
 NPliesLam   = cellfun(@length,SS);
 [NGuide,GuideIndex] = max(NPliesLam);
 GuideAngles = num2cell(SS{GuideIndex});
+SScell      = cell(NUniqueLam,NGuide);
 
 for i = 1:NUniqueLam
     if i == GuideIndex || NPliesLam(i) == NGuide 
-        SScell{i} = GuideAngles;    
+        SScell(i,:) = GuideAngles;    
     else 
         index = 1;
         for j=1:NGuide
             if index<=NPliesLam(i) && GuideAngles{j} == SS{i}(index)
-                SScell{i}{j} = SS{i}(index);
+                SScell(i,j) = {SS{i}(index)};
                 index = index +1;
             else
-                SScell{i}{j} = [];
+                SScell(i,j) = {[]};
             end
         end
     end
 end
 
-% Number the edges 
-NPatch      = length(PatchXYZ);
-PatchEdgeId = zeros(NPatch,4); % save the Edge Id of each patch 
-UniqueEdges = zeros(4*NPatch,6);
-
-EdgeId = 1;
-for iPatch = 1:NPatch
-    
-    if iPatch == 1
-        
-         for iEdge = 1:4
-             if iEdge == 4
-                UniqueEdges(EdgeId,:) =  [PatchXYZ{iPatch}.X(iEdge) PatchXYZ{iPatch}.Y(iEdge) PatchXYZ{iPatch}.Z(iEdge) PatchXYZ{iPatch}.X(1) PatchXYZ{iPatch}.Y(1) PatchXYZ{iPatch}.Z(1)];
-             else
-                UniqueEdges(EdgeId,:) =  [PatchXYZ{iPatch}.X(iEdge) PatchXYZ{iPatch}.Y(iEdge) PatchXYZ{iPatch}.Z(iEdge) PatchXYZ{iPatch}.X(iEdge+1) PatchXYZ{iPatch}.Y(iEdge+1) PatchXYZ{iPatch}.Z(iEdge+1)];
-             end
-            PatchEdgeId(iPatch,iEdge) =  iEdge; 
-            EdgeId = EdgeId+1;
-         end
-        
-    else
-        
-        for iEdge = 1:4
-            if iEdge == 4
-                Vertice =  [PatchXYZ{iPatch}.X(iEdge) PatchXYZ{iPatch}.Y(iEdge) PatchXYZ{iPatch}.Z(iEdge) PatchXYZ{iPatch}.X(1) PatchXYZ{iPatch}.Y(1) PatchXYZ{iPatch}.Z(1)];
-            else
-                Vertice =  [PatchXYZ{iPatch}.X(iEdge) PatchXYZ{iPatch}.Y(iEdge) PatchXYZ{iPatch}.Z(iEdge) PatchXYZ{iPatch}.X(iEdge+1) PatchXYZ{iPatch}.Y(iEdge+1) PatchXYZ{iPatch}.Z(iEdge+1)];
-            end
-            
-            VerticeRevert = [Vertice(4:6) Vertice(1:3)];
-            
-            [Member1,MemberIndex1] = ismember(Vertice,UniqueEdges,'rows');
-            [Member2,MemberIndex2] = ismember(VerticeRevert,UniqueEdges,'rows');
-            
-            if ~Member1 && ~Member2
-                UniqueEdges(EdgeId,:) = Vertice;
-                
-                PatchEdgeId(iPatch,iEdge) =  EdgeId;
-                EdgeId = EdgeId+1;
-            else
-                if Member1
-                    PatchEdgeId(iPatch,iEdge) = MemberIndex1;
-                else
-                    PatchEdgeId(iPatch,iEdge) = MemberIndex2;
-                end
-            end
-        end
-        
-    end
-end
-EdgeId = EdgeId -1;
-UniqueEdges = UniqueEdges(1:EdgeId,:);
-
-
-% Compute connection matrix between patches
-NEdge             = length(PatchEdgeId(:));
-PatchConnectivity = zeros(NPatch);
-for iPatch = 1:NPatch
-    for iEdge = 1:4
-        [irow,~]=find(PatchEdgeId==PatchEdgeId(iPatch,iEdge));
-        for j=1:length(irow)
-            if irow(j)~=iPatch
-                PatchConnectivity(iPatch,irow(j))=1;
-            end
-        end
-    end
-end
-
-% figure
-% hold all
-% for iEdge= 1:EdgeId
-%     % check geometry by plotting edges
-%     plot3([UniqueEdges(iEdge,[1 4])],[UniqueEdges(iEdge,[2 5])],[UniqueEdges(iEdge,[3 6])])
-% end
-
-keyboard
 
 % check the geometrical continuity of each ply
+NGeoConstraints = 0;
 for iply = 1:NGuide
     
-    CoveredPatch = find(~cellfun(@isempty, SScell)); % Patches which the ply is covering
-
-    CoveredPatch(CoveredPatch == GuideIndex) = []; %#ok<NASGU>
-    ConnectedPatch = find(PatchConnectivity(GuideIndex,:)); %#ok<EFIND>
+    Ply        = SScell(:,iply);
+    PlyPatches = find(~cellfun(@isempty, Ply)); % Patches which the ply is covering
     
-    ContinuouSpan = GuideIndex;
-    
-    while ~isempty(ConnectedPatch)
-        NewConnection = [];
-        for j=1:length(ConnectedPatch)
-            ContinuouSpan = [ContinuouSpan CoveredPatch(CoveredPatch==ConnectedPatch(j))];
-            CoveredPatch(CoveredPatch==ConnectedPatch(j))=[];
-            NewConnection = [NewConnection find(PatchConnectivity(ConnectedPatch(j),:))];
-        end
-        ConnectedPatch = unique(NewConnection);
+    if length(PlyPatches) ~= NPatch                                         % possible discontinuity
         
-
-        for j=1:length(ContinuouSpan)
-            ConnectedPatch(ConnectedPatch == ContinuouSpan(j)) = []; % remove connection already accounted for
+        CoveredPatch  = PlyPatches;                                         % we are progressively removing reachable patches 
+        ContinuousPly = GuideIndex;                                         % patch numbers that are connected and in the ply
+        CoveredPatch(CoveredPatch == ContinuousPly) = [];                          
+        ConnectedPatch = find(PatchConnectivity(ContinuousPly,:));          % patches next to the guide              
+        
+       
+        while ~isempty(CoveredPatch)                                        % as long as some patches are not accounted for
+            OldConnectedPatch = ConnectedPatch;
+            
+            % identify connected patch that are aslo covered by the ply
+            for j=1:length(ConnectedPatch)
+                PatchIndexes = find(CoveredPatch==ConnectedPatch(j)); % find Covered patch reachable from the guide extending ply        
+                ContinuousPly = [ContinuousPly CoveredPatch(PatchIndexes)]; %#ok<AGROW>
+                CoveredPatch(PatchIndexes)=[];
+            end
+            
+            % compute new connected patches
+            NewConnection = []; 
+            for j=1:length(ContinuousPly)
+                NewConnection = [NewConnection find(PatchConnectivity(ContinuousPly(j),:))];
+            end
+            ConnectedPatch = unique(NewConnection);
+            
+            % remove patches already accounted for
+            for j=1:length(ContinuousPly)
+                ConnectedPatch(ConnectedPatch == ContinuousPly(j)) = []; 
+            end
+            
+            % break from while loop if no change 
+            if length(OldConnectedPatch) == length(ConnectedPatch)
+                if sum(sort(OldConnectedPatch) - sort(ConnectedPatch)) == 0
+                    NGeoConstraints = NGeoConstraints +1;
+                    break
+                end
+            end
+            
         end
     end
     
 end
-
-keyboard
-
 
 end
 
