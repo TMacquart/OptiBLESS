@@ -1,7 +1,7 @@
 % ===                                                                   === 
 %                     Stacking Sequence Plotting function                       
 %
-% plotSS(Output,Dim,PatchXYZ,varargin)
+% plotSS(Output,PatchXYZ,varargin)
 %
 % - Output: structure returned by RetrieveSS
 % - Dim:    Either set to 2 or 3, corresponding to 2D or 3D plot

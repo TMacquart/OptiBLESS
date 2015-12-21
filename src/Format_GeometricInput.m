@@ -1,19 +1,19 @@
-function [PatchConnectivity] = Format_GeometricInput(PatchXYZ)
+function [PatchConnectivity] = Format_GeometricInput(Patch)
 
 
 %% Number Edges
-NPatch      = length(PatchXYZ);         % Total number of patches
+NPatch      = length(Patch);         % Total number of patches
 PatchEdgeId = zeros(NPatch,4);          % save the 4 Edge Identifier for all patches
 Edges = zeros(4*NPatch,6);              % Pre-allocation
 
 PatchEdgeId(1,:) = [1 2 3 4];
-[Edges(1:4,:)]   = ReturnEdges(PatchXYZ{1}); % 1st patch = 4 new edges
+[Edges(1:4,:)]   = ReturnEdges(Patch{1}); % 1st patch = 4 new edges
 EdgeId = 5;                                     % Edge Id Increment
 
 
 for iPatch = 2:NPatch  % check if edges does not already exist before accounting it
     
-    [PatchEdges]     = ReturnEdges(PatchXYZ{iPatch});
+    [PatchEdges]     = ReturnEdges(Patch{iPatch});
     RevertPatchEdges = [PatchEdges(:,4:6) PatchEdges(:,1:3)];
     
     for i = 1:4

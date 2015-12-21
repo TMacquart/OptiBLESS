@@ -48,7 +48,7 @@ function [output] = RetrieveSS(Objectives,Constraints,GAoptions)
 
 
 %% Format Inputs  
-[Nvar,NpatchVar,NthetaVar,NdropVar,LamType,LB,UB,AllowedNplies] = FormatInput(Objectives,Constraints);
+[Nvar,NpatchVar,NthetaVar,NdropVar,LamType,LB,UB,AllowedNplies,Fixed] = FormatInput(Objectives,Constraints);
 % Nvar          - Number of design variables 
 % NpatchVar     - Patches with variable number of plies (set to 1 if variable)
 % NthetaVar     - Number of fibre angles used to describe the guide laminate
@@ -79,13 +79,13 @@ end
     
 
 % Handle of the fitness function 
-fct_handle = @(x)Eval_Fitness(x,Objectives,Constraints,NpatchVar,NthetaVar,AllowedNplies,LamType);  
+fct_handle = @(x)Eval_Fitness(x,Objectives,Constraints,NpatchVar,NthetaVar,AllowedNplies,LamType,Fixed);  
 
-
+% keyboard
 %% Generate Initial Population
 for i = 1:5
     try
-        [IniPop] = Generate_IniPop (Nvar,GAoptions.Npop,NpatchVar,NthetaVar,NdropVar,Constraints,Objectives,AllowedNplies,LamType,fct_handle);
+        [IniPop] = Generate_IniPop (Nvar,GAoptions.Npop,NpatchVar,NthetaVar,NdropVar,Constraints,Objectives,AllowedNplies,LamType,Fixed,fct_handle);
         break; 
     catch
         fprintf('Inipop Failed. Retrying ...\n');
@@ -94,7 +94,7 @@ for i = 1:5
         end
     end
 end
-% IniPop(1,:) = [(90+[-45 0 45 90 0  -45  45  90  -45  45])/Constraints.DeltaAngle [1 3 6 7] []]
+% IniPop(1,:) = [(90+[-45 0 45 90 0  -45  45  90  -45  45])/Constraints.DeltaAngle [1 3 6 7 9 10] []] % not balanced
 % IniPop(1,:) = [40*ones(1,18) zeros(1,70)]
 % keyboard
 options = gaoptimset(options,'InitialPopulation' ,IniPop);

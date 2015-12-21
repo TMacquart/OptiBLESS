@@ -32,7 +32,7 @@
 % either expressed or implied, of the FreeBSD Project.
 % ----------------------------------------------------------------------- %
 
-function [SortedLamNumber,GuideAngles,ShuffleLoc,DropIndexes] = Convert_Genotype(Individual,LamNumber,Constraints,NpatchVar,NthetaVar,AllowedNplies)
+function [SortedLamNumber,GuideAngles,ShuffleLoc,DropIndexes] = Convert_Genotype(Individual,LamNumber,Constraints,NpatchVar,NthetaVar,AllowedNplies,Fixed)
 
 %% Extract Number of ply per patches
 IndexPly = 1;
@@ -64,6 +64,10 @@ NGuidePlies     = max(NpliesperLam);                                           %
 NDropPlies      = abs(diff(NpliesperLam));                                     % number of ply drops between each laminates
 GuideAngles     = Individual(sum(NpatchVar) + [1:NGuidePlies]);                % Extract variable fibre angles of the guide
 
+% if Constraints.Vector(2) == 1 % add the 10% rule framework
+%     keyboard
+%     Fixed
+% end
 
 
 %% --- Shuffle Location (i.e. location of angles pairs) for balanced Lam.

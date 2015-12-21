@@ -29,7 +29,6 @@ Lp2Match = [
 
 
 Objectives.Type    = 'LP'; 
-
 ScalingCoef        = ones(12,1); 
 
 Objectives.Table   = [{'Laminate #'}     {'Nplies'}      {'LP2Match'}     {'Scaling Coefficient'} ;
@@ -42,7 +41,7 @@ Objectives.FitnessFct = @(LP) RMSE_LP(LP,Objectives);
 %% === Constraints 
 
 %                        [Damtol  Rule10percent  Disorientation  Contiguity   BalancedIndirect  InernalContinuity  Covering];
-Constraints.Vector     = [false       false          false          false         false            false            false];
+Constraints.Vector     = [false       true          false          false         false            false            false];
 Constraints.DeltaAngle = 45;
 Constraints.ORDERED    = false;                         
 Constraints.Balanced   = false; 

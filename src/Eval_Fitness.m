@@ -37,7 +37,7 @@
 
 
 
-function [fitness,output] = Eval_Fitness (Individual,Objectives,Constraints,NpatchVar,NthetaVar,AllowedNplies,LamType)
+function [fitness,output] = Eval_Fitness (Individual,Objectives,Constraints,NpatchVar,NthetaVar,AllowedNplies,LamType,Fixed)
 
 
 ConstraintVector = Constraints.Vector;
@@ -49,7 +49,7 @@ for j=1:Nlam
     LamNumber(j) = Objectives.Table{j+1,1}; 
 end
 
-[SortedLamNumber,GuideAngles,ShuffleLoc,DropIndexes] = Convert_Genotype(Individual,LamNumber,Constraints,NpatchVar,NthetaVar,AllowedNplies);
+[SortedLamNumber,GuideAngles,ShuffleLoc,DropIndexes] = Convert_Genotype(Individual,LamNumber,Constraints,NpatchVar,NthetaVar,AllowedNplies,Fixed);
 NGuidePlies = length(GuideAngles);
 NDropPlies  = cellfun(@length,DropIndexes,'UniformOutput', true); % NUmber of dropped between each patch
 Ndrop       = length(NDropPlies);                                       % Total number of drops between patches
@@ -92,39 +92,39 @@ end
 
 
 %% fitness calculation
-% Guide
-SS          = cell(1,Ndrop+1);
-FiberAngles = Convert_dvAngles2FiberAngles(GuideAngles,[],ShuffleLoc,LamType);
-SS{1}       = FiberAngles;
+% pre-allocation
+SS  = cell(1,Ndrop+1);
 
 if strcmp(Objectives.Type,'LP')
-    LP      = zeros(12,Ndrop+1);
-    LP(:,1) = Convert_SS2LP(FiberAngles);            % evaluate lamination parameters for the guide
+    LP = zeros(12,Ndrop+1);
 end
+
 if strcmp(Objectives.Type,'ABD')
     A = cell(Ndrop+1,1);
     B = cell(Ndrop+1,1);
     D = cell(Ndrop+1,1);
-    [A{1},B{1},D{1}] = Convert_SS2ABD (Objectives.mat(1),Objectives.mat(2),Objectives.mat(4),Objectives.mat(3),Constraints.ply_t,FiberAngles,true);
 end
 
-% After Drops
-DropsLoc = [];
-for iDrop = 1 : Ndrop
-    index = iDrop + 1;
-    
-    DropsLoc = [DropsLoc DropIndexes{iDrop}];
-    DropsLoc = unique(DropsLoc);
-    DropsLoc(DropsLoc>NGuidePlies) = [];                                    % remove Infeasible Drops (only for variable Nply)
 
+% Guide + After Drops
+for iDrop = 0 : Ndrop
+    
+    if iDrop == 0
+        DropsLoc = [];
+    else
+        DropsLoc = [DropsLoc DropIndexes{iDrop}];
+        DropsLoc = unique(DropsLoc);
+        DropsLoc(DropsLoc>NGuidePlies) = [];                                    % remove Infeasible Drops (only for variable Nply)
+    end
+    
     FiberAngles = Convert_dvAngles2FiberAngles(GuideAngles,DropsLoc,ShuffleLoc,LamType);
-    SS{index}   = FiberAngles;
+    SS{iDrop + 1}   = FiberAngles;
     
     if strcmp(Objectives.Type,'LP')
-        LP(:,index) = Convert_SS2LP(FiberAngles);          % evaluate lamination parameters for the droped laminates
+        LP(:,iDrop + 1) = Convert_SS2LP(FiberAngles);          % evaluate lamination parameters for the droped laminates
     end
     if strcmp(Objectives.Type,'ABD')
-        [A{index},B{index},D{index}] = Convert_SS2ABD (Objectives.mat(1),Objectives.mat(2),Objectives.mat(4),Objectives.mat(3),Constraints.ply_t,FiberAngles,true);
+        [A{iDrop + 1},B{iDrop + 1},D{iDrop + 1}] = Convert_SS2ABD (Objectives.mat(1),Objectives.mat(2),Objectives.mat(4),Objectives.mat(3),Constraints.ply_t,FiberAngles,true);
     end
 end
 
@@ -137,6 +137,7 @@ SS = SS(RevertSort);
 % --- check individual ply continuity (only if structure geometry is given)
 if isfield(Constraints,'PatchConnectivity') 
     NGeoConstraints = CheckContinuity(SS,Constraints.PatchConnectivity);
+    output.NGeoConstraints = NGeoConstraints;
 else
     NGeoConstraints = 0;
 end

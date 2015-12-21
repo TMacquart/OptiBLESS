@@ -49,7 +49,7 @@
 % ----------------------------------------------------------------------- %
 
 
-function [IniPop] = Generate_IniPop (nvar,Npop,NpatchVar,NthetaVar,NdropVar,Constraints,Objectives,AllowedNplies,LamType,fct_handle)
+function [IniPop] = Generate_IniPop (nvar,Npop,NpatchVar,NthetaVar,NdropVar,Constraints,Objectives,AllowedNplies,LamType,Fixed,fct_handle)
 
 
 % Initialisation
@@ -112,14 +112,35 @@ while ipop < Npop + 1
         GuideAngles(iAngle) = AddedAngle;
     end                                     % Stack plies according to constraints activated
     
-    
-    %% 10% rule
+
+    %% 10% rule Framework
     if ConstraintVector(2)
+%         keyboard % might be to res
+%         RuleAngles     = [45 90 -45 0]; 
+%         FreeLoc        = 1:(Fixed.Ntheta+NthetaVar);
+%         [~,Index]      = ismember(Fixed.thetaLoc,1:8);
+%         FreeLoc(Index) = [];
+%         
+%         AddAngles = RuleAngles(1+rem(0:Fixed.Ntheta-1,4));
+%         NewGuideAngles = zeros(1,(Fixed.Ntheta+NthetaVar));
+%         NewGuideAngles(Fixed.thetaLoc) = AddAngles;
+%         NewGuideAngles(FreeLoc) = GuideAngles;
+%         
+%         GuideAngles = NewGuideAngles;
+%         
+%         ShuffleLoc = zeros(1,Fixed.Ntheta+NthetaVar);
+%         ShuffleLoc(Fixed.thetaLoc) = Fixed.thetaLoc +  (Fixed.Ntheta+NthetaVar)
         [GuideAngles] = Enforce_10PercentRule(GuideAngles);
     end
     
-    %% 
-    GuideAngles = round((GuideAngles)/DeltaAngle)*DeltaAngle; % round up Angles to discrete value
+    
+        %% 
+        
+%         keyboard
+        if sum(abs(GuideAngles-round((GuideAngles)/DeltaAngle)*DeltaAngle))~= 0
+            keyboard
+        end
+    GuideAngles = round((GuideAngles)/DeltaAngle)*DeltaAngle; % round up Angles to discrete value (to remove?)
     
     
     ShuffleLoc = randperm(NthetaVar*2,NthetaVar); % not used if not balanced
@@ -139,6 +160,7 @@ while ipop < Npop + 1
     end
     
     %% Feasibility check
+%     keyboard
     if FEASIBLE
         NGuideDropPlies = NPliesGuide-min(NpliesPerLam);
         [FEASIBLE] = Check_Feasibility(ConstraintVector,GuideAngles(1:NPliesGuide),ShuffleLoc(1:NPliesGuide),DropsIndexes(1:NGuideDropPlies),NPliesGuide,NGuideDropPlies,LamType);

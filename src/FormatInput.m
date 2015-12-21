@@ -45,7 +45,7 @@
 % ----------------------------------------------------------------------- %
 
 
-function [Nvar,NpatchVar,NthetaVar,NdropVar,LamType,LB,UB,AllowedNplies]  = FormatInput(Objectives,Constraints)
+function [Nvar,NpatchVar,NthetaVar,NdropVar,LamType,LB,UB,AllowedNplies,Fixed]  = FormatInput(Objectives,Constraints)
 
 %% NthetaVar and LamType
 
@@ -74,6 +74,16 @@ end
 Nplies    = round(NplyIni/DeltaNPly)*DeltaNPly;                    % Upper and lower Number of plies allowed for each patch
 NthetaVar = max(Nplies(:))/DeltaNPly;                              % Max number of variable angles (without counting Symmetric and balanced design variables)
 
+% if Constraints.Vector(2)==1 % Framework for 10% rule 
+%     Fixed.Ntheta   = ceil(0.4*NthetaVar);
+%     Fixed.thetaLoc = round(linspace(1,NthetaVar,Fixed.Ntheta));
+%     if length(unique(Fixed.thetaLoc)) ~= length(Fixed.thetaLoc)
+%         keyboard % should be unique locations
+%     end
+%     NthetaVar      = NthetaVar - Fixed.Ntheta;
+% else
+    Fixed = {};
+% end
 
 
 %% NdropVar
@@ -125,8 +135,9 @@ UB = [UB; cellfun(@max,AllowedNplies(NpatchVar),'UniformOutput', true)];
 
 
  % Bounds for Guide angles
-LB = [LB; 0*ones(NthetaVar,1)];                                                
+LB = [LB; 0*ones(NthetaVar,1)];  
 UB = [UB; (Nd_state-1)*ones(NthetaVar,1)];
+
 
 
 % Bounds for Balanced angles

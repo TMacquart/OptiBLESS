@@ -201,14 +201,16 @@ Constraints.PatchXYZ   = PatchXYZ;
 
 
 % --- Format Geometric Input
-if isfield(Constraints,'PatchXYZ') && ~isfield(Constraints,'PatchConnectivity') 
-    PatchConnectivity = Format_GeometricInput(Constraints.PatchXYZ);
-    display(PatchConnectivity)
-    UserInput = input(' Please check the Patch Connectivity matrix. Do you want to continue? [Y/N]: ','s');
-    if ~strcmp(UserInput,'Y')
-        error('Stopped by user. If the automatic Patch Connectivity matrix is incorrect you can input it directly as Constraints.PatchConnectivity')
+if 1
+    if isfield(Constraints,'PatchXYZ') && ~isfield(Constraints,'PatchConnectivity')
+        PatchConnectivity = Format_GeometricInput(Constraints.PatchXYZ);
+        display(PatchConnectivity)
+        UserInput = input(' Please check the Patch Connectivity matrix. Do you want to continue? [Y/N]: ','s');
+        if ~strcmp(UserInput,'Y')
+            error('Stopped by user. If the automatic Patch Connectivity matrix is incorrect you can input it directly as Constraints.PatchConnectivity')
+        end
+        Constraints.PatchConnectivity = PatchConnectivity;
     end
-    Constraints.PatchConnectivity = PatchConnectivity;
 end
 
 
@@ -230,8 +232,6 @@ GAoptions.OutputFct    = @GACustomOutput;
 
 % --- 
 plotSS(Output,PatchXYZ)
-
-fr
 
 NGeoConstraints = CheckContinuity(Output.SS,Constraints.PatchConnectivity)
 
