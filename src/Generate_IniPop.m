@@ -93,14 +93,14 @@ while ipop < Npop + 1
     for iAngle = 2 : NthetaVar - 1 % NPliesGuide-1
         if ConstraintVector(3)
             if ConstraintVector(4)
-                A = [(-45 + 40*rand) (5 + 40*rand)];
+                A = round([(-45 + 40*rand) (5 + 40*rand)]/DeltaAngle)*DeltaAngle;
                 AddedAngle = GuideAngles(iAngle-1) + A(ceil(2*rand));
             else
                 AddedAngle = GuideAngles(iAngle-1) + (-45 + 90*rand);
             end
         else
             if ConstraintVector(4)
-                A = [(-90 + 85*rand) (5 + 85*rand)];
+                A = round([(-90 + 85*rand) (5 + 85*rand)]/DeltaAngle)*DeltaAngle;
                 AddedAngle = GuideAngles(iAngle-1) + A(ceil(2*rand));
             else
                 AddedAngle = randi([0 length(0:DeltaAngle:180)-1],1,1)*DeltaAngle-90; % no constraint - full range (use randi for uniform PDF)
@@ -136,7 +136,7 @@ while ipop < Npop + 1
     
         %% 
         
-%         keyboard
+
         if sum(abs(GuideAngles-round((GuideAngles)/DeltaAngle)*DeltaAngle))~= 0
             keyboard
         end
