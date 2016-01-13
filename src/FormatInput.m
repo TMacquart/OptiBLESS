@@ -135,7 +135,7 @@ UB = [UB; cellfun(@max,AllowedNplies(NpatchVar),'UniformOutput', true)];
 
 
  % Bounds for Guide angles
-LB = [LB; 0*ones(NthetaVar,1)];  
+LB = [LB; 1*ones(NthetaVar,1)];  
 UB = [UB; (Nd_state-1)*ones(NthetaVar,1)];
 
 

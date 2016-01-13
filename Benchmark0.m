@@ -61,13 +61,13 @@ ply_t = 0.000127;
 
 
 
-GuideLamDv = [ 45   -45    90     0    45    90     0    45];                           
+% GuideLamDv = [ 45   -45    90     0    45    90     0    45];                           
 
 %% Balanced Symmetric
 % GuideLamDv = [+45 0 -45 90];                                                   % theta 1
 % GuideLamDv = [+45 0 -45 90 45 0 -45 0];                                        % theta 2
 % GuideLamDv = [-45 0 45  90 0  -45  45  90  -45  45];                           % theta 3
-GuideLamDv = [0 -45 45 45 -45   0 45 90  90 0 -45 45 0  -45 45 90 90 -45 0   0]; % theta 4
+% GuideLamDv = [0 -45 45 45 -45   0 45 90  90 0 -45 45 0  -45 45 90 90 -45 0   0]; % theta 4
 
 
 %% Symmetric 
@@ -80,7 +80,7 @@ GuideLamDv = [0 -45 45 45 -45   0 45 90  90 0 -45 45 0  -45 45 90 90 -45 0   0];
 % GuideLamDv = [-50 85 -40  -25  20 25  -45 -85 50 -20 -40  5 -5 -75 40  75  45 -85 40 85];                                             % theta 8
 
 %% Generic 
-% GuideLamDv = [10   -65   -60   -40    65   -40    60   -45    80   -25];                                                              % theta 9
+GuideLamDv = [10   -65   -60   -40    65   -40    60   -45    80   -25];                                                              % theta 9
 % GuideLamDv = [-50   -40    25     0   -25    60    20    10    80   -35 50    50   -20    15   -75   -80    10    55    80   -65];    % theta 10
 % 
 % GuideLamDv = randi([1 36],1,100)*5-90;
@@ -88,7 +88,7 @@ GuideLamDv = [0 -45 45 45 -45   0 45 90  90 0 -45 45 0  -45 45 90 90 -45 0   0];
 
 %%
 % GuideLamDv = [-90 -45 -45];
-Drops        =  [{4}] %[{[7 8 9 15 16 17]}] %[{[2 11]} {[6 12]}] % [{[4 6 7 8]}] %[{[4 5 6 11 15 17 20]}]%[{[2 3 8]}]; %[2 4 6];
+Drops        = [{[1 2 3]}]; % [{[4 6 14 16 18 20]}]; % [{[1 3 7 10]}]; % [{[3 6 9 12 16]}]; % [{[2 3 8]}]; %[{[4 5 6 11 15 17 20]}]% [{[4 6 7 8]}] %[{[1 3]}] % [{4}] %[{[7 8 9 15 16 17]}] %[{[2 11]} {[6 12]}] % [2 4 6];
 % GuideLam   = [GuideLamDv, fliplr(GuideLamDv)];
 % GuideLam   = [GuideLamDv, -GuideLamDv];
 % GuideLam   = [GuideLamDv, -GuideLamDv, fliplr([GuideLamDv, -GuideLamDv])]'; % balanced/symetric
@@ -103,15 +103,16 @@ for i = 1:NUniqueLam
         Lam(DropsLoc) = [];   
     end
     
-    Lam = [Lam, fliplr(Lam)];
+%     Lam = [Lam, fliplr(Lam)];
        
     Lp2Match(:,i)    = Convert_SS2LP(Lam);
     Objectives.Table = [Objectives.Table; [{i} {[1 1]*length(Lam)} {Lp2Match(:,i)} {ScalingCoef}]];
 end
 
+Objectives.UserFct    = false;    
 Objectives.Type        = 'LP';
-Objectives.FitnessFct = @(LP) RMSE_MaxAE_LP(LP,Objectives);
-% Objectives.FitnessFct = @(LP) RMSE_LP(LP,Objectives);
+% Objectives.FitnessFct = @(LP) RMSE_MaxAE_LP(LP,Objectives);
+Objectives.FitnessFct = @(LP) RMSE_LP(LP,Objectives);
 
 
 % =========================== Default Options =========================== %
@@ -121,7 +122,7 @@ Constraints.Vector     = [false       false          false          false       
 Constraints.DeltaAngle = 5;
 Constraints.ply_t      = ply_t;      % ply thickness
 Constraints.Balanced   = false;      % Direct Constraint Handling
-Constraints.Sym        = true; 
+Constraints.Sym        = false; 
 Constraints.ORDERED    = false;           
 
 

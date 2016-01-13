@@ -46,7 +46,7 @@ Optimisation = 0; % 0=direct, 1=indirect
 if Optimisation ==0
     Objectives.Table   = [{'Laminate #'}  {'Nplies [LB UB]'}];
     for i=1:18
-        Objectives.Table = [Objectives.Table; {i}  {[18 48]}];
+        Objectives.Table = [Objectives.Table; {i}  {[14 48]}];
     end
 else
     Table =[ % Nply  V1D     V3D
@@ -181,7 +181,7 @@ if 1    % Problem definition
 end
 
 
-Objectives.UserFct    = true;
+Objectives.UserFct = true;
 if Optimisation ==0
     Objectives.Type       = 'SS';
     Objectives.FitnessFct = @(SS)  HS_EvaluationFct(SS,Parameters);
@@ -201,7 +201,7 @@ Constraints.PatchXYZ   = PatchXYZ;
 
 
 % --- Format Geometric Input
-if 1
+if 0 
     if isfield(Constraints,'PatchXYZ') && ~isfield(Constraints,'PatchConnectivity')
         PatchConnectivity = Format_GeometricInput(Constraints.PatchXYZ);
         display(PatchConnectivity)
@@ -215,14 +215,14 @@ end
 
 
 % ---
-GAoptions.Npop    = 25; 	   % Population size
-GAoptions.Ngen    = 250; 	   % Number of generations
-GAoptions.NgenMin = 250; 	   % Minimum number of generation calculated
+GAoptions.Npop    = 100; 	   % Population size
+GAoptions.Ngen    = 5000; 	   % Number of generations
+GAoptions.NgenMin = 2500; 	   % Minimum number of generation calculated
 GAoptions.Elitism = 0.05; 	   % Percentage of elite passing to the next Gen.
 GAoptions.PC      = 0.75; 	   
 
-GAoptions.PlotInterval = [10];                  % Refresh plot every X itterations         
-GAoptions.SaveInterval = [];                  % Save Data every X itterations   
+GAoptions.PlotInterval = [];                  % Refresh plot every X itterations         
+GAoptions.SaveInterval = [1];                  % Save Data every X itterations   
 GAoptions.PlotFct      = @gaplotbestf;          % Refresh plot every X itterations
 GAoptions.OutputFct    = @GACustomOutput;
 
@@ -230,10 +230,9 @@ GAoptions.OutputFct    = @GACustomOutput;
 % ---
 [Output] = RetrieveSS(Objectives,Constraints,GAoptions);
 
-% --- 
+% ---
 plotSS(Output,PatchXYZ)
-
-NGeoConstraints = CheckContinuity(Output.SS,Constraints.PatchConnectivity)
+% NGeoConstraints = CheckContinuity(Output.SS,Constraints.PatchConnectivity)
 
 
 % ---
