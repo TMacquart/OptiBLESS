@@ -2,7 +2,7 @@
 %   Use GA to optimise stacking sequence ply angles, Drops and Number of      
 %     plies. Direct and Indirect Optimisation Framework can be used        
 %
-% [output] = RetrieveSS(Objectives,Constraints,GAoptions)
+% [output] = OptiBLESS(Objectives,Constraints,GAoptions)
 %  
 % 
 %  The individual of GA is composed of 3 parts:
@@ -44,7 +44,7 @@
 % ----------------------------------------------------------------------- %
 
 
-function [output] = RetrieveSS(Objectives,Constraints,GAoptions)
+function [output] = OptiBLESS(Objectives,Constraints,GAoptions)
 
 
 %% Format Inputs  
@@ -93,8 +93,8 @@ for i = 1:5
             error('Did not manage to generate a feasible initial population. There might be something wrong.')
         end
     end
-end
-% IniPop(1,:) = [(90+[-45 0 45 90 0  -45  45  90  -45  45])/Constraints.DeltaAngle [1 3 6 7 9 10] []] % not balanced
+end   
+% IniPop(1,:) = [(90+[10   -65   -60   -40    65   -40    60   -45    80   -25])/Constraints.DeltaAngle [] []] % not balanced
 % IniPop(1,:) = [40*ones(1,18) zeros(1,70)]
 % keyboard
 options = gaoptimset(options,'InitialPopulation' ,IniPop);
