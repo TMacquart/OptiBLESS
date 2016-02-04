@@ -163,7 +163,7 @@ while ipop < Npop + 1
 %     keyboard
     if FEASIBLE
         NGuideDropPlies = NPliesGuide-min(NpliesPerLam);
-        [FEASIBLE] = Check_Feasibility(ConstraintVector,GuideAngles(1:NPliesGuide),ShuffleLoc(1:NPliesGuide),DropsIndexes(1:NGuideDropPlies),NPliesGuide,NGuideDropPlies,LamType);
+        [FEASIBLE] = Check_Feasibility(ConstraintVector,GuideAngles(1:NPliesGuide),ShuffleLoc(1:NPliesGuide),DropsIndexes(1:NGuideDropPlies),NPliesGuide,NGuideDropPlies,LamType,Constraints.Contiguity);
     end
     
     

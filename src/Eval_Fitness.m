@@ -86,7 +86,7 @@ if ConstraintVector(2)                                                      % 10
 end
 
 if FEASIBLE
-    [FEASIBLE] = Check_Feasibility(ConstraintVector,GuideAngles,ShuffleLoc,cell2mat(DropIndexes),NGuidePlies,NDropPlies,LamType);
+    [FEASIBLE] = Check_Feasibility(ConstraintVector,GuideAngles,ShuffleLoc,cell2mat(DropIndexes),NGuidePlies,NDropPlies,LamType,Constraints.Contiguity);
 end
 
 

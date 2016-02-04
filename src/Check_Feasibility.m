@@ -37,7 +37,7 @@
 
 
 
-function [FEASIBLE] = Check_Feasibility(ConstraintVector,GuideAngles,ShuffleLoc,DropsIndexes,NGuidePlies,NDropPlies,LamType)
+function [FEASIBLE] = Check_Feasibility(ConstraintVector,GuideAngles,ShuffleLoc,DropsIndexes,NGuidePlies,NDropPlies,LamType,NContiguity)
 
 FEASIBLE = true;
 
@@ -69,7 +69,7 @@ if ConstraintVector(1)
 end
 
 
-if ConstraintVector(3) % Disorientation
+if ConstraintVector(3) || ConstraintVector(4) % Disorientation and Contiguity
 
     for iDrop= 0:length(DropsIndexes)
         
@@ -81,39 +81,44 @@ if ConstraintVector(3) % Disorientation
             FiberAngles = Convert_dvAngles2FiberAngles(GuideAngles,DropsLoc,ShuffleLoc,LamType);
         end
         
-        
+        DetlaAngle = zeros(numel(FiberAngles)-1,1);
+        Contiguity = 0;
         for iply = 1:numel(FiberAngles)-1
             if FiberAngles(iply)>=-45 && FiberAngles(iply)<=45
-                DetlaAngle = abs(FiberAngles(iply)-FiberAngles(iply+1));
+                DetlaAngle(iply) = abs(FiberAngles(iply)-FiberAngles(iply+1));
             elseif FiberAngles(iply)>45
                 if FiberAngles(iply+1)>-45
-                    DetlaAngle = abs(FiberAngles(iply)-FiberAngles(iply+1));
+                    DetlaAngle(iply) = abs(FiberAngles(iply)-FiberAngles(iply+1));
                 else
-                    DetlaAngle = abs(FiberAngles(iply)-(180+FiberAngles(iply+1)));
+                    DetlaAngle(iply) = abs(FiberAngles(iply)-(180+FiberAngles(iply+1)));
                 end
             elseif FiberAngles(iply)<-45
                 if FiberAngles(iply+1)<45
-                    DetlaAngle = abs(FiberAngles(iply)-FiberAngles(iply+1));
+                    DetlaAngle(iply) = abs(FiberAngles(iply)-FiberAngles(iply+1));
                 else
-                    DetlaAngle = abs(FiberAngles(iply)-(-180+FiberAngles(iply+1)));
+                    DetlaAngle(iply) = abs(FiberAngles(iply)-(-180+FiberAngles(iply+1)));
                 end
             end
             
-            if DetlaAngle>45
+            
+            if ConstraintVector(3) && DetlaAngle(iply)>45 % disorientation
                 FEASIBLE = false;
                 return
             end
+            
+            if ConstraintVector(4) % contiguity
+                if DetlaAngle(iply)==0
+                    Contiguity = Contiguity + 1;
+                else
+                    Contiguity = 0;
+                end
+                if Contiguity >= NContiguity
+                    FEASIBLE = false;
+                    return
+                end
+            end
         end
-        
-    end
-end
 
-
-if ConstraintVector(4) % Contiguity
-    DeltaOrientation = abs(diff(GuideAngles));
-    if ~isempty(find(DeltaOrientation<5,1)),
-        FEASIBLE = false;
-        return
     end
 end
 
