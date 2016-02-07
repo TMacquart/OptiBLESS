@@ -192,13 +192,13 @@ end
 
 % ---
 %                        [Damtol  Rule10percent  Disorientation  Contiguity   BalancedIndirect  InernalContinuity  Covering];
-Constraints.Vector     = [false       false          false          false         false            false            false];
-Constraints.DeltaAngle = 15;
+Constraints.Vector     = [true       true          true          true         false            true            true];
+Constraints.DeltaAngle = 5;
 Constraints.ORDERED    = false;                         
 Constraints.Balanced   = true; 
 Constraints.Sym        = true; 
 Constraints.PatchXYZ   = PatchXYZ;
-
+Constraints.Contiguity = 3;
 
 % --- Format Geometric Input
 if 0 
@@ -228,7 +228,7 @@ GAoptions.OutputFct    = @GACustomOutput;
 
 
 % ---
-[Output] = RetrieveSS(Objectives,Constraints,GAoptions);
+[Output] = OptiBLESS(Objectives,Constraints,GAoptions);
 
 % ---
 plotSS(Output,PatchXYZ)
@@ -239,3 +239,18 @@ plotSS(Output,PatchXYZ)
 Parameters.mMax = 2;
 Parameters.nMax = 2;
 [Fitness2,output2] = HS_EvaluationFct(Output.SS,Parameters)
+
+
+% ---
+if 0
+    for i=0:20
+       %results = load(['./HorseShoeResults/HorseShoeOpt' num2str(i)]);
+        results = load(['./Results/HorseShoeOptHome' num2str(i)]);
+       SS{i+1} = results.Output.SS;
+       [Fitness(i+1),output{i+1}] = HS_EvaluationFct(SS{i+1},Parameters);
+       minBuckling(i+1) = max(output{i+1}.BucklingFactor);
+       
+       NGeoConstraints(i+1) = CheckContinuity(SS{i+1},Constraints.PatchConnectivity);
+       
+    end
+end

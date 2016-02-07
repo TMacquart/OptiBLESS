@@ -37,39 +37,45 @@
 
 
 
-function [FEASIBLE] = Check_Feasibility(ConstraintVector,GuideAngles,ShuffleLoc,DropsIndexes,NGuidePlies,NDropPlies,LamType,NContiguity)
+function [FEASIBLE,ConstViolated] = Check_Feasibility(ConstraintVector,GuideAngles,ShuffleLoc,DropsIndexes,NGuidePlies,NDropPlies,LamType,NContiguity,SortedLamNumber)
 
+ConstViolated = '';
 FEASIBLE = true;
 
 if (length(DropsIndexes) ~= length(unique(DropsIndexes))),
     FEASIBLE = false; % penalise GA individual with non-unique ply drops
+    ConstViolated = 'Drop Indexes 1';
     return
 end 
 
 if length(DropsIndexes) ~= sum(NDropPlies)
     FEASIBLE = false; 
+    ConstViolated = 'Drop Indexes 2';
     return
 end
 
 
 if max(DropsIndexes)>length(GuideAngles) 
     FEASIBLE = false; 
+    ConstViolated = 'Drop Indexes 3';
     return
 end 
 
 if ConstraintVector(1)
     if abs(GuideAngles(1)) ~= 45
         FEASIBLE = false;
+        ConstViolated = 'Damtol';
         return
     end
     if strcmp(LamType,'Generic') && abs(GuideAngles(end)) ~= 45
         FEASIBLE = false;
+        ConstViolated = 'Damtol';
         return
     end
 end
 
 
-if ConstraintVector(3) || ConstraintVector(4) % Disorientation and Contiguity
+if ConstraintVector(2) || ConstraintVector(3) || ConstraintVector(4) % 10%rule, Disorientation and Contiguity
 
     for iDrop= 0:length(DropsIndexes)
         
@@ -81,28 +87,21 @@ if ConstraintVector(3) || ConstraintVector(4) % Disorientation and Contiguity
             FiberAngles = Convert_dvAngles2FiberAngles(GuideAngles,DropsLoc,ShuffleLoc,LamType);
         end
         
-        DetlaAngle = zeros(numel(FiberAngles)-1,1);
+        DetlaAngle = ComputeDeltaAngle(FiberAngles);
         Contiguity = 0;
         for iply = 1:numel(FiberAngles)-1
-            if FiberAngles(iply)>=-45 && FiberAngles(iply)<=45
-                DetlaAngle(iply) = abs(FiberAngles(iply)-FiberAngles(iply+1));
-            elseif FiberAngles(iply)>45
-                if FiberAngles(iply+1)>-45
-                    DetlaAngle(iply) = abs(FiberAngles(iply)-FiberAngles(iply+1));
-                else
-                    DetlaAngle(iply) = abs(FiberAngles(iply)-(180+FiberAngles(iply+1)));
-                end
-            elseif FiberAngles(iply)<-45
-                if FiberAngles(iply+1)<45
-                    DetlaAngle(iply) = abs(FiberAngles(iply)-FiberAngles(iply+1));
-                else
-                    DetlaAngle(iply) = abs(FiberAngles(iply)-(-180+FiberAngles(iply+1)));
+
+            if ConstraintVector(2)
+                FEASIBLE = Check_10PercentRule(FiberAngles);
+                if ~FEASIBLE
+                    return
                 end
             end
-            
-            
+                
             if ConstraintVector(3) && DetlaAngle(iply)>45 % disorientation
+                keyboard
                 FEASIBLE = false;
+                ConstViolated = 'Disorientation';
                 return
             end
             
@@ -113,6 +112,7 @@ if ConstraintVector(3) || ConstraintVector(4) % Disorientation and Contiguity
                     Contiguity = 0;
                 end
                 if Contiguity >= NContiguity
+                    ConstViolated = 'Contiguity';
                     FEASIBLE = false;
                     return
                 end
@@ -130,23 +130,32 @@ if (ConstraintVector(7) || ConstraintVector(6)) && ~isempty(DropsIndexes)    % c
     if ConstraintVector(7) && ~isempty(find(DropsLoc == 1,1)), % covering check first ply is not removed
         keyboard % this constraints should be removed, it has been replaced by a direct constraints on LB , UB
         FEASIBLE = false;  
+        ConstViolated = 'Covering';
         return
     end 
     
     if ConstraintVector(7) && strcmp(LamType,'Generic') && ~isempty(find(DropsLoc == length(GuideAngles),1)), % covering check first ply is not removed
         keyboard % this constraints should be removed, it has been replaced by a direct constraints on LB , UB
         FEASIBLE = false;
+        ConstViolated = 'Covering';
         return
     end
     
     if ConstraintVector(6)
-        for i = 1 : length(DropsLoc)-3
-            deltaLoc = diff(DropsLoc(i:i+3));
-            if sum(abs(deltaLoc))==3
-                FEASIBLE = false;
-                return
-            end
+        FEASIBLE = Check_InternalContinuity(SSTable);
+        if ~FEASIBLE
+            ConstViolated = 'InernalContinuity';
+            return
         end
+        
+%         for i = 1 : length(DropsLoc)-3
+%             deltaLoc = diff(DropsLoc(i:i+3));
+%             if sum(abs(deltaLoc))==3
+%                 FEASIBLE = false;
+%                 ConstViolated = 'InernalContinuity';
+%                 return
+%             end
+%         end
     end
 end
 

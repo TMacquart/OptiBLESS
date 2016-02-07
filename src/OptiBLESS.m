@@ -81,7 +81,7 @@ end
 % Handle of the fitness function 
 fct_handle = @(x)Eval_Fitness(x,Objectives,Constraints,NpatchVar,NthetaVar,AllowedNplies,LamType,Fixed);  
 
-% keyboard
+keyboard
 %% Generate Initial Population
 for i = 1:5
     try

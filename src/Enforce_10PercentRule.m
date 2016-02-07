@@ -43,11 +43,14 @@
 function [GuideAngles] = Enforce_10PercentRule(GuideAngles,unit)
 
 TenpercentDV = round(length(GuideAngles)*0.1);
-N0Plies      = length(find(GuideAngles==0));
-N90Plies     = length(find(abs(GuideAngles)==90));
-N45Plies     = length(find(GuideAngles==45));
-NM45Plies    = length(find(GuideAngles==-45));
-indexPly     = 1:length(GuideAngles);
+if TenpercentDV<1
+    TenpercentDV = 1;
+end
+N0Plies    = length(find(GuideAngles==0));
+N90Plies   = length(find(abs(GuideAngles)==90));
+N45Plies   = length(find(GuideAngles==45));
+NM45Plies  = length(find(GuideAngles==-45));
+indexPly   = 1:length(GuideAngles);
 
 
 if N0Plies < TenpercentDV
@@ -56,13 +59,11 @@ if N0Plies < TenpercentDV
     GuideAngles(PlyIndex0) = 0;
 end
 
-
 if N45Plies < TenpercentDV
     PlyTable   = sortrows([abs(GuideAngles-45)' indexPly'],1);
     PlyIndex45 = PlyTable(1:TenpercentDV,2);
     GuideAngles(PlyIndex45) = 45;
 end
-
 
 if NM45Plies < TenpercentDV
     PlyTable   = sortrows([abs(GuideAngles+45)' indexPly'],1);

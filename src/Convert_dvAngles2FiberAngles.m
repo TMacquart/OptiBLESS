@@ -88,6 +88,8 @@ if strcmp(LamType,'Balanced_Sym') || strcmp(LamType,'Balanced')
     
     if strcmp(LamType,'Balanced_Sym')
         FiberAngles = [FiberAngles, fliplr([FiberAngles])]';
+    else
+        FiberAngles = FiberAngles';
     end
 end
 

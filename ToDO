@@ -1,8 +1,6 @@
---- Done
-a) Remove the -90 degree by starting initial angles at 1 (done)
-
-
 ---- At present
+0) Add a function converting Genotype into a SS table
+1) create individual functions for feasibility check (more accessible for people)
 
 a) Clean the code for 1 geometrical continuity (unique guide)
 b) Work on the selling points (what? more appealing examples -- aircraft wing? capabilities most needed)

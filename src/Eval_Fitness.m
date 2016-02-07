@@ -67,7 +67,6 @@ if ~isempty(find(abs(GuideAngles)>90,1)),
 end
 
 
-
 %% --- check / enforce constraints for ply Guide 
 if ConstraintVector(1) % if Damtol, first angle is +- 45
     R = [-1 1];
@@ -81,14 +80,21 @@ if ConstraintVector(1) % if Damtol, first angle is +- 45
     end
 end
 
-if ConstraintVector(2)                                                      % 10% rule (0,90,+-45)
-    [GuideAngles] = Enforce_10PercentRule(GuideAngles);
-end
+keyboard
+% Create corresponding SSTable
+UniquePlyNumber = unique(SortedLamNumber(SortedLamNumber<=NGuidePlies));
+UniquePlyNumber = UniquePlyNumber(UniquePlyNumber>=(NGuidePlies-sum(NDropPlies)))
+
+SSTable = ComputeSSTable(UniquePlyNumber,GuideAngles,cell2mat(DropIndexes),ShuffleLoc,LamType);
+
+% if ConstraintVector(2)                                                      % 10% rule (0,90,+-45)
+%     [GuideAngles] = Enforce_10PercentRule(GuideAngles);
+% end
 
 if FEASIBLE
-    [FEASIBLE] = Check_Feasibility(ConstraintVector,GuideAngles,ShuffleLoc,cell2mat(DropIndexes),NGuidePlies,NDropPlies,LamType,Constraints.Contiguity);
+    [FEASIBLE,ConstViolated] = Check_Feasibility(ConstraintVector,GuideAngles,ShuffleLoc,cell2mat(DropIndexes),NGuidePlies,NDropPlies,LamType,Constraints.Contiguity,SortedLamNumber);
 end
-
+keyboard
 
 
 %% fitness calculation
