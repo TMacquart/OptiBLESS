@@ -45,11 +45,9 @@
 % ----------------------------------------------------------------------- %
 
 
-function [Nvar,NpatchVar,NthetaVar,NdropVar,LamType,LB,UB,AllowedNplies,Fixed]  = FormatInput(Objectives,Constraints)
+function [Nvar,NpatchVar,NthetaVar,NbalVar,N10percentVar,NdropVar,LamType,LB,UB,AllowedNplies]  = FormatInput(Objectives,Constraints)
 
 %% NthetaVar and LamType
-
-NplyIni = cell2mat(Objectives.Table(2:end,2));
 
 if Constraints.Sym  && Constraints.Balanced,
     DeltaNPly = 4;                  % The allowed ply numbers are multiple of DeltaNPly (i.e. 4, 8, 12, ...)
@@ -71,23 +69,14 @@ if  ~Constraints.Sym && ~Constraints.Balanced,
     DeltaNPly = 1;
 end
 
-Nplies    = round(NplyIni/DeltaNPly)*DeltaNPly;                    % Upper and lower Number of plies allowed for each patch
-NthetaVar = max(Nplies(:))/DeltaNPly;                              % Max number of variable angles (without counting Symmetric and balanced design variables)
+NplyIni = cell2mat(Objectives.Table(2:end,2));
+Nplies  = round(NplyIni/DeltaNPly)*DeltaNPly;                    % Upper and lower Number of plies allowed for each patch
+[MaxNplies,rowIndMax] = max(Nplies(:,2)); 
 
-% if Constraints.Vector(2)==1 % Framework for 10% rule 
-%     Fixed.Ntheta   = ceil(0.4*NthetaVar);
-%     Fixed.thetaLoc = round(linspace(1,NthetaVar,Fixed.Ntheta));
-%     if length(unique(Fixed.thetaLoc)) ~= length(Fixed.thetaLoc)
-%         keyboard % should be unique locations
-%     end
-%     NthetaVar      = NthetaVar - Fixed.Ntheta;
-% else
-    Fixed = {};
-% end
-
+[NthetaVar,NbalVar,N10percentVar] = AttributeDesignVariable(MaxNplies,Constraints);
 
 %% NdropVar
-[MaxNplies,rowIndMax] = max(Nplies(:,2)); 
+
 NpliesTemp = Nplies;
 NpliesTemp(rowIndMax,:) = [];
 if ~isempty(NpliesTemp), 
@@ -96,16 +85,6 @@ if ~isempty(NpliesTemp),
 else
     NdropVar = 0;                                                  % special case for single laminate
 end
-
-
-
-%%
-if Constraints.Balanced
-    NbalVar = NthetaVar;                                           % Max number of balanced angles
-else
-    NbalVar = 0;
-end
-
 
 
 %% NpatchVar and AllowedNplies
@@ -123,7 +102,7 @@ NpatchVar(Nrange>0)=1; % number of variable thickness lam.
 
 %% Genotype Upper and Lower Bounds (LB and UB)
 
-Nvar      = sum(NpatchVar) + NthetaVar + NbalVar + NdropVar;                    % total number of design variables
+Nvar      = sum(NpatchVar) + NtotalPly + NdropVar;                              % total number of design variables
 Nd_state  = length(-90:Constraints.DeltaAngle:90);                              % number of discrete state for variable angles
 
 LB = [];
@@ -140,31 +119,35 @@ UB = [UB; (Nd_state-1)*ones(NthetaVar,1)];
 
 
 
-% Bounds for Balanced angles
+% Bounds for Balanced angles and 10% rule
 if ~Constraints.Vector(1) % Damtol
-    LB = [LB; ones(NbalVar,1)];                                                 
-    UB = [UB; 2*NbalVar*ones(NbalVar,1)];
+    LB = [LB; ones(NbalVar+N10percentVar,1)];                                                 
+    UB = [UB; NtotalPly*ones(NbalVar+N10percentVar,1)];
 else
-    LB = [LB; 2*ones(NbalVar,1)];                                               % Ensure the First ply is from the guide (+- 45)
+    LB = [LB; 2*ones(NbalVar+N10percentVar,1)];                                               % Ensure the First ply is from the guide (+- 45)
     if ~strcmp(LamType,'Generic')
-        UB = [UB; 2*NbalVar*ones(NbalVar,1)];
+        UB = [UB; NtotalPly*ones(NbalVar+N10percentVar,1)];
     else
-        UB = [UB; (2*NbalVar-1)*ones(NbalVar,1)];                               % Ensure the last ply is also from the guide (+- 45)
+        UB = [UB; (NtotalPly-1)*ones(NbalVar+N10percentVar,1)];                               % Ensure the last ply is also from the guide (+- 45)
     end
 end
 
 
 % Bounds for Drop ply locations
+if rem(N10percentVar,2)~=0
+    keyboard
+end
+
 if Constraints.Vector(7) % covering
     LB = [LB; 2*ones(NdropVar,1)];                                              % remove the first
     if strcmp(LamType,'Generic')
-        UB = [UB; (NthetaVar-1)*ones(NdropVar,1)];                              % remove the last
+        UB = [UB; (N10percentVar/2+NthetaVar-1)*ones(NdropVar,1)];                              % remove the last
     else
-        UB = [UB; NthetaVar*ones(NdropVar,1)];
+        UB = [UB; (N10percentVar/2+NthetaVar)*ones(NdropVar,1)];
     end
 else
     LB = [LB; ones(NdropVar,1)];
-    UB = [UB; NthetaVar*ones(NdropVar,1)];
+    UB = [UB; (N10percentVar/2+NthetaVar)*ones(NdropVar,1)];
 end
 
 if Constraints.Vector(1) % if Damtol, make the first ply +- 45

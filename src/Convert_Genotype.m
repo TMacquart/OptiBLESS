@@ -32,7 +32,9 @@
 % either expressed or implied, of the FreeBSD Project.
 % ----------------------------------------------------------------------- %
 
-function [SortedLamNumber,GuideAngles,ShuffleLoc,DropIndexes] = Convert_Genotype(Individual,LamNumber,Constraints,NpatchVar,NthetaVar,AllowedNplies,Fixed)
+function [SortedLamNumber,GuideAngles,ShuffleLoc,DropIndexes] = Convert_Genotype(Individual,LamNumber,Constraints,NpatchVar,NthetaVar,NbalVar,N10percentVar,AllowedNplies)
+
+keyboard
 
 %% Extract Number of ply per patches
 IndexPly = 1;
@@ -64,6 +66,9 @@ NGuidePlies     = max(NpliesperLam);                                           %
 NDropPlies      = abs(diff(NpliesperLam));                                     % number of ply drops between each laminates
 GuideAngles     = Individual(sum(NpatchVar) + [1:NGuidePlies]);                % Extract variable fibre angles of the guide
 
+
+[NthetaVar0,NbalVar0,N10percentVar0] = AttributeDesignVariable(NGuidePlies*16,Constraints);
+
 % if Constraints.Vector(2) == 1 % add the 10% rule framework
 %     keyboard
 %     Fixed
@@ -73,12 +78,21 @@ GuideAngles     = Individual(sum(NpatchVar) + [1:NGuidePlies]);                %
 %% --- Shuffle Location (i.e. location of angles pairs) for balanced Lam.
 if Constraints.Balanced
     ShuffleLoc = Individual(sum(NpatchVar) + NthetaVar + [1:NGuidePlies]);
-    StartIndex = sum(NpatchVar) + NthetaVar*2;
+%     StartIndex = sum(NpatchVar) + NthetaVar*2;
 else
     ShuffleLoc = [];
-    StartIndex = sum(NpatchVar) + NthetaVar;
+%     StartIndex = sum(NpatchVar) + NthetaVar;
 end
 
+%% --- Extract 10% rule data
+
+if Constraints(2)
+    
+   
+    TenPercentData = Individual(sum(NpatchVar) + NthetaVar + NbalVar + [1:NGuidePlies]);
+else
+    TenPercentData = [];
+end
 
 
 %% --- organise ply drop sequences

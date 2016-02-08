@@ -37,7 +37,7 @@
 
 
 
-function [fitness,output] = Eval_Fitness (Individual,Objectives,Constraints,NpatchVar,NthetaVar,AllowedNplies,LamType,Fixed)
+function [fitness,output] = Eval_Fitness (Individual,Objectives,Constraints,NpatchVar,NthetaVar,NbalVar,N10percentVar,AllowedNplies,LamType)
 
 
 ConstraintVector = Constraints.Vector;
@@ -49,7 +49,9 @@ for j=1:Nlam
     LamNumber(j) = Objectives.Table{j+1,1}; 
 end
 
-[SortedLamNumber,GuideAngles,ShuffleLoc,DropIndexes] = Convert_Genotype(Individual,LamNumber,Constraints,NpatchVar,NthetaVar,AllowedNplies,Fixed);
+keyboard % change convert genotype so that it returns the SStable used for all feasibilit check
+
+[SortedLamNumber,GuideAngles,ShuffleLoc,DropIndexes] = Convert_Genotype(Individual,LamNumber,Constraints,NpatchVar,NthetaVar,NbalVar,N10percentVar,AllowedNplies);
 NGuidePlies = length(GuideAngles);
 NDropPlies  = cellfun(@length,DropIndexes,'UniformOutput', true); % NUmber of dropped between each patch
 Ndrop       = length(NDropPlies);                                       % Total number of drops between patches

@@ -49,7 +49,7 @@
 % ----------------------------------------------------------------------- %
 
 
-function [IniPop] = Generate_IniPop (nvar,Npop,NpatchVar,NthetaVar,NdropVar,Constraints,Objectives,AllowedNplies,LamType,Fixed,fct_handle)
+function [IniPop] = Generate_IniPop (nvar,Npop,NpatchVar,NthetaVar,NdropVar,Constraints,Objectives,AllowedNplies,LamType,fct_handle)
 
 
 % Initialisation

@@ -48,7 +48,8 @@ function [output] = OptiBLESS(Objectives,Constraints,GAoptions)
 
 
 %% Format Inputs  
-[Nvar,NpatchVar,NthetaVar,NdropVar,LamType,LB,UB,AllowedNplies,Fixed] = FormatInput(Objectives,Constraints);
+
+[Nvar,NpatchVar,NthetaVar,NbalVar,N10percentVar,NdropVar,LamType,LB,UB,AllowedNplies] = FormatInput(Objectives,Constraints);
 % Nvar          - Number of design variables 
 % NpatchVar     - Patches with variable number of plies (set to 1 if variable)
 % NthetaVar     - Number of fibre angles used to describe the guide laminate
@@ -79,13 +80,16 @@ end
     
 
 % Handle of the fitness function 
-fct_handle = @(x)Eval_Fitness(x,Objectives,Constraints,NpatchVar,NthetaVar,AllowedNplies,LamType,Fixed);  
+fct_handle = @(x)Eval_Fitness(x,Objectives,Constraints,NpatchVar,NthetaVar,NbalVar,N10percentVar,AllowedNplies,LamType);  
+
+
+fct_handle(LB)
 
 keyboard
 %% Generate Initial Population
 for i = 1:5
     try
-        [IniPop] = Generate_IniPop (Nvar,GAoptions.Npop,NpatchVar,NthetaVar,NdropVar,Constraints,Objectives,AllowedNplies,LamType,Fixed,fct_handle);
+        [IniPop] = Generate_IniPop (Nvar,GAoptions.Npop,NpatchVar,NthetaVar,NdropVar,Constraints,Objectives,AllowedNplies,LamType,fct_handle);
         break; 
     catch
         fprintf('Inipop Failed. Retrying ...\n');
