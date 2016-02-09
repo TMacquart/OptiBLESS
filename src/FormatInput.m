@@ -114,12 +114,21 @@ BCs.UB.BalancedLoc = (NStruct.NDvs-1)*ones(NStruct.NbalVar + NStruct.N10percentV
 
 % Bounds for Midplane Angles (max of 2) 
 % (either 0 or 90)
-NStruct.NDV_NMidPlane = 2;
-LB = [LB; ones(2,1)];
-UB = [UB; 2*ones(2,1)];
 
-BCs.LB.MidPlane = ones(2,1); 
-BCs.UB.MidPlane = 2*ones(2,1); 
+NStruct.NDV_NMidPlane = 2;
+if Constraints.Balanced
+    LB = [LB; ones(2,1)];
+    UB = [UB; 2*ones(2,1)];
+
+    BCs.LB.MidPlane = ones(2,1); 
+    BCs.UB.MidPlane = 2*ones(2,1); 
+else
+    LB = [LB; ones(2,1)];
+    UB = [UB; (Nd_state-1)*ones(2,1)];
+
+    BCs.LB.MidPlane = ones(2,1); 
+    BCs.UB.MidPlane = (Nd_state-1)*ones(2,1); 
+end
 
 
 % Bounds for Drop ply locations
@@ -128,19 +137,19 @@ if Constraints.Vector(7) % covering
     BCs.LB.PlyDrop = 2*ones(NStruct.NdropVar,1);
     
     if strcmp(LamType,'Generic')
-       UB = [UB; (NStruct.N10percentVar + NStruct.NthetaVar-1)*ones(NStruct.NdropVar,1)];
-       BCs.UB.PlyDrop = (NStruct.N10percentVar + NStruct.NthetaVar-1)*ones(NStruct.NdropVar,1);
+       UB = [UB; (NStruct.N10percentVar + NStruct.NthetaVar + NStruct.NDV_NMidPlane-1)*ones(NStruct.NdropVar,1)];
+       BCs.UB.PlyDrop = (NStruct.N10percentVar + NStruct.NthetaVar +NStruct.NDV_NMidPlane -1)*ones(NStruct.NdropVar,1);
        
     else
-       UB = [UB; (NStruct.N10percentVar + NStruct.NthetaVar)*ones(NStruct.NdropVar,1)]; 
-       BCs.UB.PlyDrop = (NStruct.N10percentVar + NStruct.NthetaVar)*ones(NStruct.NdropVar,1);
+       UB = [UB; (NStruct.N10percentVar + NStruct.NthetaVar + NStruct.NDV_NMidPlane)*ones(NStruct.NdropVar,1)]; 
+       BCs.UB.PlyDrop = (NStruct.N10percentVar + NStruct.NthetaVar +NStruct.NDV_NMidPlane)*ones(NStruct.NdropVar,1);
     end
 else
     LB = [LB; ones(NStruct.NdropVar,1)];
     BCs.LB.PlyDrop = ones(NStruct.NdropVar,1); 
     
-    UB = [UB; (NStruct.N10percentVar + NStruct.NthetaVar)*ones(NStruct.NdropVar,1)];
-    BCs.UB.PlyDrop = (NStruct.N10percentVar + NStruct.NthetaVar)*ones(NStruct.NdropVar,1);
+    UB = [UB; (NStruct.N10percentVar + NStruct.NthetaVar + NStruct.NDV_NMidPlane)*ones(NStruct.NdropVar,1)];
+    BCs.UB.PlyDrop = (NStruct.N10percentVar + NStruct.NthetaVar + NStruct.NDV_NMidPlane)*ones(NStruct.NdropVar,1);
 end
 
 if Constraints.Vector(1) % if Damtol, make the first ply +- 45

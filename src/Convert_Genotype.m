@@ -50,6 +50,7 @@ NpliesPerLam = flipud(sortrows(NpliesPerLam,1));
 
 NStruct_0 = AttributeNply(NpliesPerLam(:,1),Constraints,LamType);
 
+
 % Extract All design variable from the individual
 Thetas          = Individual(sum(NStruct.NpatchVar) + [1:NStruct_0.NthetaVar]);                
 BalancedLoc     = Individual(sum(NStruct.NpatchVar) + NStruct.NthetaVar + [1:NStruct_0.NbalVar]);
@@ -58,7 +59,13 @@ Thetas_Mid      = Individual(sum(NStruct.NpatchVar) + NStruct.NthetaVar + NStruc
 PlyDrops        = Individual(sum(NStruct.NpatchVar) + NStruct.NthetaVar + NStruct.NbalVar + NStruct.N10percentVar + NStruct.NDV_NMidPlane + [1:NStruct_0.NdropVar]);
 
 
-% keyboard
+ Individual0 = [NpliesPerLam(:,1); 
+                          Thetas;
+                          BalancedLoc;
+                          TenPercentLoc;
+                          Thetas_Mid;
+                          PlyDrops ];
+                      
 % compute SSTAble
 SSTable = NewComputeSSTable(Thetas,PlyDrops,BalancedLoc,TenPercentLoc,Thetas_Mid,LamType,Constraints);   
 end

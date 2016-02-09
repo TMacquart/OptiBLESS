@@ -50,6 +50,9 @@ end
 
 [NpliesPerLam,SSTable] = Convert_Genotype(Individual,Constraints,NStruct,AllowedNplies,LamType);
 
+display(SSTable)
+keyboard
+
 % repaired solution - change NpliesPerLam to match SS values (avoid infeasibility)
 if 1  
     for j = 1:size(SSTable,1)

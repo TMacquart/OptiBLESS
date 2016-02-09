@@ -1,5 +1,7 @@
 function NStruct = AttributeNply(Nplies,Constraints,LamType)
 
+% NMidPlane are sometime negatives
+
 MaxNplies = max(Nplies(:)); 
 
 if strcmp(LamType,'Generic')
@@ -9,7 +11,7 @@ if strcmp(LamType,'Generic')
         N10percentVar = 0; 
         NthetaVar = MaxNplies;
     else
-        N10percentVar = round((0.4*MaxNplies)/4)*4;
+         N10percentVar = (floor((0.4*MaxNplies/2)/4)*4 + ceil((0.4*MaxNplies/2)/4)*4)/2;
         if N10percentVar > MaxNplies
             keyboard % should not happen
         end
@@ -32,7 +34,7 @@ if strcmp(LamType,'Sym')
             NMidPlane = 1;
         end
     else
-        N10percentVar = round((0.4*MaxNplies/2)/4)*4;
+        N10percentVar = (floor((0.4*MaxNplies/2)/4)*4 + ceil((0.4*MaxNplies/2)/4)*4)/2;
         if rem(MaxNplies,2) == 0
             NthetaVar = floor(MaxNplies/2-N10percentVar);
         else
@@ -42,7 +44,6 @@ if strcmp(LamType,'Sym')
     end
     NtotalPly = 2*(NthetaVar + NbalVar + N10percentVar) + NMidPlane;
 end
-
 
 
 if strcmp(LamType,'Balanced')
@@ -58,7 +59,7 @@ if strcmp(LamType,'Balanced')
             NMidPlane = 1;
         end
     else
-        N10percentVar = round((0.4*MaxNplies)/4)*4;
+         N10percentVar = (floor((0.4*MaxNplies/2)/4)*4 + ceil((0.4*MaxNplies/2)/4)*4)/2;
         if rem(MaxNplies-N10percentVar,2) == 0
             NthetaVar = (MaxNplies-N10percentVar)/2;
             NbalVar   = (MaxNplies-N10percentVar)/2;
@@ -70,7 +71,6 @@ if strcmp(LamType,'Balanced')
     end
     NtotalPly = NthetaVar + NbalVar + N10percentVar + NMidPlane;
 end
-
 
 
 if strcmp(LamType,'Balanced_Sym') % enforce even number of plies
@@ -87,7 +87,7 @@ if strcmp(LamType,'Balanced_Sym') % enforce even number of plies
         end
     else
 
-        N10percentVar = round((0.4*MaxNplies)/4)*4/2;
+        N10percentVar = (floor((0.4*MaxNplies/2)/4)*4 + ceil((0.4*MaxNplies/2)/4)*4)/2;
         NMissingPly = MaxNplies-N10percentVar;
         NthetaVar = 0;
         NbalVar   = 0;
@@ -116,27 +116,30 @@ end
 
 NdropPlies = NtotalPly - min(Nplies(:));
 
-if strcmp(LamType,'Generic')
-    NdropVar = NdropPlies;
-end
-
-if strcmp(LamType,'Sym') || strcmp(LamType,'Balanced')
-    if rem(NdropPlies,2) == 0
-        NdropVar = NdropPlies/2;
-    else
-        NdropVar = floor(NdropPlies/2) + 1;
+if NdropPlies~=0
+    if strcmp(LamType,'Generic')
+        NdropVar = NdropPlies;
     end
-end
-
-if strcmp(LamType,'Balanced_Sym')
-    if rem(NdropPlies,4) == 0
-        NdropVar = NdropPlies/4;
-    else
-        NdropVar = floor(NdropPlies/4) + 3;
+    
+    if strcmp(LamType,'Sym') || strcmp(LamType,'Balanced')
+        if rem(NdropPlies,2) == 0
+            NdropVar = NdropPlies/2;
+        else
+            NdropVar = floor(NdropPlies/2) + 1;
+        end
     end
+    
+    if strcmp(LamType,'Balanced_Sym')
+        if rem(NdropPlies,4) == 0
+            NdropVar = NdropPlies/4;
+        else
+            NdropVar = floor(NdropPlies/4) + 3;
+        end
+    end
+    NdropVar = NdropVar + ceil(NMidPlane/2);
+else
+    NdropVar = 0 ;
 end
-
-NdropVar = NdropVar + ceil(NMidPlane/2);
 
 NStruct.NDvs            = NDvs;
 NStruct.NthetaVar       = NthetaVar;

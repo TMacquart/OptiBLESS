@@ -1,7 +1,8 @@
 % =====                                                                ====
 %                         Creates Initial Population
 %
-% Recommended to use this function rather than the Random GA inipop.
+% Recommended to use this function rather than the Random GA inipop. It
+% will help (not ensure) the generation of feasible solution
 %
 % [IniPop] = Generate_IniPop (nvar,Npop,NpatchVar,NthetaVar,NdropVar,Constraints,AllowedNplies,LamType)
 %
@@ -52,8 +53,6 @@
 function [IniPop] = Generate_IniPop (NStruct,Npop,Constraints,Objectives,AllowedNplies,LamType,BCs,fct_handle)
 
 
-keyboard
-
 % Initialisation
 IniPop = zeros(Npop,NStruct.Nvar);
 display(' Creating IniPop ... ' )
@@ -67,7 +66,7 @@ NTried        = 0;
 while ipop < Npop + 1
     
     %%  Variable number of plies
-    NpliesPerLam = zeros(1,length(AllowedNplies));
+    NpliesPerLam = zeros(length(AllowedNplies),1);
     for iply = 1:length(AllowedNplies)
         NpliesPerLam(iply) = AllowedNplies{iply}(randi([1 length(AllowedNplies{iply})]));
     end
@@ -81,363 +80,129 @@ while ipop < Npop + 1
     NdropPlies = NStruct0.NdropVar;
     
     if NdropPlies>0
-        if Constraints.Vector(7) % covering
-            Offset = 1;
-        else
-            Offset = 0;
-        end
         
-        if strcmp(LamType,'Generic') || strcmp(LamType,'Sym')
-%             if strcmp(LamType,'Generic')
-%                 Coeff = 1;
-%             else
-%                 Coeff = 2;
-%             end
-%             DropsIndexes = randperm((NStruct.N10percentVar + NStruct.NthetaVar)-Offset,NdropPlies)+Offset;
-            
-            DropsIndexes = randperm(BCs.UB.PlyDrop(1)-BCs.LB.PlyDrop(1),NdropPlies)+BCs.LB.PlyDrop(1);
-            
-            if Constraint.Vector(6) % Internal continuity
-                FEASIBLE = false;
-                while ~FEASIBLE
-                    FEASIBLE = true;
-                    DropsLoc = sort(DropsIndexes);
-                    for i = 1 : length(DropsLoc)-3
-                        deltaLoc = diff(DropsLoc(i:i+3));
-                        if sum(abs(deltaLoc))==3
-                            FEASIBLE = false;
-                            DropsIndexes = randperm((NStruct.N10percentVar + NStruct.NthetaVar)-Offset,NdropPlies)+Offset;
-                            break
-                        end
-                    end
-                end
-            end
-        end
+        % create a symbolic SSsequence including BalancedLoc, 10% rule and
+        % PlyDrops becaue they all affect internal continuity
         
+        Thetas_Symbolic    = (1:NStruct.NthetaVar)';
         
-        if strcmp(LamType,'Balanced') || strcmp(LamType,'Balanced_Sym')
-            if strcmp(LamType,'Balanced')
-                Coeff = 2;
-            else
-                Coeff = 4;
-            end
-            
-            FEASIBLE = false;
-            while ~FEASIBLE
-                FEASIBLE = true;
-                BalancedLoc  = randperm(NStruct.NthetaVar*2-1,NStruct.NthetaVar)+1; % First ply not allowed for simplicity
-                DropsIndexes = randperm(NStruct.NthetaVar-Offset,NStruct.NdropPlies)+Offset;
-                
-                if ConstraintVector(6) % check internal continuity
-                    PatchNPly = sort(unique(NpliesPerLam*Coeff),'descend');
-                    SymbolicGuideAngles =  [1:NthetaVar];
-                    
-                    % reconstuct 1st and Last
-                    SymbolicSS     = num2cell(Convert_dvAngles2FiberAngles(SymbolicGuideAngles,[],BalancedLoc,LamType)');
-                    SymbolicSS_End = Convert_dvAngles2FiberAngles(SymbolicGuideAngles,DropsIndexes,BalancedLoc,LamType)';
-                    
-                    for i=1:NthetaVar*Coeff
-                        if ~isempty(find(SymbolicSS{1,i}==SymbolicSS_End,1))
-                            SymbolicSS{2,i} = SymbolicSS{1,i};
-                        end
-                    end
-                    
-                    
-                    SSDrops = sort(find(cellfun(@isempty,SymbolicSS(2,:))));
-                    for i = 1 : length(SSDrops)-3
-                        deltaLoc = diff(SSDrops(i:i+3));
-                        if sum(abs(deltaLoc))==3
-                            FEASIBLE = false;
-                            break
-                        end
-                    end
-                end
-            end
-        end
-
-    else
-        DropsIndexes = [];
-    end
-    
-    
-    %% Add Fibre Angles
-    if 1 % reconstruct all
-        PatchNPly = sort(unique(NpliesPerLam*Coeff),'descend');
-        SymbolicGuideAngles =  [1:NthetaVar];
-        
-        index = 1;
-        SymbolicSSTable = cell(length(PatchNPly),max(PatchNPly));
-        for j=0:length(DropsIndexes)
-            if ~isempty(find(((NthetaVar-j)*Coeff-PatchNPly)==0,1))
-                
-                SymbolicFiberAngles = Convert_dvAngles2FiberAngles(SymbolicGuideAngles,DropsIndexes(1:j),BalancedLoc,LamType)';
-                if index == 1
-                    SymbolicSSTable(index,:) = num2cell(SymbolicFiberAngles);
-                else
-                    for i=1:max(PatchNPly)
-                        if ~isempty(find(SymbolicSSTable{1,i}==SymbolicFiberAngles,1))
-                            SymbolicSSTable{index,i} = SymbolicSSTable{1,i};
-                        end
-                    end
-                end
-                
-                index = index + 1;
-            end
-        end
-    end
-            
-    GuideNumber = 1:NthetaVar;
-    GuideAssign = zeros(1,NthetaVar);
-    GuideAngles = nan*zeros(1,NthetaVar);
-    
-    if ConstraintVector(1) % Damtol (and covering assumed)
-        A = [-1 1];
-        GuideAngles(1) = 45*A(ceil(2*rand)); % 1st ply is +- 45
-        if strcmp(LamType,'Generic')
-            GuideAngles(end) = 45*A(ceil(2*rand)); % Last ply is +- 45
-        end
-        GuideAssign(1) = 1;
-    end
-    
-%     keyboard
-    for j=length(SymbolicSSTable(:,1)):-1:1
-        
-        plyNumber = cell2mat(SymbolicSSTable(j,:));
-        plyAngle  = nan*ones(1,length(plyNumber));
-        UniqueplyNumber  = unique(abs(plyNumber));
-        UnAssignedNumber = UniqueplyNumber(~ismember(UniqueplyNumber,find(GuideAssign)));
-        
-        for i=1:length(UniqueplyNumber) %replace by assigned angles
-            if GuideAssign(UniqueplyNumber(i)) == 1
-                Indexes           = find(UniqueplyNumber(i)==abs(plyNumber));
-                plyAngle(Indexes) = GuideAngles(UniqueplyNumber(i)).*sign(plyNumber(Indexes));
-            end
-        end
-
-        TriedSol = 0;
         FEASIBLE = false;
-        clear FiberAngle
-        while ~FEASIBLE && TriedSol<500
+        
+        while  ~FEASIBLE
             FEASIBLE = true;
             
-            FiberAngle = randi([0 length(0:DeltaAngle:180)-1],1,length(UnAssignedNumber))*DeltaAngle-90;
+            DropsIndexes       = randperm(BCs.UB.PlyDrop(1)-BCs.LB.PlyDrop(1) , NdropPlies) + BCs.LB.PlyDrop(1);
             
-              if ConstraintVector(2) && j==length(SymbolicSSTable(:,1))
-                %keyboard % need to change fibre angles accordingly
-                FiberAngle = Enforce_10PercentRule( [GuideAngles(~isnan(GuideAngles)) FiberAngle]); % only enforce for the thinnest and let random for the rest
-                if ConstraintVector(1)
-                    FiberAngle(1) = [];
+            if NStruct.NbalVar==0
+                BalancedLoc = [];
+            else
+                BalancedLoc = (randperm(BCs.UB.BalancedLoc(1)-BCs.LB.BalancedLoc(1) , NStruct.NbalVar) + BCs.LB.BalancedLoc(1))';
+            end
+            
+            if NStruct.N10percentVar ==0
+                TenPercentLoc = [];
+            else
+                TenPercentLoc = (randperm(BCs.UB.BalancedLoc(1)-BCs.LB.BalancedLoc(1) , NStruct.N10percentVar) + BCs.LB.BalancedLoc(1))';
+            end
+            
+            if NStruct.NMidPlane == 0
+                Thetas_Mid = [];
+            else
+                Thetas_Mid = (randi([BCs.LB.MidPlane(1) BCs.UB.MidPlane(1)] ,1 , NStruct.NMidPlane))';
+            end
+            
+            SSTable_Symbolic = NewComputeSSTable(Thetas_Symbolic,DropsIndexes,BalancedLoc,TenPercentLoc,Thetas_Mid,LamType,Constraints);
+            
+            if Constraints.Vector(6)
+                FEASIBLE = Check_InternalContinuity(SSTable_Symbolic);
+            end
+            
+        end
+        
+        %% Add Fiber Angles
+        
+        FEASIBLE = false;
+        TriedSol = 1;
+        while ~FEASIBLE
+            Thetas = (randperm(BCs.UB.Thetas(1)-BCs.LB.Thetas(1) , NStruct.NthetaVar) + BCs.LB.Thetas(1))';
+            
+            % repaired solution - change NpliesPerLam to match SS values (avoid infeasibility)
+            if 1
+                for j = 1:size(SSTable_Symbolic,1)
+                    NplySS(j) = length(find(~cellfun(@isempty,SSTable_Symbolic(j,:))));
                 end
-              end
-            
-            for i=1:length(UnAssignedNumber)
-                Indexes           = find(UnAssignedNumber(i)==abs(plyNumber));
-                plyAngle(Indexes) = FiberAngle(i).*sign(plyNumber(Indexes));
-            end
-            
-            DetlaAngle = ComputeDeltaAngle(plyAngle);
-
-            if ConstraintVector(3) && ~isempty(find(DetlaAngle>45,1)) % disorientation
-                FEASIBLE = false;
-            end
-            
-            if FEASIBLE && ConstraintVector(4) % contiguity
-                Contiguity=0;
-                for i=1:length(DetlaAngle)
-                    if DetlaAngle(i)==0
-                        Contiguity = Contiguity + 1;
-                    else
-                        Contiguity = 0;
-                    end
-                    if Contiguity >= Constraints.Contiguity
-                        FEASIBLE = false;
+                for j = 1:length(NpliesPerLam(:,1))
+                    if isempty(find(NpliesPerLam(j,1)==NplySS,1))
+                        [~,NIndex] = min(abs(NplySS-NpliesPerLam(j,1)));
+                        NpliesPerLam(j,1) = NplySS(NIndex);
                     end
                 end
             end
+            %
             
-            if FEASIBLE && ConstraintVector(2) % 10% rule
-                FEASIBLE = Check_10PercentRule(plyAngle);
-            end
+            SSTable = NewComputeSSTable(Thetas,DropsIndexes,BalancedLoc,TenPercentLoc,Thetas_Mid,LamType,Constraints);
             
-
+            FEASIBLE = Check_Feasibility(Constraints,NpliesPerLam,SSTable);
             
             TriedSol = TriedSol +1;
-        end
-        
-        if TriedSol==500
-            % no-feasible solution, go back one more letter
-            break
-        end
-        
-        GuideAssign(UnAssignedNumber) = 1;
-        GuideAngles(UnAssignedNumber) = FiberAngle;
-    end
-    
-    if FEASIBLE && ~isempty(find(isnan(GuideAngles),1))
-        FEASIBLE = false;
-    end
-    
-    
-    
-    %% OLD APPROACH
-    if 0
-        GuideAngles = zeros(1,NthetaVar); % some non-coded genes are included
-        
-        
-        %% Damtol
-        if ConstraintVector(1)
-            A = [-1 1];
-            GuideAngles(1) = 45*A(ceil(2*rand)); % 1st ply is +- 45
-            if strcmp(LamType,'Generic')
-                GuideAngles(end) = 45*A(ceil(2*rand)); % Last ply is +- 45
-            end
-        else
-            GuideAngles(1)   = randi([0 length(0:DeltaAngle:180)-1],1,1)*DeltaAngle -90;
-            GuideAngles(end) = randi([0 length(0:DeltaAngle:180)-1],1,1)*DeltaAngle -90;
+            if TriedSol==2000,   break;  end     % no-feasible solution, go back one more level
+           
         end
         
         
-        %% Disorientation and Contiguity
-        for iAngle = 2 : NthetaVar - 1 % NPliesGuide-1
-            if ConstraintVector(3)
-                if ConstraintVector(4)
-                    A = round([(-45 + 40*rand) (5 + 40*rand)]/DeltaAngle)*DeltaAngle;
-                    AddedAngle = GuideAngles(iAngle-1) + A(ceil(2*rand));
-                else
-                    AddedAngle = GuideAngles(iAngle-1) + round((-45 + 90*rand)/DeltaAngle)*DeltaAngle;
-                end
-            else
-                if ConstraintVector(4)
-                    A = round([(-90 + 85*rand) (5 + 85*rand)]/DeltaAngle)*DeltaAngle;
-                    AddedAngle = GuideAngles(iAngle-1) + A(ceil(2*rand));
-                else
-                    AddedAngle = randi([0 length(0:DeltaAngle:180)-1],1,1)*DeltaAngle-90; % no constraint - full range (use randi for uniform PDF)
-                end
-            end
-            if AddedAngle>90,    AddedAngle = AddedAngle - 180;   end
-            if AddedAngle<-90,   AddedAngle = AddedAngle + 180;   end
-            
-            GuideAngles(iAngle) = AddedAngle;
-        end                                     % Stack plies according to constraints activated
-        
-        %     keyboard
-        
-        %% 10% rule Framework
-        if ConstraintVector(2)
-            [GuideAngles] = Enforce_10PercentRule(GuideAngles);
-        end
-        
-        
-        %%
-        if sum(abs(GuideAngles-round((GuideAngles)/DeltaAngle)*DeltaAngle))~= 0
-            keyboard
-        end
-        GuideAngles = round((GuideAngles)/DeltaAngle)*DeltaAngle; % round up Angles to discrete value (to remove?)
-        
-        
-        BalancedLoc = randperm(NthetaVar*2,NthetaVar); % not used if not balanced
-        if ~isempty(find(BalancedLoc==0,1)), keyboard; end
-        
-        FEASIBLE = true;
-        
-        %% Drop Locations
-        NdropPlies = NdropVar;
-        if NdropPlies>0
-            DropsIndexes = Generate_DropIndexes (GuideAngles,NdropPlies,ConstraintVector,LamType);
-            if isempty(DropsIndexes)
-                FEASIBLE = false;
-            end
-        else
-            DropsIndexes = [];
-        end
-        
-        %% Feasibility check
-        %     keyboard
+        %% Final check and Add to population
         if FEASIBLE
-            NGuideDropPlies = NPliesGuide-min(NpliesPerLam);
-            [FEASIBLE] = Check_Feasibility(ConstraintVector,GuideAngles(1:NPliesGuide),BalancedLoc(1:NPliesGuide),DropsIndexes(1:NGuideDropPlies),NPliesGuide,NGuideDropPlies,LamType,Constraints.Contiguity);
-        end
-        
-        
-        %% Convert Angles in degree into the discrete corresponding values
-        if ~ConstraintVector(1)
-            GuideAngles = round((90+GuideAngles)/DeltaAngle);
-        else
-            if strcmp(LamType,'Generic')
-                GuideAngles(2:end-1) = round((90+GuideAngles(2:end-1))/DeltaAngle);
+            keyboard
+
+            % keyboard
+            
+            SSTableLocal = SSTable
+            
+            Individual = [%NpliesPerLam(SortIndex);  % no Nplies if fixed variables
+                          Thetas;
+                          BalancedLoc;
+                          TenPercentLoc;
+                          %Thetas_Mid;
+                          0; % add thetamid if zero
+                          0; % add thetamid if zero
+                          DropsIndexes ];
+                          
+                           
+            [~,output] = fct_handle(Individual);
+            
+
+            
+            if isfield(Constraints,'PatchConnectivity')
+                NGeoConstraints = CheckContinuity(output.SS,Constraints.PatchConnectivity);
             else
-                GuideAngles(2:end) = round((90+GuideAngles(2:end))/DeltaAngle);
+                NGeoConstraints = 0;
             end
-        end
-        
-        
-        if ConstraintVector(1) % make the first ply a discrete value with only 2 possible state
-            if (GuideAngles(1) == -45), GuideAngles(1) = 1; end
-            if (GuideAngles(1) == 45),  GuideAngles(1) = 2; end
-            if strcmp(LamType,'Generic')
-                if (GuideAngles(end) == -45), GuideAngles(end) = 1; end
-                if (GuideAngles(end) == 45),  GuideAngles(end) = 2; end
-            end
-        end
-        
-        
-    end
-    %% End OLD APPROACH
-    
-    %% Final check and Add to population
-    if FEASIBLE
-        keyboard
-        if 0 % check purpose only
-            SSTable = ComputeSSTable(unique(NpliesPerLam),GuideAngles,DropsIndexes,BalancedLoc,LamType); 
-        end
-        
-        GuideAnglesInt = round((90+GuideAngles)/DeltaAngle);
-        if ConstraintVector(1)
-            if GuideAngles(1) == -45,  GuideAnglesInt(1)=1; end
-            if GuideAngles(1) ==  45,  GuideAnglesInt(1)=2; end
-            if abs(GuideAngles(1)) ~= 45,  keyboard; end % should not happen
-        end
-        
-        NpliesPerLam = NpliesPerLam(SortIndex);
-        if Constraints.Balanced
-            Individual = [NpliesPerLam(NpatchVar) GuideAnglesInt BalancedLoc DropsIndexes];
-        else
-            Individual = [NpliesPerLam(NpatchVar) GuideAnglesInt DropsIndexes];
-        end
-        
-        % keyboard
-        [~,output] = fct_handle(Individual);
-        if isfield(Constraints,'PatchConnectivity')
-            NGeoConstraints = CheckContinuity(output.SS,Constraints.PatchConnectivity);
-        else
-            NGeoConstraints = 0;
-        end
-        %         display(NGeoConstraints)
-        
-        if output.FEASIBLE
-            if Objectives.UserFct % Check based on user function = user fitness fct
-                if output.NViolatedConst<=1
-                    display(ipop)
+            %         display(NGeoConstraints)
+            
+            if output.FEASIBLE
+                if Objectives.UserFct % Check based on user function = user fitness fct
+                    if output.NViolatedConst<=1
+                        display(ipop)
+                        IniPop(ipop,:) = Individual;
+                        ipop   = ipop + 1;
+                        NTried = 0;
+                    end
+                else
                     IniPop(ipop,:) = Individual;
-                    ipop   = ipop + 1;
-                    NTried = 0;
+                    ipop = ipop + 1;
                 end
-            else
-                IniPop(ipop,:) = Individual;
-                ipop = ipop + 1;
             end
         end
+        
+        
+        
+        %% Stop if too hard to create the initial populations
+        NTried = NTried + 1
+        if  NTried == 1000000 && ipop<2
+            error('Hard Constrained Problem. Difficulties Generating IniPop')
+        end
+        
     end
-    
-    
-    
-    %% Stop if too hard to create the initial populations
-    NTried = NTried + 1
-    if  NTried == 1000000 && ipop<2
-        error('Hard Constrained Problem. Difficulties Generating IniPop')
-    end
-    
 end
 
 display(' IniPop Created ... ' )
-end
