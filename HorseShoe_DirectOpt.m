@@ -46,7 +46,7 @@ Optimisation = 0; % 0=direct, 1=indirect
 if Optimisation ==0
     Objectives.Table   = [{'Laminate #'}  {'Nplies [LB UB]'}];
     for i=1:18
-        Objectives.Table = [Objectives.Table; {i}  {[14 48]}];
+        Objectives.Table = [Objectives.Table; {i}  {[14 49]}];
     end
 else
     Table =[ % Nply  V1D     V3D
@@ -193,8 +193,7 @@ end
 % ---
 %                        [Damtol  Rule10percent  Disorientation  Contiguity   BalancedIndirect  InernalContinuity  Covering];
 Constraints.Vector     = [true       true          true          true         false            true            true];
-Constraints.DeltaAngle = 5;
-Constraints.ORDERED    = false;                         
+Constraints.DeltaAngle = 5;                    
 Constraints.Balanced   = true; 
 Constraints.Sym        = true; 
 Constraints.PatchXYZ   = PatchXYZ;

@@ -37,152 +37,134 @@
 
 
 
-function [fitness,output] = Eval_Fitness (Individual,Objectives,Constraints,NpatchVar,NthetaVar,NbalVar,N10percentVar,AllowedNplies,LamType)
+function [fitness,output] = Eval_Fitness (Individual,Objectives,Constraints,NStruct,AllowedNplies,LamType)
 
 
-ConstraintVector = Constraints.Vector;
-
-FEASIBLE  = true; 
 Nlam      = size(Objectives.Table,1)-1;
 LamNumber = int8(zeros(Nlam,1));
 for j=1:Nlam
     LamNumber(j) = Objectives.Table{j+1,1}; 
 end
 
-keyboard % change convert genotype so that it returns the SStable used for all feasibilit check
+% keyboard % change convert genotype so that it returns the SStable used for all feasibilit check
 
-[SortedLamNumber,GuideAngles,ShuffleLoc,DropIndexes] = Convert_Genotype(Individual,LamNumber,Constraints,NpatchVar,NthetaVar,NbalVar,N10percentVar,AllowedNplies);
-NGuidePlies = length(GuideAngles);
-NDropPlies  = cellfun(@length,DropIndexes,'UniformOutput', true); % NUmber of dropped between each patch
-Ndrop       = length(NDropPlies);                                       % Total number of drops between patches
+[NpliesPerLam,SSTable] = Convert_Genotype(Individual,Constraints,NStruct,AllowedNplies,LamType);
 
-
-
-%% --- Convert discrete values into Angles in degree
-if ~ConstraintVector(1)     % if not Damtol
-    GuideAngles = -90 + GuideAngles*Constraints.DeltaAngle;
-else
-    GuideAngles(2:end) = -90 + GuideAngles(2:end)*Constraints.DeltaAngle;
-end
-if ~isempty(find(abs(GuideAngles)>90,1)),
-    error('Angle greater than 90 detected');
-end
-
-
-%% --- check / enforce constraints for ply Guide 
-if ConstraintVector(1) % if Damtol, first angle is +- 45
-    R = [-1 1];
-    GuideAngles(1) = 45*R(GuideAngles(1));
-    if strcmp(LamType,'Generic') % convert to closest
-        if abs(GuideAngles(end)-45) < abs(GuideAngles(end) +45) % closer to +45
-            GuideAngles(end) = 45;
-        else
-            GuideAngles(end) = -45;
+% repaired solution - change NpliesPerLam to match SS values (avoid infeasibility)
+if 1  
+    for j = 1:size(SSTable,1)
+        NplySS(j) = length(find(~cellfun(@isempty,SSTable(j,:))));
+    end
+    for j = 1:length(NpliesPerLam(:,1))
+        if isempty(find(NpliesPerLam(j,1)==NplySS,1))
+            [~,NIndex] = min(abs(NplySS-NpliesPerLam(j,1)));
+            NpliesPerLam(j,1) = NplySS(NIndex);
         end
     end
 end
+[~,UniqueIndex] = unique(NpliesPerLam(:,1));
+UniqueNplies    = flipud(NpliesPerLam(UniqueIndex,:));
+NUnique         = length(UniqueIndex);
+%
 
-keyboard
-% Create corresponding SSTable
-UniquePlyNumber = unique(SortedLamNumber(SortedLamNumber<=NGuidePlies));
-UniquePlyNumber = UniquePlyNumber(UniquePlyNumber>=(NGuidePlies-sum(NDropPlies)))
-
-SSTable = ComputeSSTable(UniquePlyNumber,GuideAngles,cell2mat(DropIndexes),ShuffleLoc,LamType);
-
-% if ConstraintVector(2)                                                      % 10% rule (0,90,+-45)
-%     [GuideAngles] = Enforce_10PercentRule(GuideAngles);
-% end
-
-if FEASIBLE
-    [FEASIBLE,ConstViolated] = Check_Feasibility(ConstraintVector,GuideAngles,ShuffleLoc,cell2mat(DropIndexes),NGuidePlies,NDropPlies,LamType,Constraints.Contiguity,SortedLamNumber);
-end
-keyboard
+[FEASIBLE,ConstViolated] = Check_Feasibility(Constraints,NpliesPerLam(:,1),SSTable);
 
 
 %% fitness calculation
 % pre-allocation
-SS  = cell(1,Ndrop+1);
+SS_Unique = cell(size(SSTable));
+SS_Patch  = cell(Nlam,size(SSTable,2));
 
 if strcmp(Objectives.Type,'LP')
-    LP = zeros(12,Ndrop+1);
+    LP = zeros(12,NUnique);
+    LP_Patch = zeros(12,Nlam);
 end
 
 if strcmp(Objectives.Type,'ABD')
-    A = cell(Ndrop+1,1);
-    B = cell(Ndrop+1,1);
-    D = cell(Ndrop+1,1);
+    A = cell(NUnique,1);
+    B = cell(NUnique,1);
+    D = cell(NUnique,1);
+    
+    A_Patch = cell(NUnique,1);
+    B_Patch = cell(NUnique,1);
+    D_Patch = cell(NUnique,1);
 end
+
 
 
 % Guide + After Drops
-for iDrop = 0 : Ndrop
+for iSS = 1 : NUnique
+    RowIndex = find(NplySS==UniqueNplies(iSS,1),1);
     
-    if iDrop == 0
-        DropsLoc = [];
-    else
-        DropsLoc = [DropsLoc DropIndexes{iDrop}];
-        DropsLoc = unique(DropsLoc);
-        DropsLoc(DropsLoc>NGuidePlies) = [];                                    % remove Infeasible Drops (only for variable Nply)
-    end
-    
-    FiberAngles = Convert_dvAngles2FiberAngles(GuideAngles,DropsLoc,ShuffleLoc,LamType);
-    SS{iDrop + 1}   = FiberAngles;
+    SS_Unique(iSS,:)   = SSTable(RowIndex,:);    
+    NplySS_Unique(iSS) = length(find(~cellfun(@isempty,SS_Unique(iSS,:))));
+    FiberAngles        = cell2mat(SS_Unique(iSS,:));
     
     if strcmp(Objectives.Type,'LP')
-        LP(:,iDrop + 1) = Convert_SS2LP(FiberAngles);          % evaluate lamination parameters for the droped laminates
+        LP(:,iSS) = Convert_SS2LP(FiberAngles);          % evaluate lamination parameters for the droped laminates
     end
     if strcmp(Objectives.Type,'ABD')
-        [A{iDrop + 1},B{iDrop + 1},D{iDrop + 1}] = Convert_SS2ABD (Objectives.mat(1),Objectives.mat(2),Objectives.mat(4),Objectives.mat(3),Constraints.ply_t,FiberAngles,true);
+        [A{iSS},B{iSS},D{iSS}] = Convert_SS2ABD (Objectives.mat(1),Objectives.mat(2),Objectives.mat(4),Objectives.mat(3),Constraints.ply_t,FiberAngles,true);
     end
 end
 
+NpliesPerLam = sortrows(NpliesPerLam,2);
+for iPatch = 1:Nlam
+    
+    RowIndex = find(NplySS_Unique == NpliesPerLam(iPatch),1);
+    
+    if strcmp(Objectives.Type,'SS')
+        SS_Patch(iPatch,:) = SS_Unique(RowIndex,:);
+    end
+    
+    if strcmp(Objectives.Type,'LP')
+        LP_Patch(:,iPatch) = LP(:,RowIndex);
+    end
 
-% revert both sorting at once
-[~,RevertSort]    = sort(SortedLamNumber);
-SS = SS(RevertSort);
+    if strcmp(Objectives.Type,'ABD')
+        A_Patch(iPatch) = A(RowIndex);
+        B_Patch(iPatch) = B(RowIndex);
+        D_Patch(iPatch) = D(RowIndex);
+    end
+end
 
 
 % --- check individual ply continuity (only if structure geometry is given)
-if isfield(Constraints,'PatchConnectivity') 
-    NGeoConstraints = CheckContinuity(SS,Constraints.PatchConnectivity);
-    output.NGeoConstraints = NGeoConstraints;
-else
-    NGeoConstraints = 0;
-end
+% if isfield(Constraints,'PatchConnectivity') 
+%     NGeoConstraints = CheckContinuity(SS,Constraints.PatchConnectivity);
+%     output.NGeoConstraints = NGeoConstraints;
+% else
+%     NGeoConstraints = 0;
+% end
 % ---
 
 
 if strcmp(Objectives.Type,'LP')
-    LP        = LP(:,RevertSort);
     if ~Objectives.UserFct
-        fitness          = Objectives.FitnessFct(LP);                       % Default Fitness Function (Do not Change)
+        fitness          = Objectives.FitnessFct(LP_Patch);                       % Default Fitness Function (Do not Change)
     else
-        [fitness,output] = Objectives.FitnessFct(LP);                       % User Fitness Function Calls
+        [fitness,output] = Objectives.FitnessFct(LP_Patch);                       % User Fitness Function Calls
     end
-    output.LP = LP;
+    output.LP = LP_Patch;
 end
 
 if strcmp(Objectives.Type,'ABD')
-    A = A(RevertSort);
-    B = B(RevertSort);
-    D = D(RevertSort);
-    
     if ~Objectives.UserFct
-        fitness = Objectives.FitnessFct(A,B,D);                             % Default Fitness Function (Do not Change)
+        fitness = Objectives.FitnessFct(A_Patch,B_Patch,D_Patch);                             % Default Fitness Function (Do not Change)
     else
-        [fitness,output] = Objectives.FitnessFct(A,B,D);                    % User Fitness Function Calls
-    end
-    
-    output.A  = A;
-    output.B  = B;
-    output.D  = D;
+        [fitness,output] = Objectives.FitnessFct(A_Patch,B_Patch,D_Patch);                    % User Fitness Function Calls
+    end 
+    output.A  = A_Patch;
+    output.B  = B_Patch;
+    output.D  = D_Patch;
 end
 
 if strcmp(Objectives.Type,'SS')
-    [fitness,output] = Objectives.FitnessFct(SS);                           % User Fitness Function Calls
+    [fitness,output] = Objectives.FitnessFct(SS_Patch);                           % User Fitness Function Calls
 end
 
-fitness = fitness * (1+NGeoConstraints);
+fitness = fitness;
+% fitness = fitness * (1+NGeoConstraints);
 
 if ~FEASIBLE  % add penalty if not FEASIBLE
     if isnan(fitness) || isinf(fitness) || ~isreal(fitness)
@@ -191,9 +173,6 @@ if ~FEASIBLE  % add penalty if not FEASIBLE
     fitness = fitness * 4;
 end
 
-
-
-output.SS          = SS;
-output.DropIndexes = DropIndexes;
-output.FEASIBLE    = FEASIBLE;
+output.SS_Patch = SS_Patch;
+output.FEASIBLE = FEASIBLE;
 

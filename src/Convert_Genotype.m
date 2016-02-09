@@ -32,77 +32,33 @@
 % either expressed or implied, of the FreeBSD Project.
 % ----------------------------------------------------------------------- %
 
-function [SortedLamNumber,GuideAngles,ShuffleLoc,DropIndexes] = Convert_Genotype(Individual,LamNumber,Constraints,NpatchVar,NthetaVar,NbalVar,N10percentVar,AllowedNplies)
+function [NpliesPerLam,SSTable] = Convert_Genotype(Individual,Constraints,NStruct,AllowedNplies,LamType)
 
-keyboard
 
-%% Extract Number of ply per patches
-IndexPly = 1;
-NpliesperLam = nan*ones(length(NpatchVar),1);
-for iPly = 1:length(NpatchVar)
-    if NpatchVar(iPly)==0
-        NpliesperLam(iPly) = AllowedNplies{iPly};
+% Extract Number of ply per patches
+NpliesPerLam = nan*ones(length(NStruct.NpatchVar),1);
+for iPly = 1:length(NStruct.NpatchVar)
+    if NStruct.NpatchVar(iPly)==0
+        NpliesPerLam(iPly) = AllowedNplies{iPly};
     else
-        NpliesperLam(iPly) = Individual(IndexPly);
-        IndexPly = IndexPly+1;
+        NpliesPerLam(iPly) = AllowedNplies{iPly}(Individual(iPly));
     end
 end
 
+NpliesPerLam = [NpliesPerLam [1:length(NpliesPerLam)]'];
+NpliesPerLam = flipud(sortrows(NpliesPerLam,1));
+
+NStruct_0 = AttributeNply(NpliesPerLam(:,1),Constraints,LamType);
+
+% Extract All design variable from the individual
+Thetas          = Individual(sum(NStruct.NpatchVar) + [1:NStruct_0.NthetaVar]);                
+BalancedLoc     = Individual(sum(NStruct.NpatchVar) + NStruct.NthetaVar + [1:NStruct_0.NbalVar]);
+TenPercentLoc   = Individual(sum(NStruct.NpatchVar) + NStruct.NthetaVar + NStruct.NbalVar + [1:NStruct_0.N10percentVar]);
+Thetas_Mid      = Individual(sum(NStruct.NpatchVar) + NStruct.NthetaVar + NStruct.NbalVar + NStruct.N10percentVar + [1:NStruct_0.NMidPlane]);
+PlyDrops        = Individual(sum(NStruct.NpatchVar) + NStruct.NthetaVar + NStruct.NbalVar + NStruct.N10percentVar + NStruct.NDV_NMidPlane + [1:NStruct_0.NdropVar]);
 
 
-%% sort ply order to have Guide First 
-if Constraints.ORDERED
-    NpliesperLam = sort(NpliesperLam,'descend');                            % repair to ensure thickness is ordered
-    SortIndex    = 1:length(NpliesperLam);
-    if find(diff(NpliesperLam)>0,1)
-        keyboard % should never happen
-    end
-else
-    [NpliesperLam,SortIndex] = sort(NpliesperLam,'descend');
-end
-
-SortedLamNumber = LamNumber(SortIndex);                                        % after 2nd sorting
-NGuidePlies     = max(NpliesperLam);                                           % number of plies in the guide laminate (take half for Sym.)
-NDropPlies      = abs(diff(NpliesperLam));                                     % number of ply drops between each laminates
-GuideAngles     = Individual(sum(NpatchVar) + [1:NGuidePlies]);                % Extract variable fibre angles of the guide
-
-
-[NthetaVar0,NbalVar0,N10percentVar0] = AttributeDesignVariable(NGuidePlies*16,Constraints);
-
-% if Constraints.Vector(2) == 1 % add the 10% rule framework
-%     keyboard
-%     Fixed
-% end
-
-
-%% --- Shuffle Location (i.e. location of angles pairs) for balanced Lam.
-if Constraints.Balanced
-    ShuffleLoc = Individual(sum(NpatchVar) + NthetaVar + [1:NGuidePlies]);
-%     StartIndex = sum(NpatchVar) + NthetaVar*2;
-else
-    ShuffleLoc = [];
-%     StartIndex = sum(NpatchVar) + NthetaVar;
-end
-
-%% --- Extract 10% rule data
-
-if Constraints(2)
-    
-   
-    TenPercentData = Individual(sum(NpatchVar) + NthetaVar + NbalVar + [1:NGuidePlies]);
-else
-    TenPercentData = [];
-end
-
-
-%% --- organise ply drop sequences
-Ndrop = length(NDropPlies);
-DropIndexes = cell(1,Ndrop);                                                   % matrix of drops plies bundled together
-
-for iDrop = 1 : Ndrop
-    DropIndexesTEMP     = Individual(StartIndex + [1:NDropPlies(iDrop)]);
-    DropIndexes{iDrop}  = DropIndexesTEMP(~isnan(DropIndexesTEMP));
-    StartIndex          = StartIndex + NDropPlies(iDrop);
-end
-
+% keyboard
+% compute SSTAble
+SSTable = NewComputeSSTable(Thetas,PlyDrops,BalancedLoc,TenPercentLoc,Thetas_Mid,LamType,Constraints);   
 end

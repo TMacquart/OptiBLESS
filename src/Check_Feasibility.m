@@ -37,81 +37,67 @@
 
 
 
-function [FEASIBLE,ConstViolated] = Check_Feasibility(ConstraintVector,GuideAngles,ShuffleLoc,DropsIndexes,NGuidePlies,NDropPlies,LamType,NContiguity,SortedLamNumber)
+function [FEASIBLE,ConstViolated] = Check_Feasibility(Constraints,NpliesPerLam,SSTable)
 
 ConstViolated = '';
 FEASIBLE = true;
 
-if (length(DropsIndexes) ~= length(unique(DropsIndexes))),
-    FEASIBLE = false; % penalise GA individual with non-unique ply drops
-    ConstViolated = 'Drop Indexes 1';
-    return
-end 
-
-if length(DropsIndexes) ~= sum(NDropPlies)
-    FEASIBLE = false; 
-    ConstViolated = 'Drop Indexes 2';
+NpliesPerLam = sort(unique(NpliesPerLam),'descend');
+for j = 1:size(SSTable,1)
+    NplySS(j) = length(find(~cellfun(@isempty,SSTable(j,:))));
+end
+if find(ismember(NpliesPerLam,NplySS)==0,1)
+    FEASIBLE = false;
+    ConstViolated = 'Drop Indexes';
     return
 end
 
 
-if max(DropsIndexes)>length(GuideAngles) 
-    FEASIBLE = false; 
-    ConstViolated = 'Drop Indexes 3';
-    return
-end 
-
-if ConstraintVector(1)
-    if abs(GuideAngles(1)) ~= 45
-        FEASIBLE = false;
-        ConstViolated = 'Damtol';
-        return
-    end
-    if strcmp(LamType,'Generic') && abs(GuideAngles(end)) ~= 45
-        FEASIBLE = false;
-        ConstViolated = 'Damtol';
-        return
-    end
-end
+% if Constraints.Vector(1) % damtol
+%     if abs(SSTable{1,1}) ~= 45
+%         keyboard % should never happem and can be removed
+%         FEASIBLE = false;
+%         ConstViolated = 'Damtol';
+%         return
+%     end
+%     if strcmp(LamType,'Generic') && abs(GuideAngles(end)) ~= 45
+%         FEASIBLE = false;
+%         ConstViolated = 'Damtol';
+%         return
+%     end
+% end
 
 
-if ConstraintVector(2) || ConstraintVector(3) || ConstraintVector(4) % 10%rule, Disorientation and Contiguity
+if Constraints.Vector(2) || Constraints.Vector(3) || Constraints.Vector(4) % 10%rule, Disorientation and Contiguity
+    
 
-    for iDrop= 0:length(DropsIndexes)
-        
-        if iDrop == 0
-            [FiberAngles] = Convert_dvAngles2FiberAngles(GuideAngles,[],ShuffleLoc,LamType);
-        else
-            DropsLoc = unique(DropsIndexes(1:iDrop));
-            DropsLoc(DropsLoc>NGuidePlies) = [];
-            FiberAngles = Convert_dvAngles2FiberAngles(GuideAngles,DropsLoc,ShuffleLoc,LamType);
-        end
-        
+    for i = 1:length(NplySS) 
+        FiberAngles = cell2mat(SSTable(j,:));
         DetlaAngle = ComputeDeltaAngle(FiberAngles);
         Contiguity = 0;
         for iply = 1:numel(FiberAngles)-1
 
-            if ConstraintVector(2)
+            if Constraints.Vector(2)
                 FEASIBLE = Check_10PercentRule(FiberAngles);
                 if ~FEASIBLE
+                    ConstViolated = 'TenPercentRule';
                     return
                 end
             end
                 
-            if ConstraintVector(3) && DetlaAngle(iply)>45 % disorientation
-                keyboard
+            if Constraints.Vector(3) && DetlaAngle(iply)>45 % disorientation
                 FEASIBLE = false;
                 ConstViolated = 'Disorientation';
                 return
             end
             
-            if ConstraintVector(4) % contiguity
+            if Constraints.Vector(4) % contiguity
                 if DetlaAngle(iply)==0
                     Contiguity = Contiguity + 1;
                 else
                     Contiguity = 0;
                 end
-                if Contiguity >= NContiguity
+                if Contiguity >= Constraints.Contiguity
                     ConstViolated = 'Contiguity';
                     FEASIBLE = false;
                     return
@@ -122,80 +108,59 @@ if ConstraintVector(2) || ConstraintVector(3) || ConstraintVector(4) % 10%rule, 
     end
 end
 
-
-if (ConstraintVector(7) || ConstraintVector(6)) && ~isempty(DropsIndexes)    % check covering and internal continuity constraints
-   
-    DropsLoc = sort(DropsIndexes);
-    
-    if ConstraintVector(7) && ~isempty(find(DropsLoc == 1,1)), % covering check first ply is not removed
-        keyboard % this constraints should be removed, it has been replaced by a direct constraints on LB , UB
-        FEASIBLE = false;  
-        ConstViolated = 'Covering';
-        return
-    end 
-    
-    if ConstraintVector(7) && strcmp(LamType,'Generic') && ~isempty(find(DropsLoc == length(GuideAngles),1)), % covering check first ply is not removed
-        keyboard % this constraints should be removed, it has been replaced by a direct constraints on LB , UB
-        FEASIBLE = false;
-        ConstViolated = 'Covering';
+if Constraints.Vector(6)
+    FEASIBLE = Check_InternalContinuity(SSTable);
+    if ~FEASIBLE
+          ConstViolated = 'InternalContinuity';
         return
     end
-    
-    if ConstraintVector(6)
-        FEASIBLE = Check_InternalContinuity(SSTable);
-        if ~FEASIBLE
-            ConstViolated = 'InernalContinuity';
-            return
-        end
-        
-%         for i = 1 : length(DropsLoc)-3
-%             deltaLoc = diff(DropsLoc(i:i+3));
-%             if sum(abs(deltaLoc))==3
+end
+
+if Constraints.Vector(7)  % check covering 
+   if ~isempty(find(isempty(SSTable(:,1)),1))
+        ConstViolated = 'Covering';
+       FEASIBLE = false;
+       return
+   end
+end
+
+
+
+% if ConstraintVector(5) % check if balanced for indirect constraint handling
+%     % guide
+%     [FiberAngles] = Convert_dvAngles2FiberAngles(GuideAngles,[],LamType);
+%     UniqueAngle = unique(FiberAngles);
+%     UniqueAngle(abs(UniqueAngle)==90) = [];
+%     UniqueAngle(UniqueAngle==0)       = [];
+%     for j=1:length(UniqueAngle)
+%         if length(find(UniqueAngle(j)==FiberAngles)) ~= length(find(-UniqueAngle(j)==FiberAngles))
+%             FEASIBLE = false;
+%             return
+%         end
+%     end
+%     
+%     % guideDroped laminates
+%     for iDrop=1:length(DropsIndexes)
+%         ply_angles = GuideAngles;
+%         DropsLoc = unique(DropsIndexes(1:iDrop));
+%         if max(DropsLoc)>NGuidePlies
+%             DropsLoc(DropsLoc>NGuidePlies) = [];
+%         end
+%         
+%         ply_angles(DropsLoc(DropsLoc<=length(ply_angles))) = [];  % drop plies
+%         FiberAngles      = Convert_dvAngles2FiberAngles(ply_angles,[],LamType);
+%         UniqueAngle = unique(FiberAngles);
+%         UniqueAngle(abs(UniqueAngle)==90) = [];
+%         UniqueAngle(UniqueAngle==0)       = [];
+%         
+%         for j=1:length(UniqueAngle)
+%             if length(find(UniqueAngle(j)==FiberAngles)) ~= length(find(-UniqueAngle(j)==FiberAngles))
 %                 FEASIBLE = false;
-%                 ConstViolated = 'InernalContinuity';
 %                 return
 %             end
 %         end
-    end
-end
-
-
-
-if ConstraintVector(5) % check if balanced for indirect constraint handling
-    % guide
-    [FiberAngles] = Convert_dvAngles2FiberAngles(GuideAngles,[],LamType);
-    UniqueAngle = unique(FiberAngles);
-    UniqueAngle(abs(UniqueAngle)==90) = [];
-    UniqueAngle(UniqueAngle==0)       = [];
-    for j=1:length(UniqueAngle)
-        if length(find(UniqueAngle(j)==FiberAngles)) ~= length(find(-UniqueAngle(j)==FiberAngles))
-            FEASIBLE = false;
-            return
-        end
-    end
-    
-    % guideDroped laminates
-    for iDrop=1:length(DropsIndexes)
-        ply_angles = GuideAngles;
-        DropsLoc = unique(DropsIndexes(1:iDrop));
-        if max(DropsLoc)>NGuidePlies
-            DropsLoc(DropsLoc>NGuidePlies) = [];
-        end
-        
-        ply_angles(DropsLoc(DropsLoc<=length(ply_angles))) = [];  % drop plies
-        FiberAngles      = Convert_dvAngles2FiberAngles(ply_angles,[],LamType);
-        UniqueAngle = unique(FiberAngles);
-        UniqueAngle(abs(UniqueAngle)==90) = [];
-        UniqueAngle(UniqueAngle==0)       = [];
-        
-        for j=1:length(UniqueAngle)
-            if length(find(UniqueAngle(j)==FiberAngles)) ~= length(find(-UniqueAngle(j)==FiberAngles))
-                FEASIBLE = false;
-                return
-            end
-        end
-    end
-end
+%     end
+% end
 
 
 end

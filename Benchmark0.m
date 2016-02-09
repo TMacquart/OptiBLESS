@@ -80,8 +80,8 @@ ply_t = 0.000127;
 % GuideLamDv = [-50 85 -40  -25  20 25  -45 -85 50 -20 -40  5 -5 -75 40  75  45 -85 40 85];                                             % theta 8
 
 %% Generic 
-GuideLamDv = [10   -65   -60   -40    65   -40    60   -45    80   -25];                                                              % theta 9
-% GuideLamDv = [-50   -40    25     0   -25    60    20    10    80   -35 50    50   -20    15   -75   -80    10    55    80   -65];    % theta 10
+% GuideLamDv = [10   -65   -60   -40    65   -40    60   -45    80   -25];                                                              % theta 9
+GuideLamDv = [-50   -40    25     0   -25    60    20    10    80   -35 50    50   -20    15   -75   -80    10    55    80   -65];    % theta 10
 % 
 % GuideLamDv = randi([1 36],1,100)*5-90;
 % Drops = num2cell(randperm(100,50));
@@ -123,7 +123,7 @@ Constraints.DeltaAngle = 5;
 Constraints.Contiguity = 2;
 Constraints.ply_t      = ply_t;      % ply thickness
 Constraints.Balanced   = true;      % Direct Constraint Handling
-Constraints.Sym        = false; 
+Constraints.Sym        = true; 
 Constraints.ORDERED    = false;           
 
 

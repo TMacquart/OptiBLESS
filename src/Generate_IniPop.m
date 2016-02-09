@@ -49,14 +49,15 @@
 % ----------------------------------------------------------------------- %
 
 
-function [IniPop] = Generate_IniPop (nvar,Npop,NpatchVar,NthetaVar,NdropVar,Constraints,Objectives,AllowedNplies,LamType,fct_handle)
+function [IniPop] = Generate_IniPop (NStruct,Npop,Constraints,Objectives,AllowedNplies,LamType,BCs,fct_handle)
 
+
+keyboard
 
 % Initialisation
-IniPop = zeros(Npop,nvar);
+IniPop = zeros(Npop,NStruct.Nvar);
 display(' Creating IniPop ... ' )
-ConstraintVector = Constraints.Vector;
-DeltaAngle       = Constraints.DeltaAngle;
+DeltaAngle    = Constraints.DeltaAngle;
 ipop          = 1 ;
 NTried        = 0;
 
@@ -73,25 +74,30 @@ while ipop < Npop + 1
     [NpliesPerLam,SortIndex] = sort(NpliesPerLam,'descend');
     NPliesGuide = max(NpliesPerLam);
     
+    
     %% Drop Location
-    NdropPlies = NdropVar;
+    
+    NStruct0   = AttributeNply(NpliesPerLam,Constraints,LamType);
+    NdropPlies = NStruct0.NdropVar;
+    
     if NdropPlies>0
-        if ConstraintVector(7) % covering
+        if Constraints.Vector(7) % covering
             Offset = 1;
         else
             Offset = 0;
         end
         
         if strcmp(LamType,'Generic') || strcmp(LamType,'Sym')
-            if strcmp(LamType,'Generic')
-                Coeff = 1;
-            else
-                Coeff = 2;
-            end
+%             if strcmp(LamType,'Generic')
+%                 Coeff = 1;
+%             else
+%                 Coeff = 2;
+%             end
+%             DropsIndexes = randperm((NStruct.N10percentVar + NStruct.NthetaVar)-Offset,NdropPlies)+Offset;
             
-            DropsIndexes = randperm(NthetaVar-Offset,NdropPlies)+Offset;
+            DropsIndexes = randperm(BCs.UB.PlyDrop(1)-BCs.LB.PlyDrop(1),NdropPlies)+BCs.LB.PlyDrop(1);
             
-            if ConstraintVector(6) % Internal continuity
+            if Constraint.Vector(6) % Internal continuity
                 FEASIBLE = false;
                 while ~FEASIBLE
                     FEASIBLE = true;
@@ -100,7 +106,7 @@ while ipop < Npop + 1
                         deltaLoc = diff(DropsLoc(i:i+3));
                         if sum(abs(deltaLoc))==3
                             FEASIBLE = false;
-                            DropsIndexes = randperm(NthetaVar-Offset,NdropPlies)+Offset;
+                            DropsIndexes = randperm((NStruct.N10percentVar + NStruct.NthetaVar)-Offset,NdropPlies)+Offset;
                             break
                         end
                     end
@@ -119,16 +125,16 @@ while ipop < Npop + 1
             FEASIBLE = false;
             while ~FEASIBLE
                 FEASIBLE = true;
-                ShuffleLoc   = randperm(NthetaVar*2-1,NthetaVar)+1; % First ply not allowed for simplicity
-                DropsIndexes = randperm(NthetaVar-Offset,NdropPlies)+Offset;
+                BalancedLoc  = randperm(NStruct.NthetaVar*2-1,NStruct.NthetaVar)+1; % First ply not allowed for simplicity
+                DropsIndexes = randperm(NStruct.NthetaVar-Offset,NStruct.NdropPlies)+Offset;
                 
                 if ConstraintVector(6) % check internal continuity
                     PatchNPly = sort(unique(NpliesPerLam*Coeff),'descend');
                     SymbolicGuideAngles =  [1:NthetaVar];
                     
                     % reconstuct 1st and Last
-                    SymbolicSS     = num2cell(Convert_dvAngles2FiberAngles(SymbolicGuideAngles,[],ShuffleLoc,LamType)');
-                    SymbolicSS_End = Convert_dvAngles2FiberAngles(SymbolicGuideAngles,DropsIndexes,ShuffleLoc,LamType)';
+                    SymbolicSS     = num2cell(Convert_dvAngles2FiberAngles(SymbolicGuideAngles,[],BalancedLoc,LamType)');
+                    SymbolicSS_End = Convert_dvAngles2FiberAngles(SymbolicGuideAngles,DropsIndexes,BalancedLoc,LamType)';
                     
                     for i=1:NthetaVar*Coeff
                         if ~isempty(find(SymbolicSS{1,i}==SymbolicSS_End,1))
@@ -164,7 +170,7 @@ while ipop < Npop + 1
         for j=0:length(DropsIndexes)
             if ~isempty(find(((NthetaVar-j)*Coeff-PatchNPly)==0,1))
                 
-                SymbolicFiberAngles = Convert_dvAngles2FiberAngles(SymbolicGuideAngles,DropsIndexes(1:j),ShuffleLoc,LamType)';
+                SymbolicFiberAngles = Convert_dvAngles2FiberAngles(SymbolicGuideAngles,DropsIndexes(1:j),BalancedLoc,LamType)';
                 if index == 1
                     SymbolicSSTable(index,:) = num2cell(SymbolicFiberAngles);
                 else
@@ -329,8 +335,8 @@ while ipop < Npop + 1
         GuideAngles = round((GuideAngles)/DeltaAngle)*DeltaAngle; % round up Angles to discrete value (to remove?)
         
         
-        ShuffleLoc = randperm(NthetaVar*2,NthetaVar); % not used if not balanced
-        if ~isempty(find(ShuffleLoc==0,1)), keyboard; end
+        BalancedLoc = randperm(NthetaVar*2,NthetaVar); % not used if not balanced
+        if ~isempty(find(BalancedLoc==0,1)), keyboard; end
         
         FEASIBLE = true;
         
@@ -349,7 +355,7 @@ while ipop < Npop + 1
         %     keyboard
         if FEASIBLE
             NGuideDropPlies = NPliesGuide-min(NpliesPerLam);
-            [FEASIBLE] = Check_Feasibility(ConstraintVector,GuideAngles(1:NPliesGuide),ShuffleLoc(1:NPliesGuide),DropsIndexes(1:NGuideDropPlies),NPliesGuide,NGuideDropPlies,LamType,Constraints.Contiguity);
+            [FEASIBLE] = Check_Feasibility(ConstraintVector,GuideAngles(1:NPliesGuide),BalancedLoc(1:NPliesGuide),DropsIndexes(1:NGuideDropPlies),NPliesGuide,NGuideDropPlies,LamType,Constraints.Contiguity);
         end
         
         
@@ -382,7 +388,7 @@ while ipop < Npop + 1
     if FEASIBLE
         keyboard
         if 0 % check purpose only
-            SSTable = ComputeSSTable(unique(NpliesPerLam),GuideAngles,DropsIndexes,ShuffleLoc,LamType); 
+            SSTable = ComputeSSTable(unique(NpliesPerLam),GuideAngles,DropsIndexes,BalancedLoc,LamType); 
         end
         
         GuideAnglesInt = round((90+GuideAngles)/DeltaAngle);
@@ -394,7 +400,7 @@ while ipop < Npop + 1
         
         NpliesPerLam = NpliesPerLam(SortIndex);
         if Constraints.Balanced
-            Individual = [NpliesPerLam(NpatchVar) GuideAnglesInt ShuffleLoc DropsIndexes];
+            Individual = [NpliesPerLam(NpatchVar) GuideAnglesInt BalancedLoc DropsIndexes];
         else
             Individual = [NpliesPerLam(NpatchVar) GuideAnglesInt DropsIndexes];
         end

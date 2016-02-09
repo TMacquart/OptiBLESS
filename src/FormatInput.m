@@ -45,113 +45,109 @@
 % ----------------------------------------------------------------------- %
 
 
-function [Nvar,NpatchVar,NthetaVar,NbalVar,N10percentVar,NdropVar,LamType,LB,UB,AllowedNplies]  = FormatInput(Objectives,Constraints)
+function [NStruct,LamType,LB,UB,BCs,AllowedNplies]  = FormatInput(Objectives,Constraints)
 
 %% NthetaVar and LamType
 
-if Constraints.Sym  && Constraints.Balanced,
-    DeltaNPly = 4;                  % The allowed ply numbers are multiple of DeltaNPly (i.e. 4, 8, 12, ...)
-    LamType   = 'Balanced_Sym';     % Type of Laminate
-end
+if Constraints.Sym  && Constraints.Balanced,    LamType = 'Balanced_Sym';     end
+if Constraints.Sym && ~Constraints.Balanced,    LamType = 'Sym';              end
+if ~Constraints.Sym && Constraints.Balanced,    LamType = 'Balanced';         end
+if ~Constraints.Sym && ~Constraints.Balanced,   LamType = 'Generic';          end
 
-if Constraints.Sym && ~Constraints.Balanced,
-    DeltaNPly = 2;
-    LamType   = 'Sym';
-end
 
-if ~Constraints.Sym && Constraints.Balanced,
-    DeltaNPly = 2;
-    LamType   = 'Balanced';
-end
+Nplies = round(cell2mat(Objectives.Table(2:end,2)));    % Upper and lower Number of plies allowed for each patch
 
-if  ~Constraints.Sym && ~Constraints.Balanced,
-    LamType   = 'Generic';
-    DeltaNPly = 1;
-end
-
-NplyIni = cell2mat(Objectives.Table(2:end,2));
-Nplies  = round(NplyIni/DeltaNPly)*DeltaNPly;                    % Upper and lower Number of plies allowed for each patch
-[MaxNplies,rowIndMax] = max(Nplies(:,2)); 
-
-[NthetaVar,NbalVar,N10percentVar] = AttributeDesignVariable(MaxNplies,Constraints);
-
-%% NdropVar
-
-NpliesTemp = Nplies;
-NpliesTemp(rowIndMax,:) = [];
-if ~isempty(NpliesTemp), 
-    NdropVar = (MaxNplies-min(NpliesTemp(:)))/DeltaNPly;           % Max number of guide drops variable
-    clear NpliesTemp
-else
-    NdropVar = 0;                                                  % special case for single laminate
-end
-
+NStruct =  AttributeNply(Nplies,Constraints,LamType);
 
 %% NpatchVar and AllowedNplies
-AllowedNplies = cell(size(NplyIni,1),1);
-for i=1:size(NplyIni,1)
-    AllowedNplies{i} = (Nplies(i,1):DeltaNPly:Nplies(i,2))/DeltaNPly;       % Number of Ply Range
+AllowedNplies = cell(size(Nplies,1),1);            % Number of Ply Range allowed
+for i=1:size(Nplies,1)
+    if strcmp(LamType,'Balanced_Sym')
+        AllowedNplies{i} = Nplies(i,1):2:Nplies(i,2);      
+    else
+        AllowedNplies{i} = Nplies(i,1):Nplies(i,2);       
+    end
 end
 
 
-Nrange    = cellfun(@max,AllowedNplies,'UniformOutput', true) - cellfun(@min,AllowedNplies,'UniformOutput', true); % max ply - min ply per lam.
-NpatchVar = boolean(zeros(length(Nrange),1));
-NpatchVar(Nrange>0)=1; % number of variable thickness lam.
+Nrange = cellfun(@max,AllowedNplies,'UniformOutput', true) - cellfun(@min,AllowedNplies,'UniformOutput', true); % max ply - min ply per lam.
+NStruct.NpatchVar = boolean(zeros(length(Nrange),1));
+NStruct.NpatchVar(Nrange>0)=1; % number of variable thickness lam.
 
 
 
 %% Genotype Upper and Lower Bounds (LB and UB)
 
-Nvar      = sum(NpatchVar) + NtotalPly + NdropVar;                              % total number of design variables
-Nd_state  = length(-90:Constraints.DeltaAngle:90);                              % number of discrete state for variable angles
+%[Nply, Theta's, -Theta's Location , 10% rule location, MidPlaneAngle , ply drops ]
+
+
+
+NStruct.Nvar = sum(NStruct.NpatchVar) + NStruct.NDvs + NStruct.NdropVar;                                   % total number of design variables
+Nd_state     = length(-90:Constraints.DeltaAngle:90);                              % number of discrete state for variable angles
 
 LB = [];
 UB = [];
 
 % Bounds for Variable number of plies
-LB = [LB; cellfun(@min,AllowedNplies(NpatchVar),'UniformOutput', true)];  
-UB = [UB; cellfun(@max,AllowedNplies(NpatchVar),'UniformOutput', true)];
+LB = [LB; ones(sum(NStruct.NpatchVar),1)];  
+UB = [UB; cellfun(@length,AllowedNplies(NStruct.NpatchVar),'UniformOutput', true)];
+
+BCs.LB.Nply = ones(sum(NStruct.NpatchVar),1);
+BCs.UB.Nply = cellfun(@length,AllowedNplies(NStruct.NpatchVar),'UniformOutput', true);
 
 
- % Bounds for Guide angles
-LB = [LB; 1*ones(NthetaVar,1)];  
-UB = [UB; (Nd_state-1)*ones(NthetaVar,1)];
+ % Bounds for theta's
+LB = [LB; ones(NStruct.NthetaVar,1)];  
+UB = [UB; (Nd_state-1)*ones(NStruct.NthetaVar,1)];
+
+BCs.LB.Thetas = ones(NStruct.NthetaVar,1);
+BCs.UB.Thetas = (Nd_state-1)*ones(NStruct.NthetaVar,1);
 
 
+% Bounds for Balanced angles and 10% rule (first and last ply are Theta's)
+LB = [LB; 2*ones(NStruct.NbalVar + NStruct.N10percentVar,1)];                                             
+UB = [UB; (NStruct.NDvs-1)*ones(NStruct.NbalVar + NStruct.N10percentVar,1)];                               
 
-% Bounds for Balanced angles and 10% rule
-if ~Constraints.Vector(1) % Damtol
-    LB = [LB; ones(NbalVar+N10percentVar,1)];                                                 
-    UB = [UB; NtotalPly*ones(NbalVar+N10percentVar,1)];
-else
-    LB = [LB; 2*ones(NbalVar+N10percentVar,1)];                                               % Ensure the First ply is from the guide (+- 45)
-    if ~strcmp(LamType,'Generic')
-        UB = [UB; NtotalPly*ones(NbalVar+N10percentVar,1)];
-    else
-        UB = [UB; (NtotalPly-1)*ones(NbalVar+N10percentVar,1)];                               % Ensure the last ply is also from the guide (+- 45)
-    end
-end
+BCs.LB.BalancedLoc = 2*ones(NStruct.NbalVar + NStruct.N10percentVar,1);
+BCs.UB.BalancedLoc = (NStruct.NDvs-1)*ones(NStruct.NbalVar + NStruct.N10percentVar,1);
+
+
+% Bounds for Midplane Angles (max of 2) 
+% (either 0 or 90)
+NStruct.NDV_NMidPlane = 2;
+LB = [LB; ones(2,1)];
+UB = [UB; 2*ones(2,1)];
+
+BCs.LB.MidPlane = ones(2,1); 
+BCs.UB.MidPlane = 2*ones(2,1); 
 
 
 % Bounds for Drop ply locations
-if rem(N10percentVar,2)~=0
-    keyboard
-end
-
 if Constraints.Vector(7) % covering
-    LB = [LB; 2*ones(NdropVar,1)];                                              % remove the first
+    LB = [LB; 2*ones(NStruct.NdropVar,1)];                                              % remove the first
+    BCs.LB.PlyDrop = 2*ones(NStruct.NdropVar,1);
+    
     if strcmp(LamType,'Generic')
-        UB = [UB; (N10percentVar/2+NthetaVar-1)*ones(NdropVar,1)];                              % remove the last
+       UB = [UB; (NStruct.N10percentVar + NStruct.NthetaVar-1)*ones(NStruct.NdropVar,1)];
+       BCs.UB.PlyDrop = (NStruct.N10percentVar + NStruct.NthetaVar-1)*ones(NStruct.NdropVar,1);
+       
     else
-        UB = [UB; (N10percentVar/2+NthetaVar)*ones(NdropVar,1)];
+       UB = [UB; (NStruct.N10percentVar + NStruct.NthetaVar)*ones(NStruct.NdropVar,1)]; 
+       BCs.UB.PlyDrop = (NStruct.N10percentVar + NStruct.NthetaVar)*ones(NStruct.NdropVar,1);
     end
 else
-    LB = [LB; ones(NdropVar,1)];
-    UB = [UB; (N10percentVar/2+NthetaVar)*ones(NdropVar,1)];
+    LB = [LB; ones(NStruct.NdropVar,1)];
+    BCs.LB.PlyDrop = ones(NStruct.NdropVar,1); 
+    
+    UB = [UB; (NStruct.N10percentVar + NStruct.NthetaVar)*ones(NStruct.NdropVar,1)];
+    BCs.UB.PlyDrop = (NStruct.N10percentVar + NStruct.NthetaVar)*ones(NStruct.NdropVar,1);
 end
 
 if Constraints.Vector(1) % if Damtol, make the first ply +- 45
-    LB(sum(NpatchVar)+1) = 1;
-    UB(sum(NpatchVar)+1) = 2;
+    LB(sum(NStruct.NpatchVar)+1) = 1;
+    UB(sum(NStruct.NpatchVar)+1) = 2;
+    
+    BCs.LB.Thetas(1) = 1; 
+    BCs.UB.Thetas(1) = 2; 
 end
 end
