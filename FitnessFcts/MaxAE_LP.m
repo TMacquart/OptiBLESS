@@ -1,9 +1,3 @@
-% =====                                                                ====
-%     Average of the Max Absolute Error between lamination paramters
-% 
-% Fitness = MaxAE_LP(LP,Objectives)
-% =====                                                                ====
-
 % ----------------------------------------------------------------------- %
 % Copyright (c) <2015>, <Terence Macquart>
 % All rights reserved.
@@ -32,6 +26,13 @@
 % of the authors and should not be interpreted as representing official policies,
 % either expressed or implied, of the FreeBSD Project.
 % ----------------------------------------------------------------------- %
+%
+%
+% =====                                                                ====
+%     Average of the Max Absolute Error between lamination paramters
+% 
+% Fitness = MaxAE_LP(LP,Objectives)
+% =====                                                                ====
 
 function Fitness = MaxAE_LP(LP,Objectives)
 

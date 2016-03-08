@@ -1,37 +1,18 @@
-function NGeoConstraints = CheckContinuity(SS,PatchConnectivity)
+function NGeoConstraints = CheckContinuity(SS_Patch,PatchConnectivity)
 
-% Reconstruct Stacking Sequences in cell format
-NUniqueLam  = length(SS);
-NPatch      = NUniqueLam; % always true??
-
-
-NPliesLam   = cellfun(@length,SS);
-[NGuide,GuideIndex] = max(NPliesLam);
-GuideAngles = num2cell(SS{GuideIndex});
-SScell      = cell(NUniqueLam,NGuide);
-
-for i = 1:NUniqueLam
-    if i == GuideIndex || NPliesLam(i) == NGuide 
-        SScell(i,:) = GuideAngles;    
-    else 
-        index = 1;
-        for j=1:NGuide
-            if index<=NPliesLam(i) && GuideAngles{j} == SS{i}(index)
-                SScell(i,j) = {SS{i}(index)};
-                index = index +1;
-            else
-                SScell(i,j) = {[]};
-            end
-        end
-    end
+NPatch = size(SS_Patch,1);
+NplySS = nan*ones(size(SS_Patch,1),1);
+for j = 1:size(SS_Patch,1)
+    NplySS(j) = length(find(~cellfun(@isempty,SS_Patch(j,:))));
 end
+[NGuide,GuideIndex] = max(NplySS);
 
 
 % check the geometrical continuity of each ply
 NGeoConstraints = 0;
 for iply = 1:NGuide
     
-    Ply        = SScell(:,iply);
+    Ply        = SS_Patch(:,iply);
     PlyPatches = find(~cellfun(@isempty, Ply)); % Patches which the ply is covering
     
     if length(PlyPatches) ~= NPatch                                         % possible discontinuity
@@ -74,7 +55,6 @@ for iply = 1:NGuide
             
         end
     end
-    
 end
 
 end

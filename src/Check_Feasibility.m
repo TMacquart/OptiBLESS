@@ -1,11 +1,3 @@
-% =====                                                              ==== 
-%           Check the feasibility of a blended stacking sequence
-%            
-% Non-feasible individual are attributed a penalised fitness values
-% GuideAngles must be input in degrees!
-% =====                                                              ==== 
-
-
 % ----------------------------------------------------------------------- %
 % Copyright (c) <2015>, <Terence Macquart>
 % All rights reserved.
@@ -34,94 +26,133 @@
 % of the authors and should not be interpreted as representing official policies,
 % either expressed or implied, of the FreeBSD Project.
 % ----------------------------------------------------------------------- %
+%
+%
+% =====                                                              ==== 
+%           Check the feasibility of a blended stacking sequence
+%            
+% Non-feasible individual are attributed a penalised fitness values
+% =====                                                              ==== 
 
 
 
-function [FEASIBLE,ConstViolated] = Check_Feasibility(Constraints,NpliesPerLam,SSTable)
 
-ConstViolated = '';
+function [FEASIBLE,output] = Check_Feasibility(Constraints,SSTable,NplySS,SSTableSymbolic,varargin)
+
+% Only implicit constraints are check in this functions, 
+% constraints not checked are explicitly coded and are therefore ensured
+
+output.ConstViolated = '';
 FEASIBLE = true;
 
-NpliesPerLam = sort(unique(NpliesPerLam),'descend');
-for j = 1:size(SSTable,1)
-    NplySS(j) = length(find(~cellfun(@isempty,SSTable(j,:))));
+
+% if NplySS not provided, compute it
+if nargin==2 || isempty(NplySS)
+    NplySS = nan*ones(size(SSTable,1),1);
+    for j = 1:size(SSTable,1)
+        NplySS(j) = length(find(~cellfun(@isempty,SSTable(j,:))));
+    end
 end
-if find(ismember(NpliesPerLam,NplySS)==0,1)
-    FEASIBLE = false;
-    ConstViolated = 'Drop Indexes';
-    return
-end
 
-
-% if Constraints.Vector(1) % damtol
-%     if abs(SSTable{1,1}) ~= 45
-%         keyboard % should never happem and can be removed
-%         FEASIBLE = false;
-%         ConstViolated = 'Damtol';
-%         return
-%     end
-%     if strcmp(LamType,'Generic') && abs(GuideAngles(end)) ~= 45
-%         FEASIBLE = false;
-%         ConstViolated = 'Damtol';
-%         return
-%     end
-% end
-
-
-if Constraints.Vector(2) || Constraints.Vector(3) || Constraints.Vector(4) % 10%rule, Disorientation and Contiguity
-    
-
-    for i = 1:length(NplySS) 
-        FiberAngles = cell2mat(SSTable(j,:));
-        DetlaAngle = ComputeDeltaAngle(FiberAngles);
-        Contiguity = 0;
-        for iply = 1:numel(FiberAngles)-1
-
-            if Constraints.Vector(2)
-                FEASIBLE = Check_10PercentRule(FiberAngles);
-                if ~FEASIBLE
-                    ConstViolated = 'TenPercentRule';
-                    return
-                end
-            end
-                
-            if Constraints.Vector(3) && DetlaAngle(iply)>45 % disorientation
+% Internal Continuity
+if Constraints.Vector(7)
+    SSDrops  = sort(find(cellfun(@isempty,SSTable(end,:)))); % check last line of SS Table
+    if length(SSDrops)>Constraints.NInternalCont
+        for i = 1 : length(SSDrops)-Constraints.NInternalCont
+            deltaLoc = diff(SSDrops(i:i+Constraints.NInternalCont));
+            if sum(abs(deltaLoc))==Constraints.NInternalCont
                 FEASIBLE = false;
-                ConstViolated = 'Disorientation';
+                output.ConstViolated = 'InternalContinuity';
                 return
             end
-            
-            if Constraints.Vector(4) % contiguity
-                if DetlaAngle(iply)==0
-                    Contiguity = Contiguity + 1;
-                else
-                    Contiguity = 0;
-                end
-                if Contiguity >= Constraints.Contiguity
-                    ConstViolated = 'Contiguity';
+        end
+    end
+end
+
+
+% These Constraints are checked for all patches
+% Rule10percent,  Disorientation and Contiguity
+if Constraints.Vector(4) || Constraints.Vector(5) || Constraints.Vector(6)
+    
+    for i = 1:length(NplySS) 
+        FiberAngles = cell2mat(SSTable(i,:));
+        
+        % --- Rule10percent 
+            if 1 %Constraints.Vector(2) 
+                
+                TenpercentDV = round(length(FiberAngles)*0.1);
+                N0Plies      = length(find(FiberAngles==0));
+                N90Plies     = length(find(abs(FiberAngles)==90));
+                N45Plies     = length(find(FiberAngles==45));
+                NM45Plies    = length(find(FiberAngles==-45));
+                
+                if N0Plies<TenpercentDV || N90Plies<TenpercentDV || N45Plies<TenpercentDV || NM45Plies<TenpercentDV
                     FEASIBLE = false;
+                    output.ConstViolated = 'TenPercentRule';
+                    output.TenPercentVec = [N0Plies<TenpercentDV  N90Plies<TenpercentDV  N45Plies<TenpercentDV  NM45Plies<TenpercentDV];
                     return
                 end
+
             end
-        end
+        % ---
+        
+        
+        DetlaAngle  = ComputeDeltaAngle(FiberAngles); % delta fibre angles between plies
+        
+        % --- Disorientation
+            if Constraints.Vector(5) && ~isempty( find(DetlaAngle>45,1) ) 
+                FEASIBLE = false;
+                output.ConstViolated = 'Disorientation';
+                
+                if nargin == 4 % for inipop only
+                    % symbolic for Inipop Gen. only, find where
+                    % disorientation occured and return to repair
+                        
+                    DvIndex    = find(DetlaAngle>45,1);
+                    DvIndex_SS = find(~cellfun(@isempty,SSTable(i,:)));
+                    Dvs        = cell2mat(SSTableSymbolic(i,DvIndex_SS(DvIndex+[0 1])));
 
+                    if find(Dvs>0,1)
+                        Index = find(Dvs>0);
+                        if length(Index)==1
+                            output.FailedDv = Dvs(find(Dvs>0,1));           % failed due to a theta
+                        else
+                            output.FailedDv = Dvs(2);      
+                        end
+                    elseif find(Dvs<0,1)
+                        Index = find(Dvs<0);
+                        if length(Index)==1
+                            output.FailedDv = abs(Dvs(find(Dvs<0,1)));           % failed due to a theta
+                        else
+                            output.FailedDv = abs(Dvs(2));      
+                        end
+                    end
+                end
+                return
+            end
+        % ---
+        
+        
+        % --- Contiguity
+            if Constraints.Vector(6) 
+                Contiguity = 0;
+                for iply = 1:numel(FiberAngles)-1
+
+                    if DetlaAngle(iply)==0
+                        Contiguity = Contiguity + 1;
+                    else
+                        Contiguity = 0;
+                    end
+                    if Contiguity > (Constraints.NContiguity-1)
+                        output.ConstViolated = 'Contiguity';
+                        FEASIBLE = false;
+                        return
+                    end
+                end
+            end
+        % ---
+        
     end
-end
-
-if Constraints.Vector(6)
-    FEASIBLE = Check_InternalContinuity(SSTable);
-    if ~FEASIBLE
-          ConstViolated = 'InternalContinuity';
-        return
-    end
-end
-
-if Constraints.Vector(7)  % check covering 
-   if ~isempty(find(isempty(SSTable(:,1)),1))
-        ConstViolated = 'Covering';
-       FEASIBLE = false;
-       return
-   end
 end
 
 

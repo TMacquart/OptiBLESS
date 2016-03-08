@@ -1,3 +1,5 @@
+% use to set the visibility of ply angles in the final plot
+
 function []=SetAngle(es,ed,T)
 
 for i=1:size(T,2)

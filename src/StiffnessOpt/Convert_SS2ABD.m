@@ -1,4 +1,34 @@
-% % ===================================================================== %
+% ----------------------------------------------------------------------- %
+% Copyright (c) <2015>, <Terence Macquart>
+% All rights reserved.
+%
+% Redistribution and use in source and binary forms, with or without
+% modification, are permitted provided that the following conditions are met:
+%
+% 1. Redistributions of source code must retain the above copyright notice, this
+%    list of conditions and the following disclaimer.
+% 2. Redistributions in binary form must reproduce the above copyright notice,
+%    this list of conditions and the following disclaimer in the documentation
+%    and/or other materials provided with the distribution.
+%
+% THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+% ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+% WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+% DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+% ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+% (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+% LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+% ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+% (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+% SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+%
+% The views and conclusions contained in the software and documentation are those
+% of the authors and should not be interpreted as representing official policies,
+% either expressed or implied, of the FreeBSD Project.
+% ----------------------------------------------------------------------- %
+%
+%
+% ===                                                                   ===
 %                       Custom Function (TM 21/05/2015)
 %
 % SS2ABD Returns the stiffness matrices of a given stacking sequence.
@@ -13,7 +43,8 @@
 % ply_angles are defined from bottom (1st element) to top (last element)
 %
 % Example: [A,B,D] = SS2ABD(181e9,10.3e9,0.28,7.17e9,0.000127,[42 -40  19 -38 -38 18 59 55 -47 -6 -47 32 37 -47 39 -24]',true )
-% % ===================================================================== %
+%
+% ===                                                                   ===
 
 
 function [A,B,D] = Convert_SS2ABD (E1,E2,v12,G12,ply_t,ply_angle,NORMALISED)

@@ -1,8 +1,3 @@
-% =====                                                              ==== 
-%               Convert the coded genotype into a guide laminate, 
-%           balanced angles shuffling locations and ply drop locations
-% =====                                                              ==== 
-
 % ----------------------------------------------------------------------- %
 % Copyright (c) <2015>, <Terence Macquart>
 % All rights reserved.
@@ -31,41 +26,62 @@
 % of the authors and should not be interpreted as representing official policies,
 % either expressed or implied, of the FreeBSD Project.
 % ----------------------------------------------------------------------- %
+%
+%
+% =====                                                              ====== 
+%           Convert the coded genotype into a Stacking sequence table, 
+%                       and the number of plies per patch 
+%
+% [NpliesPerLam,SSTable,NplySS] = Convert_Genotype(Individual,Constraints,NStruct,AllowedNplies,LamType)
+% =====                                                              ====== 
 
-function [NpliesPerLam,SSTable] = Convert_Genotype(Individual,Constraints,NStruct,AllowedNplies,LamType)
+function [NpliesPerLam,SSTable,NplySS] = Convert_Genotype(Individual,Constraints,NStruct,NStructMin,AllowedNplies,LamType)
+
+% Separate design variables from the individual
+NVarPatch       = sum(NStruct.NpatchVar); % number of patches with variable thickness 
+Thetas          = Individual(NVarPatch + [1:NStruct.NthetaVar]);                
+BalancedLoc     = Individual(NVarPatch + NStruct.NthetaVar + [1:NStruct.NbalVar]);
+TenPercentLoc   = Individual(NVarPatch + NStruct.NthetaVar + NStruct.NbalVar + [1:NStruct.N10percentVar]);
+
+if NStruct.NMidPlane>=NStruct.NDV_NMidPlane
+    keyboard
+    % only happens for Sym. Balanced (NStruct.NMidPlane can be = 3 at max), in this case need to ensure symmetry is preserved
+    Thetas_Mid      = Individual(NVarPatch + NStruct.NthetaVar + NStruct.NbalVar + NStruct.N10percentVar + [1:NStruct.NDV_NMidPlane]);
+else
+    % NStruct.NMidPlane = 1
+    Thetas_Mid      = Individual(NVarPatch + NStruct.NthetaVar + NStruct.NbalVar + NStruct.N10percentVar + [1:NStruct.NMidPlane]);
+end
+
+InsertIndexes  = Individual(NVarPatch + NStruct.NthetaVar + NStruct.NbalVar + NStruct.N10percentVar + NStruct.NDV_NMidPlane + [1:NStruct.NInsertVar]);
 
 
-% Extract Number of ply per patches
+
+% compute stacking sequence table
+[SSTable,NplySS] = ComputeSSTable(Thetas,InsertIndexes,BalancedLoc,TenPercentLoc,Thetas_Mid,LamType,Constraints,NStruct,NStructMin,false);   
+
+
+
+% --- Extract Number of ply per patches and repair to match SS_Table options
 NpliesPerLam = nan*ones(length(NStruct.NpatchVar),1);
 for iPly = 1:length(NStruct.NpatchVar)
     if NStruct.NpatchVar(iPly)==0
+        % if not a design variable (only 1 choice)
         NpliesPerLam(iPly) = AllowedNplies{iPly};
+        
     else
+        % if a design variable de-code the information
         NpliesPerLam(iPly) = AllowedNplies{iPly}(Individual(iPly));
+        
     end
 end
 
-NpliesPerLam = [NpliesPerLam [1:length(NpliesPerLam)]'];
-NpliesPerLam = flipud(sortrows(NpliesPerLam,1));
 
-NStruct_0 = AttributeNply(NpliesPerLam(:,1),Constraints,LamType);
+% replace Nply by the closest one available
+for j = 1:length(NpliesPerLam(:,1))
+    if isempty(find(NpliesPerLam(j,1)==NplySS,1))
+        [~,NIndex] = min(abs(NplySS-NpliesPerLam(j,1) ));
+        NpliesPerLam(j,1) = NplySS(NIndex);
+    end
+end
 
-
-% Extract All design variable from the individual
-Thetas          = Individual(sum(NStruct.NpatchVar) + [1:NStruct_0.NthetaVar]);                
-BalancedLoc     = Individual(sum(NStruct.NpatchVar) + NStruct.NthetaVar + [1:NStruct_0.NbalVar]);
-TenPercentLoc   = Individual(sum(NStruct.NpatchVar) + NStruct.NthetaVar + NStruct.NbalVar + [1:NStruct_0.N10percentVar]);
-Thetas_Mid      = Individual(sum(NStruct.NpatchVar) + NStruct.NthetaVar + NStruct.NbalVar + NStruct.N10percentVar + [1:NStruct_0.NMidPlane]);
-PlyDrops        = Individual(sum(NStruct.NpatchVar) + NStruct.NthetaVar + NStruct.NbalVar + NStruct.N10percentVar + NStruct.NDV_NMidPlane + [1:NStruct_0.NdropVar]);
-
-
- Individual0 = [NpliesPerLam(:,1); 
-                          Thetas;
-                          BalancedLoc;
-                          TenPercentLoc;
-                          Thetas_Mid;
-                          PlyDrops ];
-                      
-% compute SSTAble
-SSTable = NewComputeSSTable(Thetas,PlyDrops,BalancedLoc,TenPercentLoc,Thetas_Mid,LamType,Constraints);   
 end

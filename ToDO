@@ -1,8 +1,15 @@
 ---- At present
-0) Add a function converting Genotype into a SS table
-1) create individual functions for feasibility check (more accessible for people)
+0) create option for explicit or implicit 10% rule
+0) reduce check feasibility for symmetric tables
+0) Create Stacking Sequence that do not follow all design guildeins but remove access to the corresponding NPLY (may result in new design?)
+0) Inipop Generation for N insert variable (>12) become difficult
 
-a) Clean the code for 1 geometrical continuity (unique guide)
+0) Explicit disorientation (1 theta and the rest delta theta's)
+0) Better inipop (closer to Nminply) : Faster generation
+0) find a better value for the number of drop variable
+0) create dedicated GA operators (in particular, subfield operators like crossover)
+
+
 b) Work on the selling points (what? more appealing examples -- aircraft wing? capabilities most needed)
 c) SSORT Conference paper
 d) ADD A CONSTRAINTS THAT CHECKS THE NUMBER OF LOCAL DROPS PLIES BETWEEN PATCHES AND CHECK IF THE INTERMEDIARY STEP CAN BE NEGLECTED.
@@ -10,7 +17,6 @@ d) ADD A CONSTRAINTS THAT CHECKS THE NUMBER OF LOCAL DROPS PLIES BETWEEN PATCHES
 
 
 ----- Possible future development (functionalities)
-a) Direct implementation of the 10% rule
-b) Geometrical continuity (multi-guide possibilities with patch interface)
-c) structure with more than one blending methodology or material ??
+a) Geometrical continuity (multi-guide possibilities with patch interface)
+b) structure with more than one blending methodology or material ??
 

@@ -1,21 +1,3 @@
-% =====                                                              ====
-% SS2LP returns the lamination parameters of a given stacking sequence.
-% Ply thickness is assumed constant through the laminate.
-%
-% [LP,V1A,V2A,V3A,V4A,V1B,V2B,V3B,V4B,V1D,V2D,V3D,V4D] = SS2LP(ply_angle,unit,ply_t,varargin)
-% SS2LP Necessary Input
-% 'ply_angle' is a vector of real values (degree by default)
-% The ply angles are defined from bottom (1st element) to top (last element)
-%
-% SS2LP Optional Inputs
-% 'unit' is a string specifying the angles units either 'deg' or 'rad'
-% 'ply_t' is a real scalar value corresponding the ply thickness
-%
-% SS2LP Example:
-% LP = SS2LP([42 -40  19 -38 -38 18 59 55 -47 -6 -47 32 37 -47 39 -24]','deg', 0.000127)
-% =====                                                              ====
-
-
 % ----------------------------------------------------------------------- %
 % Copyright (c) <2015>, <Terence Macquart>
 % All rights reserved.
@@ -44,7 +26,24 @@
 % of the authors and should not be interpreted as representing official policies,
 % either expressed or implied, of the FreeBSD Project.
 % ----------------------------------------------------------------------- %
-
+%
+%
+% =====                                                              ====
+% SS2LP returns the lamination parameters of a given stacking sequence.
+% Ply thickness is assumed constant through the laminate.
+%
+% [LP,V1A,V2A,V3A,V4A,V1B,V2B,V3B,V4B,V1D,V2D,V3D,V4D] = SS2LP(ply_angle,unit,ply_t,varargin)
+% SS2LP Necessary Input
+% 'ply_angle' is a vector of real values (degree by default)
+% The ply angles are defined from bottom (1st element) to top (last element)
+%
+% SS2LP Optional Inputs
+% 'unit' is a string specifying the angles units either 'deg' or 'rad'
+% 'ply_t' is a real scalar value corresponding the ply thickness
+%
+% SS2LP Example:
+% LP = SS2LP([42 -40  19 -38 -38 18 59 55 -47 -6 -47 32 37 -47 39 -24]','deg', 0.000127)
+% =====                                                              ====
 
 function [LP,V1A,V2A,V3A,V4A,V1B,V2B,V3B,V4B,V1D,V2D,V3D,V4D] = Convert_SS2LP(ply_angle,unit,ply_t,varargin)
 %% Input Check

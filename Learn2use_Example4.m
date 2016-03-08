@@ -1,93 +1,78 @@
-% =====                                                              ==== 
-%  This file is a typical user input file that is used to run the code.
-% =====                                                              ==== 
+% =====                                                              ====== 
+%
+%  Simple Three Symmetric Patch Example with Lamination Parameter Matching
+%
+% =====                                                              ====== 
 
-% ----------------------------------------------------------------------- %
-% Copyright (c) <2015>, <Terence Macquart>
-% All rights reserved.
-% 
-% Redistribution and use in source and binary forms, with or without
-% modification, are permitted provided that the following conditions are met:
-% 
-% 1. Redistributions of source code must retain the above copyright notice, this
-%    list of conditions and the following disclaimer.
-% 2. Redistributions in binary form must reproduce the above copyright notice,
-%    this list of conditions and the following disclaimer in the documentation
-%    and/or other materials provided with the distribution.
-% 
-% THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-% ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-% WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-% DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-% ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-% (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-% LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-% ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-% (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-% SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-% 
-% The views and conclusions contained in the software and documentation are those
-% of the authors and should not be interpreted as representing official policies,
-% either expressed or implied, of the FreeBSD Project.
-% ----------------------------------------------------------------------- %
+
 clear all; clc; format short g; format compact; close all;
 
-addpath ./StiffnessOpt
+addpath ./src
 addpath ./FitnessFcts
 
-% GuideLamDv = [-45 0 45 90 0  -45  45  90  -45  45]s;    
-% Lam1       = [    0    90 0  -45  45  90  -45  45]s;   
-% Lam2       = [    0    90 0           90  -45  45]s;   
+
+% GuideLamDv = [-45 0 45 90 0 -45  90 45 0 -45 0 45]s;    
+% Lam1       = [-45   45 90 0 -45  90 45 0 -45   45]s;   
+% Lam2       = [-45   45 90 0      90 45 0 -45     ]s;   
 
 Lp2Match = [
     % Guide     % Lam 1     % Lam 2
-        0          0          0             % V1A
+        0.16667    0          0             % V1A
         0          0          0             % V2A
-       -0.2        0          0.33333       % V3A
+        0         -0.2        0             % V3A
         0          0          0             % V4A
         0          0          0             % V1B
         0          0          0             % V2B
         0          0          0             % V3B
         0          0          0             % V4B
-        0.162      0.22266    0.22222       % V1D
-       -0.132    -0.058594    -0.027778     % V2D
-       -0.092      0.58594    0.92593       % V3D  
+        0.13657   -0.084     -0.11719       % V1D
+       -0.12153   -0.114     -0.046875      % V2D
+       -0.013889  -0.248     -0.23438       % V3D      
         0          0          0];           % V4D
     
 
 Objectives.Type   = 'LP';
 ScalingCoef       = [1 1 1 1, 1 1 1 1, 1 1 1 1]';
 Objectives.Table  = [{'Laminate #'}  {'Nplies [LB UB]'}     {'LP2Match'}     {'Scaling Coefficient'} ;
-                            {1}           {2*[10 10]}         Lp2Match(:,1)     {ScalingCoef} ;
-                            {2}           {2*[8 8]}           Lp2Match(:,2)     {ScalingCoef} ; 
-                            {3}           {2*[6 6]}           Lp2Match(:,3)     {ScalingCoef} ; ];
+                            {1}           {2*[12 12]}         Lp2Match(:,1)     {ScalingCoef} ;
+                            {2}           {2*[10 10]}         Lp2Match(:,2)     {ScalingCoef} ; 
+                            {3}           {2*[8 8]}           Lp2Match(:,3)     {ScalingCoef} ; ];
 
-Objectives.FitnessFct = @(LP) RMSE_LP(LP,Objectives);
-
+Objectives.FitnessFct = @(LP) RMSE_MaxAE_LP(LP,Objectives);
+Objectives.UserFct    = false;
 
            
-% =========================== Default Options =========================== %
-
-%                        [Damtol  Rule10percent  Disorientation  Contiguity   BalancedIndirect   InernalContinuity  Covering];
-Constraints.Vector     = [false       false          false          false             false            false            false];
-Constraints.DeltaAngle = 5;
+%% === Design Guidelines 
+%                        [Symmetry,  Balanced,  Damtol,   Rule10percent,  Disorientation,  Contiguity,  InternalContinuity,  Covering];
+Constraints.Vector     = [false   ,    false ,  false ,      false     ,      false     ,     false  ,      false         ,     false];
+Constraints.DeltaAngle = 45;
 Constraints.ORDERED    = false;                           
 Constraints.Balanced   = true; 
-Constraints.Sym        = true; 
+Constraints.Sym        = false; 
 
 
-% ---
-GAoptions.Npop    = 100; 	   % Population size
-GAoptions.Ngen    = 500; 	   % Number of generations
-GAoptions.NgenMin = 500; 	   % Minimum number of generation calculated
-GAoptions.Elitism = 0.075; 	   % Percentage of elite passing to the next Gen.
-GAoptions.Plot    = true; 	   % Plot Boolean
-GAoptions.PC      = 0.75; 	   % Plot Boolean
+%% === Options 
+GAoptions.Npop    = 100;                     % Population size
+GAoptions.Ngen    = 500;                    % Number of generations
+GAoptions.NgenMin = 500;                    % Minimum number of generation calculated
+GAoptions.Elitism = 0.01;                   % Percentage of elite passing to the next Gen. (from 0 to 1)
+GAoptions.PC      = 0.75;                   % Percentage of crossover (from 0.1 to 1)
+GAoptions.IniPopFEASIBLE = 1;               % Either (1 or 2), Ensure the initial population 1:respect all design guidelines, 2:and addition respect user function constraints
+
+GAoptions.FitnessLimit = 1e-5;              % Value at which the GA will stop if a fitness is found below this threshold
+GAoptions.PlotInterval = [10];              % Refresh plot every X itterations         
+GAoptions.SaveInterval = [2];               % Save Data every    X itterations (in Results.txt)   
+GAoptions.PlotFct      = @gaplotbestf;      % Refresh plot every X itterations
+GAoptions.OutputFct    = @GACustomOutput;   % Custom ouput function (can be changed to output any information regarding the evolution of the population)
 
 
 
-% ---
-[Output]  = RetrieveSS(Objectives,Constraints,GAoptions);
+%% == Run
+[Output]  = OptiBLESS(Objectives,Constraints,GAoptions);
 
 display(Output)
 display(Output.Table)
+
+
+%% Plot
+plotSS(Output,1) 

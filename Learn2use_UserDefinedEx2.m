@@ -2,34 +2,6 @@
 %  This file is a typical user input file that is used to run the code.
 % =====                                                              ==== 
 
-% ----------------------------------------------------------------------- %
-% Copyright (c) <2015>, <Terence Macquart>
-% All rights reserved.
-% 
-% Redistribution and use in source and binary forms, with or without
-% modification, are permitted provided that the following conditions are met:
-% 
-% 1. Redistributions of source code must retain the above copyright notice, this
-%    list of conditions and the following disclaimer.
-% 2. Redistributions in binary form must reproduce the above copyright notice,
-%    this list of conditions and the following disclaimer in the documentation
-%    and/or other materials provided with the distribution.
-% 
-% THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-% ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-% WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-% DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-% ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-% (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-% LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-% ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-% (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-% SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-% 
-% The views and conclusions contained in the software and documentation are those
-% of the authors and should not be interpreted as representing official policies,
-% either expressed or implied, of the FreeBSD Project.
-% ----------------------------------------------------------------------- %
 
 clear all; clc; format short g; format compact; close all;
 
@@ -76,52 +48,34 @@ Objectives.UserFct    = true;
 Objectives.FitnessFct = @(A,B,D) UserDefined_ABDFitness(A,B,D);
 
 
-%% =========================== Default Options =========================== %
+%% === Design Guidelines 
+%                        [Symmetry,  Balanced,  Damtol,   Rule10percent,  Disorientation,  Contiguity,  InternalContinuity,  Covering];
+Constraints.Vector     = [false   ,    false ,  false ,      false     ,      false     ,     false  ,      false         ,     false];
+Constraints.DeltaAngle = 5;                       
+Constraints.ply_t      = 0.000127;          % ply thickness    
 
-%                        [Damtol  Rule10percent  Disorientation  Contiguity   BalancedIndirect  InernalContinuity  Covering];
-Constraints.Vector     = [false       false          false          false         false            false            false];
-Constraints.DeltaAngle = 45;
-Constraints.ply_t      = 0.000127;          % ply thickness
-Constraints.ORDERED    = true;                         
-Constraints.Balanced   = false; 
-Constraints.Sym        = false; 
-
+Constraints.NContiguity   = 3;  % optional (only needed if Contiguity = true)
+Constraints.NInternalCont = 3;  % optional (only needed if InternalContinuity = true)
 
 
 
+%% === Options 
+GAoptions.Npop    = 100;                    % Population size
+GAoptions.Ngen    = 2000;                    % Number of generations
+GAoptions.NgenMin = 1000;                    % Minimum number of generation calculated
+GAoptions.Elitism = 0.01;                   % Percentage of elite passing to the next Gen. (from 0 to 1)
+GAoptions.PC      = 0.75;                   % Percentage of crossover (from 0.1 to 1)
+GAoptions.IniPopFEASIBLE = 1;               % Either (1 or 2), Ensure the initial population 1:respect all design guidelines, 2:and addition respect user function constraints
+GAoptions.FitnessLimit = 1e-5;               
 
-% ---
-GAoptions.Npop    = 100; 	   % Population size
-GAoptions.Ngen    = 500; 	   % Number of generations
-GAoptions.NgenMin = 500; 	   % Minimum number of generation calculated
-GAoptions.Elitism = 0.01; 	   % Percentage of elite passing to the next Gen.
-GAoptions.PC      = 0.75; 	   % Percentage of crossover
-
-GAoptions.PlotInterval = [10];                  % Refresh plot every X itterations         
-GAoptions.SaveInterval = [1];                  % Save Data every X itterations   
-GAoptions.PlotFct      = @gaplotbestf;          % Refresh plot every X itterations
-GAoptions.OutputFct    = @GACustomOutput;
+GAoptions.PlotInterval = [10];              % Refresh plot every X itterations         
+GAoptions.SaveInterval = [2];               % Save Data every    X itterations (in Results.txt)   
+GAoptions.PlotFct      = @gaplotbestf;      % Refresh plot every X itterations
+GAoptions.OutputFct    = @GACustomOutput;   % Custom ouput function (can be changed to output any information regarding the evolution of the population)
 
 
-% ---
-[Output]  = RetrieveSS(Objectives,Constraints,GAoptions);
+%% === Run
+[Output]  = OptiBLESS(Objectives,Constraints,GAoptions);
 
 display(Output)
 display(Output.Table)
-
-%% Plot
-plotSS(Output)
-
-%% --- Back from SS 2 ABD
-for i = 1:length(Output.SS)
-    [AOpt{i},BOpt{i},DOpt{i}] = Convert_SS2ABD(E1,E2,v12,G12,tply,Output.SS{i},true);                       %#ok<SAGROW>
-end
-
-A2Match{i}
-AOpt{i}
-
-B2Match{i}
-BOpt{i}
-
-D2Match{i}
-DOpt{i}

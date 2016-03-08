@@ -1,11 +1,3 @@
-% =====                                                              ==== 
-%                 Fitness evaluation function used by the GA              
-%                                                                                                        
-% [fitness,output] = Eval_Fitness (Individual,Objectives,Constraints,NpatchVar,NthetaVar,AllowedNplies,LamType)
-%
-% =====                                                              ==== 
-
-
 % ----------------------------------------------------------------------- %
 % Copyright (c) <2015>, <Terence Macquart>
 % All rights reserved.
@@ -34,73 +26,66 @@
 % of the authors and should not be interpreted as representing official policies,
 % either expressed or implied, of the FreeBSD Project.
 % ----------------------------------------------------------------------- %
+%
+%
+% =====                                                              ====== 
+%                 Fitness evaluation function used by the GA              
+%                                                                                                        
+% [fitness,output] = Eval_Fitness (Individual,Objectives,Constraints,NStruct,AllowedNplies,LamType)
+%
+% =====                                                              ====== 
 
+function [fitness,output] = Eval_Fitness (Individual,Objectives,Constraints,NStruct,NStructMin,AllowedNplies,LamType)
 
-
-function [fitness,output] = Eval_Fitness (Individual,Objectives,Constraints,NStruct,AllowedNplies,LamType)
-
-
+% Extract laminate numbers
 Nlam      = size(Objectives.Table,1)-1;
 LamNumber = int8(zeros(Nlam,1));
 for j=1:Nlam
     LamNumber(j) = Objectives.Table{j+1,1}; 
 end
 
-% keyboard % change convert genotype so that it returns the SStable used for all feasibilit check
 
-[NpliesPerLam,SSTable] = Convert_Genotype(Individual,Constraints,NStruct,AllowedNplies,LamType);
+% Convert individual genotype into stacking sequence table
 
-display(SSTable)
-keyboard
+[NpliesPerLam,SSTable,NplySS] = Convert_Genotype(Individual,Constraints,NStruct,NStructMin,AllowedNplies,LamType);
 
-% repaired solution - change NpliesPerLam to match SS values (avoid infeasibility)
-if 1  
-    for j = 1:size(SSTable,1)
-        NplySS(j) = length(find(~cellfun(@isempty,SSTable(j,:))));
+[NUniquePliesPerLam] = unique(NpliesPerLam(:,1));
+NUniquePliesPerLam   = flipud(NUniquePliesPerLam);
+NUnique              = length(NUniquePliesPerLam);
+
+FEASIBLE = Check_Feasibility(Constraints,SSTable,NplySS);
+
+
+
+%% Compute Fitness
+
+% --- pre-allocation
+    SS_Unique = cell(size(SSTable));
+    SS_Patch  = cell(Nlam,size(SSTable,2));
+
+    if strcmp(Objectives.Type,'LP')
+        LP = zeros(12,NUnique);
+        LP_Patch = zeros(12,Nlam);
     end
-    for j = 1:length(NpliesPerLam(:,1))
-        if isempty(find(NpliesPerLam(j,1)==NplySS,1))
-            [~,NIndex] = min(abs(NplySS-NpliesPerLam(j,1)));
-            NpliesPerLam(j,1) = NplySS(NIndex);
-        end
+
+    if strcmp(Objectives.Type,'ABD')
+        A = cell(NUnique,1);
+        B = cell(NUnique,1);
+        D = cell(NUnique,1);
+
+        A_Patch = cell(NUnique,1);
+        B_Patch = cell(NUnique,1);
+        D_Patch = cell(NUnique,1);
     end
-end
-[~,UniqueIndex] = unique(NpliesPerLam(:,1));
-UniqueNplies    = flipud(NpliesPerLam(UniqueIndex,:));
-NUnique         = length(UniqueIndex);
-%
-
-[FEASIBLE,ConstViolated] = Check_Feasibility(Constraints,NpliesPerLam(:,1),SSTable);
+% ---
 
 
-%% fitness calculation
-% pre-allocation
-SS_Unique = cell(size(SSTable));
-SS_Patch  = cell(Nlam,size(SSTable,2));
-
-if strcmp(Objectives.Type,'LP')
-    LP = zeros(12,NUnique);
-    LP_Patch = zeros(12,Nlam);
-end
-
-if strcmp(Objectives.Type,'ABD')
-    A = cell(NUnique,1);
-    B = cell(NUnique,1);
-    D = cell(NUnique,1);
-    
-    A_Patch = cell(NUnique,1);
-    B_Patch = cell(NUnique,1);
-    D_Patch = cell(NUnique,1);
-end
-
-
-
-% Guide + After Drops
+% Only keep unique stacking sequences 
 for iSS = 1 : NUnique
-    RowIndex = find(NplySS==UniqueNplies(iSS,1),1);
+    RowIndex = find(NplySS==NUniquePliesPerLam(iSS),1);
     
     SS_Unique(iSS,:)   = SSTable(RowIndex,:);    
-    NplySS_Unique(iSS) = length(find(~cellfun(@isempty,SS_Unique(iSS,:))));
+    NplySS_Unique(iSS) = length(find(~cellfun(@isempty,SS_Unique(iSS,:)))); %#ok<AGROW>
     FiberAngles        = cell2mat(SS_Unique(iSS,:));
     
     if strcmp(Objectives.Type,'LP')
@@ -111,14 +96,11 @@ for iSS = 1 : NUnique
     end
 end
 
-NpliesPerLam = sortrows(NpliesPerLam,2);
+
+% Assign each patch with its corresponding stacking sequence, LP and ABD
 for iPatch = 1:Nlam
-    
     RowIndex = find(NplySS_Unique == NpliesPerLam(iPatch),1);
-    
-    if strcmp(Objectives.Type,'SS')
-        SS_Patch(iPatch,:) = SS_Unique(RowIndex,:);
-    end
+    SS_Patch(iPatch,:) = SS_Unique(RowIndex,:);
     
     if strcmp(Objectives.Type,'LP')
         LP_Patch(:,iPatch) = LP(:,RowIndex);
@@ -131,17 +113,16 @@ for iPatch = 1:Nlam
     end
 end
 
-
-% --- check individual ply continuity (only if structure geometry is given)
-% if isfield(Constraints,'PatchConnectivity') 
-%     NGeoConstraints = CheckContinuity(SS,Constraints.PatchConnectivity);
-%     output.NGeoConstraints = NGeoConstraints;
-% else
-%     NGeoConstraints = 0;
-% end
-% ---
+% Remove Empty Columns (ply not used)
+Temp  = sum(cellfun(@isempty,SS_Patch));
+EmptyCol_Index = find(Nlam==Temp);
+if ~isempty(EmptyCol_Index)
+    SS_Patch(:,EmptyCol_Index) = [];
+end
 
 
+
+% Compute Lamination parameter based fitness
 if strcmp(Objectives.Type,'LP')
     if ~Objectives.UserFct
         fitness          = Objectives.FitnessFct(LP_Patch);                       % Default Fitness Function (Do not Change)
@@ -151,6 +132,8 @@ if strcmp(Objectives.Type,'LP')
     output.LP = LP_Patch;
 end
 
+
+% Compute Stiffness based fitness
 if strcmp(Objectives.Type,'ABD')
     if ~Objectives.UserFct
         fitness = Objectives.FitnessFct(A_Patch,B_Patch,D_Patch);                             % Default Fitness Function (Do not Change)
@@ -162,20 +145,38 @@ if strcmp(Objectives.Type,'ABD')
     output.D  = D_Patch;
 end
 
+
+% Compute Stacking sequence based fitness
 if strcmp(Objectives.Type,'SS')
     [fitness,output] = Objectives.FitnessFct(SS_Patch);                           % User Fitness Function Calls
 end
 
-fitness = fitness;
-% fitness = fitness * (1+NGeoConstraints);
 
-if ~FEASIBLE  % add penalty if not FEASIBLE
-    if isnan(fitness) || isinf(fitness) || ~isreal(fitness)
-        error('Non appropriate Fitness (i.e. NaN,inf or complex) has been detected')
+
+% --- check individual ply continuity (only if structure geometry is given)
+    if isfield(Constraints,'PatchConnectivity') 
+        NGeoConstraints = CheckContinuity(SS_Patch,Constraints.PatchConnectivity);
+    else
+        NGeoConstraints = 0;
     end
-    fitness = fitness * 4;
+% ---
+
+% keyboard
+% Penalise infeasible solutions
+MaxNGeoConstraints = 50;            % abritraty for now 
+fitness = fitness * (1 + NGeoConstraints/MaxNGeoConstraints);
+
+if ~FEASIBLE  
+    if isnan(fitness) || isinf(fitness) || ~isreal(fitness) || size(fitness,1)~=1 ||  size(fitness,2)~=1 
+        error('Non appropriate Fitness (i.e. Non-Scalar, NaN, inf or complex) has been detected')
+    end
+    fitness = fitness * 2;
 end
 
+
+% return
 output.SS_Patch = SS_Patch;
 output.FEASIBLE = FEASIBLE;
+output.NGeoConstraints = NGeoConstraints;
+
 

@@ -1,8 +1,3 @@
-% ===                                                                   === 
-%                        HorseShoe Blending Example                       
-% ===                                                                   === 
-
-
 % ----------------------------------------------------------------------- %
 % Copyright (c) <2015>, <Terence Macquart>
 % All rights reserved.
@@ -31,6 +26,11 @@
 % of the authors and should not be interpreted as representing official policies,
 % either expressed or implied, of the FreeBSD Project.
 % ----------------------------------------------------------------------- %
+%
+%
+% ===                                                                   === 
+%                        HorseShoe Blending Example                       
+% ===                                                                   === 
 
 
 clear all; close all force; clc; format short g; format compact;
@@ -46,7 +46,7 @@ Optimisation = 0; % 0=direct, 1=indirect
 if Optimisation ==0
     Objectives.Table   = [{'Laminate #'}  {'Nplies [LB UB]'}];
     for i=1:18
-        Objectives.Table = [Objectives.Table; {i}  {[14 49]}];
+        Objectives.Table = [Objectives.Table; {i}  {[16 49]}];
     end
 else
     Table =[ % Nply  V1D     V3D
@@ -191,13 +191,12 @@ else
 end
 
 % ---
-%                        [Damtol  Rule10percent  Disorientation  Contiguity   BalancedIndirect  InernalContinuity  Covering];
-Constraints.Vector     = [true       true          true          true         false            true            true];
-Constraints.DeltaAngle = 5;                    
-Constraints.Balanced   = true; 
-Constraints.Sym        = true; 
-Constraints.PatchXYZ   = PatchXYZ;
-Constraints.Contiguity = 3;
+%                        [Symmetry,  Balanced,  Damtol,   Rule10percent,  Disorientation,  Contiguity,  InternalContinuity,  Covering];
+Constraints.Vector     = [true   ,    true ,  true ,      false     ,      true     ,     true  ,      true         ,     true];
+Constraints.DeltaAngle    = 15;                    
+Constraints.NContiguity   = 3;           % only used if Contiguity is set to true 
+Constraints.NInternalCont = 3;           % only used if InernalContinuity is set to true 
+Constraints.PatchXYZ      = PatchXYZ;    % (optional / used with PatchConnectivity) 
 
 % --- Format Geometric Input
 if 0 
@@ -214,14 +213,16 @@ end
 
 
 % ---
-GAoptions.Npop    = 100; 	   % Population size
-GAoptions.Ngen    = 5000; 	   % Number of generations
-GAoptions.NgenMin = 2500; 	   % Minimum number of generation calculated
-GAoptions.Elitism = 0.05; 	   % Percentage of elite passing to the next Gen.
-GAoptions.PC      = 0.75; 	   
+GAoptions.Npop     = 100; 	   % Population size
+GAoptions.Ngen     = 10000; 	   % Number of generations
+GAoptions.NgenMin  = 5000; 	   % Minimum number of generation calculated
+GAoptions.Elitism  = 0.10; 	   % Percentage of elite passing to the next Gen.
+GAoptions.PC       = 0.75; 	   
+GAoptions.IniPopFEASIBLE = 1;  % [1,2] % 1-Satisfy all design guidelines,  2-Addtionally satify user function Constraints
+GAoptions.FitnessLimit = 1e-5; 
 
-GAoptions.PlotInterval = [];                  % Refresh plot every X itterations         
-GAoptions.SaveInterval = [1];                  % Save Data every X itterations   
+GAoptions.PlotInterval = [50];                  % Refresh plot every X itterations         
+GAoptions.SaveInterval = [1];                   % Save Data every X itterations   
 GAoptions.PlotFct      = @gaplotbestf;          % Refresh plot every X itterations
 GAoptions.OutputFct    = @GACustomOutput;
 
@@ -230,14 +231,14 @@ GAoptions.OutputFct    = @GACustomOutput;
 [Output] = OptiBLESS(Objectives,Constraints,GAoptions);
 
 % ---
-plotSS(Output,PatchXYZ)
-% NGeoConstraints = CheckContinuity(Output.SS,Constraints.PatchConnectivity)
+plotSS(Output,1,PatchXYZ)
+% NGeoConstraints = CheckContinuity(Output.SS_Patch,Constraints.PatchConnectivity)
 
 
 % ---
 Parameters.mMax = 2;
 Parameters.nMax = 2;
-[Fitness2,output2] = HS_EvaluationFct(Output.SS,Parameters)
+[Fitness2,output2] = HS_EvaluationFct(Output.SS_Patch,Parameters)
 
 
 % ---

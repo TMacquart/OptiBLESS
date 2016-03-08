@@ -71,7 +71,8 @@ Constraints.ply_t      = 0.000127;          % ply thickness
 Constraints.ORDERED    = false;                         
 Constraints.Balanced   = false; 
 Constraints.Sym        = false; 
-
+Constraints.NContiguity   = 3;           % only used if Contiguity is set to true 
+Constraints.NInternalCont = 3;           % only used if InernalContinuity is set to true 
 
 
 % ---
@@ -85,10 +86,10 @@ GAoptions.PlotInterval = [10];                  % Refresh plot every X itteratio
 GAoptions.SaveInterval = [];                  % Save Data every X itterations   
 GAoptions.PlotFct      = @gaplotbestf;          % Refresh plot every X itterations
 GAoptions.OutputFct    = @GACustomOutput;
-
+GAoptions.IniPopFEASIBLE = 1;
 
 % ---
-[output_Match] = RetrieveSS(Objectives,Constraints,GAoptions);
+[output_Match] = OptiBLESS(Objectives,Constraints,GAoptions);
 
 display(output_Match)
 display(output_Match.Table)

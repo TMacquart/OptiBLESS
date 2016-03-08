@@ -1,16 +1,3 @@
-% =====                                                              ==== 
-%                   Custom GA output Function.
-%
-% If GAoptions.SaveInterval is not empty this function is called during GA 
-% and population scores are saved into an external text file (see main
-% folder Results.txt). 
-%
-%
-% [state,options,optchanged] = GACustomOutput(options,state,flag,SaveInterval)
-%  
-% =====                                                              ==== 
-
-
 % ----------------------------------------------------------------------- %
 % Copyright (c) <2015>, <Terence Macquart>
 % All rights reserved.
@@ -39,7 +26,19 @@
 % of the authors and should not be interpreted as representing official policies,
 % either expressed or implied, of the FreeBSD Project.
 % ----------------------------------------------------------------------- %
-
+%
+%
+% =====                                                              ==== 
+%                   Custom GA output Function.
+%
+% If GAoptions.SaveInterval is not empty this function is called during GA 
+% and population scores are saved into an external text file (see main
+% folder Results.txt). 
+%
+%
+% [state,options,optchanged] = GACustomOutput(options,state,flag,SaveInterval)
+%  
+% =====                                                              ==== 
 
 function [state,options,optchanged] = GACustomOutput(options,state,flag,SaveInterval,ObjType)
 

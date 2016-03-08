@@ -1,19 +1,3 @@
-% =====                                                              ==== 
-%   Use GA to optimise stacking sequence ply angles, Drops and Number of      
-%     plies. Direct and Indirect Optimisation Framework can be used        
-%
-% [output] = OptiBLESS(Objectives,Constraints,GAoptions)
-%  
-% 
-%  The individual of GA is composed of 3 parts:
-%  --------------------------------------------
-%  [ [Nply(1) ... Nply(Npatch)]                                  -- the Number of plies
-%  [ Theta(1) ... Theta(N) ]                                     -- N is the guide Nply
-%  [ (Location of -Theta(1)) ... (Location of -Theta(N)) ]       -- location of balanced angle pairs
-%  [ Drop(1)  ... Drop(M)  ]                                     -- M is the Delta Nply
-% =====                                                              ==== 
-
-
 % ----------------------------------------------------------------------- %
 % Copyright (c) <2015>, <Terence Macquart>
 % All rights reserved.
@@ -42,88 +26,99 @@
 % of the authors and should not be interpreted as representing official policies,
 % either expressed or implied, of the FreeBSD Project.
 % ----------------------------------------------------------------------- %
-
+%
+%
+% =====                                                              ====== 
+%           Employ a GA to optimise stacking sequence ply angles, 
+%                       Drops and Number of plies.       
+%
+% [output] = OptiBLESS(Objectives,Constraints,GAoptions)
+%  
+% 
+%  The genotype of an individual is composed of 6 vectors:
+%  [ [Nply] [Theta's]  [Loc_Balanced] [Loc_10%rule] [MidPlaneAngles] [Loc_plyDrops] ]
+% 
+%  [Nply]                                                   -- (per patch)    
+%  [Theta's]  [Loc_Balanced] [Loc_10%rule] [MidPlaneAngles] -- Define the guide laminate     
+%  [Loc_plyDrops]                                           -- Rest of plies obtained by dropping plies from th guide
+%  --------------------------------------------
+%  [ [Nply(1) ... Nply(Npatch)]                                  -- the Number of plies per patch
+%  [ Theta(1) ... Theta(N) ]                                     -- SImple fibre angles
+%  [ (Location of -Theta(1)) ... (Location of -Theta(N)) ]       -- location of balanced angle pairs
+%  [ locations of +-45/0/90]                                     -- location of 10% rules angles
+%  [ MidPlaneAngles ]                                            -- Values of midplane angles (if any)
+%  [ Drop(1)  ... Drop(M)  ]                                     -- M is the Delta Nply
+% =====                                                              ====== 
 
 function [output] = OptiBLESS(Objectives,Constraints,GAoptions)
 
 
 %% Format Inputs  
 
-[NStruct,LamType,LB,UB,BCs,AllowedNplies] = FormatInput(Objectives,Constraints);
-% Nvar          - Number of design variables 
-% NpatchVar     - Patches with variable number of plies (set to 1 if variable)
-% NthetaVar     - Number of fibre angles used to describe the guide laminate
-% NdropVar      - Number of drops from the guide laminate
-% LamType       - Type of laminates
-% LB            - Lower bound of design variables
-% UB            - Upper bound of design variables
-% AllowedNplies - Number of plies allowed for each patches
+% NStruct.NthetaVar;        - number of theta's  design variables
+% NStruct.NbalVar;          - number of balanced design variables (will always be equal to NthetaVar, but kept for sake of clarity)
+% NStruct.N10percentVar;    - number of 10% rule design variables
+% NStruct.NMidPlane;        - number of MidPlane design variables
+% NStruct.NdropVar;         - number of Drop Location design variables
+% LamType                   - Type of laminates
+% LB                        - Lower bound of design variables (GA Format)
+% UB                        - Upper bound of design variables (GA Format)
+% BCs                       - Design variable bounds stored in a more readable format
+% AllowedNplies             - Number of plies allowed for each patch
+
+
+[NStruct,NStructMin,LamType,LB,UB,BCs,AllowedNplies] = FormatInput(Objectives,Constraints);
 
 %% Set GA, see --- doc gaoptimset --- for more option
  options  = gaoptimset('PopulationSize',GAoptions.Npop,...
                       'Generation',GAoptions.Ngen, ...
                       'StallGenLimit',GAoptions.NgenMin, ...                    % Minimum Number of Generation computed
                       'EliteCount',ceil(GAoptions.Elitism*GAoptions.Npop),...   % Elitism
-                      'FitnessLimit' ,1e-5,...                                  % Stoping fitness criterion
+                      'FitnessLimit' ,GAoptions.FitnessLimit,...                % Stoping fitness criterion
                       'TolFun' ,1e-10,...                                       % Stoping change in fitness criterion
                       'CrossoverFraction',GAoptions.PC,...                      % crossover fraction
                       'PlotInterval',GAoptions.PlotInterval);
+
+
                   
+
+% --- Saving in .txt file and Plotting                  
+% You can change the plot and save functions by setting GAoptions.PlotFct 
+% and/or GAoptions.OutputFct to the the handle of your own function in the input file. 
+% See @gaplotbestf and @GACustomOutput for templates                  
+GAoptions.OutputFct = @GACustomOutput;
 if ~isempty(GAoptions.SaveInterval)
-    options  = gaoptimset(options,'OutputFcns',{@(options,state,flag)GAoptions.OutputFct(options,state,flag,GAoptions.SaveInterval,Objectives.Type)});  % Output function used  
-end                                                  
+    % if mean and best value are saved in txt file
+    options  = gaoptimset(options,'OutputFcns',{@(options,state,flag)GAoptions.OutputFct(options,state,flag,GAoptions.SaveInterval,Objectives.Type)});   
+end                 
+
 if ~isempty(GAoptions.PlotInterval)
-    options  = gaoptimset(options,'PlotFcns',{GAoptions.PlotFct});              % Plot function used  
+    % if mean and best value are plotted
+    options  = gaoptimset(options,'PlotFcns',{GAoptions.PlotFct});           
 end
 
-    
 
-% Handle of the fitness function 
-fct_handle = @(x)Eval_Fitness(x,Objectives,Constraints,NStruct,AllowedNplies,LamType);  
-
-
-keyboard
-
-for i=1:length(UB)
-    Individual(i,1) = randi([LB(i) UB(i)],1,1);
-end
-fct_handle(Individual)
+% Handle of the fitness function (x denotes the individual)
+fct_handle = @(x)Eval_Fitness(x,Objectives,Constraints,NStruct,NStructMin,AllowedNplies,LamType);  
 
 
-keyboard
-%% Generate Initial Population
-for i = 1:5
-    try
-        [IniPop] = Generate_IniPop (NStruct,GAoptions.Npop,Constraints,Objectives,AllowedNplies,LamType,BCs,fct_handle);
-        break; 
-    catch
-        fprintf('Inipop Failed. Retrying ...\n');
-        if i == 5
-            error('Did not manage to generate a feasible initial population. There might be something wrong.')
-        end
-    end
-end   
-% IniPop(1,:) = [(90+[10   -65   -60   -40    65   -40    60   -45    80   -25])/Constraints.DeltaAngle [] []] % not balanced
-% IniPop(1,:) = [40*ones(1,18) zeros(1,70)]
-% keyboard
+%% Generate Initial Population (weird results will come up if individual is not in [LB UB])
+[IniPop] = Generate_IniPop (NStruct,NStructMin,GAoptions,Constraints,Objectives,LamType,BCs,fct_handle);
 options = gaoptimset(options,'InitialPopulation' ,IniPop);
 
 
 %% run GA
 display('Running GA')
-
-% fct_handle(IniPop(1,:))
-[xOpt,fval,~,OutputGA] = ga(fct_handle,Nvar,[],[],[],[],LB,UB,[],1:Nvar,options);
-
+[xOpt,fval,~,OutputGA] = ga(fct_handle,NStruct.Nvar,[],[],[],[],LB',UB',[],1:NStruct.Nvar,options);
 display('GA(s) Terminated Successfully')
 
 
-[~,output]       = fct_handle(xOpt);                                        % Evaluate the best individual found during GA, returns the output structure
-output.NfctEval  = OutputGA.funccount;                                      % Number of function evaluation that have been computed
-output.NGen      = OutputGA.generations;                                    % Number of generation computed
-output.xOpt      = xOpt;                                                    % Genotype of the best found individual
-output.fval      = fval;                                                    % Fintess value of the best found individual
-output.LamType   = LamType;
+[~,output]        = fct_handle(xOpt);                                        % Evaluate the best individual found during GA, returns the output structure
+output.NfctEval   = OutputGA.funccount;                                      % Number of function evaluation that have been computed
+output.NGen       = OutputGA.generations;                                    % Number of generation computed
+output.EncodedSol = xOpt;                                                    % Genotype of the best found individual
+output.fval       = fval;                                                    % Fintess value of the best found individual
+output.LamType    = LamType;
 
 if ~output.FEASIBLE,  
     warning('The optimal solution found is not feasible!');
@@ -145,7 +140,7 @@ if strcmp(Objectives.Type,'LP')
         QualIndex3 = mae( (LPMatched(:,j) - LP2Match(:)).*ScalingCoef );            % Mean absolute error
         QualIndex4 = max( abs((LPMatched(:,j) - LP2Match(:)).*ScalingCoef) );       % Maximum absolute error
         
-        Table = [Table ;  {j} {length(output.SS{j})} output.SS(j) {LP2Match} {LPMatched(:,j)} {QualIndex1} {QualIndex2} {QualIndex3} {QualIndex4}]; %#ok<AGROW>
+        Table = [Table ;  {j} {length( cell2mat(output.SS_Patch(j,:))) } {cell2mat(output.SS_Patch(j,:))} {LP2Match} {LPMatched(:,j)} {QualIndex1} {QualIndex2} {QualIndex3} {QualIndex4}]; %#ok<AGROW>
     end
     
     output.Table     = Table;                                                   % Table sumarising results
@@ -184,7 +179,7 @@ if strcmp(Objectives.Type,'ABD')
         QualIndex2D = norm( DScaling(:).*(D_Matched(:) - D2Match(:)) );
         QualIndex3D = rms(  DScaling(:).*(D_Matched(:) - D2Match(:)) );
         
-        Table = [Table ;  {j} {length(output.SS{j})} output.SS(j) ...                                      
+        Table = [Table ;  {j} { cell2mat(length(output.SS_Patch(j,:)))} {cell2mat(output.SS_Patch(j,:))} ...                                      
                     {A2Match} {A_Matched} {QualIndex1A} {QualIndex2A} {QualIndex3A}...
                     {B2Match} {B_Matched} {QualIndex1B} {QualIndex2B} {QualIndex3B} ...
                     {D2Match} {D_Matched} {QualIndex1D} {QualIndex2D} {QualIndex3D}];               %#ok<AGROW>
