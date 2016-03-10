@@ -1,8 +1,4 @@
 ---- At present
-0) Return more than the best found design, maybe 10 near optimal = more choice for user to pick a robust design
-
-
-0) Multi-guide (independent = multi-structure) and later dependent on the same structure
 0) create option for explicit or implicit 10% rule
 0) reduce check feasibility for symmetric tables
 0) Create Stacking Sequence that do not follow all design guildeins but remove access to the corresponding NPLY (may result in new design?)

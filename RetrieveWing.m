@@ -45,11 +45,14 @@ addpath ./src/StiffnessOpt
 
 %% Objective Structure
 Objectives.Type   = 'LP';
-ScalingCoef       = [1 1 1 1, 0 0 0 0, 1 1 1 1]';
+ScalingCoef       = [1 1 1 1, 0 0 0 0, 0 0 0 0]';
 Objectives.Table  = [{'Laminate #'}  {'Nplies [LB UB]'}     {'LP2Match'}     {'Scaling Coefficient'} ];
 
-load ('HighFid_Opt_14LC')
-constant = AnalysisInputs.constant;
+% load ('HighFid_Opt_14LC')
+% constant = AnalysisInputs.constant;
+
+load ('BlendedWing')
+dvFull_s = dvFull;
 
 TopId = cell2mat(constant.lam.TopID);
 TopId = TopId(:);
@@ -57,7 +60,7 @@ Nlam  = length(TopId);
 
 Lp2Match = zeros(12,Nlam);
 
-tply = constant.mat.tply * 2;
+tply = constant.mat.tply * 1;
 for j=1:Nlam
     Lp2Match([1 2 3 4  9 10 11 12],j) = dvFull_s ((j-1)*9 + [1:8],end);
     thickness(j) = dvFull_s(j*9,end);
@@ -71,9 +74,9 @@ Objectives.FitnessFct = @(LP) RMSE_LP(LP,Objectives);
 
 %% === Design Guidelines 
 %                        [Symmetry,  Balanced,  Damtol,   Rule10percent,  Disorientation,  Contiguity,  InternalContinuity,  Covering];
-Constraints.Vector     = [true   ,    true ,  false ,      false     ,      false     ,     false  ,      false         ,     false];
-% Constraints.Vector     =   [true   ,    true ,  true ,      false     ,      false     ,     false  ,      true         ,     true];
-Constraints.DeltaAngle = 15;       
+Constraints.Vector     = [true   ,    false ,  false ,      false     ,      false     ,     false  ,      false         ,     false];
+% Constraints.Vector     =   [true   ,    false ,  true ,      false     ,      false     ,     false  ,      true         ,     true];
+Constraints.DeltaAngle = 5;       
 
 Constraints.NContiguity   = 3;  % optional (only needed if Contiguity = true)
 Constraints.NInternalCont = 3;  % optional (only needed if InternalContinuity = true)
@@ -117,8 +120,9 @@ plotSS(Output,1,PatchXYZ)
 %% write text file output with LP
 fr
 
-LPText = LP2Match;
-% LPText = Output.LP;
+rms(Output.LP(1:12,1)-Lp2Match(1:12,1))
+% LPText = Lp2Match;
+LPText = Output.LP;
 LPText([5 6 7 8],:) =[];
 fid = fopen('LPResults.txt', 'wt'); % Open for writing
 for i=1:size(LPText,1) % rows

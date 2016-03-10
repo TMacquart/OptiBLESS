@@ -199,8 +199,8 @@ if ~isempty(Thetas_MidCoded)
             Thetas_Mid = [Thetas_Mid13(1) Thetas_Mid0 Thetas_Mid13(2)];
             
             
-            Thetas_Mid = [Thetas_Mid; zeros(1,3)];
-%             Thetas_Mid = [Thetas_Mid; zeros(1,3); [LastIndex(2,1)+1 LastIndex(2,1)+2 LastIndex(2,1)+1]];
+%             Thetas_Mid = [Thetas_Mid; zeros(1,3)];
+            Thetas_Mid = [Thetas_Mid; zeros(1,3); [LastIndex(2,1)+1 LastIndex(2,1)+2 LastIndex(2,1)+1]];
         end
 
     end
