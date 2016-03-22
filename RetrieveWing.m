@@ -42,7 +42,6 @@ addpath ./GUI
 addpath ./src/StiffnessOpt
 
 
-
 %% Objective Structure
 Objectives.Type   = 'LP';
 ScalingCoef       = [1 1 1 1, 0 0 0 0, 0 0 0 0]';
@@ -65,6 +64,10 @@ for j=1:Nlam
     Lp2Match([1 2 3 4  9 10 11 12],j) = dvFull_s ((j-1)*9 + [1:8],end);
     thickness(j) = dvFull_s(j*9,end);
     Nply(j)      = round(thickness(j)/tply);  
+    
+    if Nply(j)<25,
+        Nply(j)=25;
+    end
     Objectives.Table = [Objectives.Table; {j} {round([Nply(j)*1 Nply(j)*1])}  Lp2Match(:,j) {ScalingCoef}];  
 end
 
@@ -74,9 +77,9 @@ Objectives.FitnessFct = @(LP) RMSE_LP(LP,Objectives);
 
 %% === Design Guidelines 
 %                        [Symmetry,  Balanced,  Damtol,   Rule10percent,  Disorientation,  Contiguity,  InternalContinuity,  Covering];
-Constraints.Vector     = [true   ,    false ,  false ,      false     ,      false     ,     false  ,      false         ,     false];
-% Constraints.Vector     =   [true   ,    false ,  true ,      false     ,      false     ,     false  ,      true         ,     true];
-Constraints.DeltaAngle = 5;       
+% Constraints.Vector     = [true   ,    false ,  false ,      false     ,      false     ,     false  ,      false         ,     false];
+Constraints.Vector     =   [true   ,    false ,  true ,      false     ,      true     ,     true  ,      true         ,     true];
+Constraints.DeltaAngle = 15;       
 
 Constraints.NContiguity   = 3;  % optional (only needed if Contiguity = true)
 Constraints.NInternalCont = 3;  % optional (only needed if InternalContinuity = true)

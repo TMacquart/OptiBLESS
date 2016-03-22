@@ -80,7 +80,6 @@ end
 GuideIndex = GuideIndex(1);
 Opacity = ones(size(SS,1),1);
 
-
 if nargin~=3 % no location data have been given
     for i=1:size(SS,1)
         PatchXYZ{i}.X = i+[-1 0 0 -1];

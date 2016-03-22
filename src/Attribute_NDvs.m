@@ -256,7 +256,3 @@ NStruct.N10percentVar   = N10percentVar;    % number of 10% rule design variable
 NStruct.NMidPlane       = NMidPlane;        % number of MidPlane design variables
 NStruct.NInsertVar      = NInsertVar;         % number of Drop Location design variables
 
-
-if NInsertVar>20
-    warning ('More than 20 insertion design variables are being used. Inipop may be difficult to generate')
-end

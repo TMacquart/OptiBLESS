@@ -236,21 +236,29 @@ plotSS(Output,1,PatchXYZ)
 
 
 % ---
-Parameters.mMax = 2;
-Parameters.nMax = 2;
+Parameters.mMax = 1;
+Parameters.nMax = 1;
 [Fitness2,output2] = HS_EvaluationFct(Output.SS_Patch,Parameters)
 
 
 % ---
 if 0
-    for i=0:20
-       %results = load(['./HorseShoeResults/HorseShoeOpt' num2str(i)]);
-        results = load(['./Results/HorseShoeOptHome' num2str(i)]);
-       SS{i+1} = results.Output.SS;
-       [Fitness(i+1),output{i+1}] = HS_EvaluationFct(SS{i+1},Parameters);
-       minBuckling(i+1) = max(output{i+1}.BucklingFactor);
+    for i=1:20
+   
+%        results = load(['./OptiBLessWorkResulsts/SymResults/HS_Sym' num2str(i)]); %symmetric
+%        results = load(['./OptiBLessWorkResulsts/SymBalResults/HS_SymBal' num2str(i)]); % sym and balanced
+       results = load(['./OptiBLessWorkResulsts/FullConst_Implicit10Percent_Results/HS_FullConst_ImplicitTenPercent_' num2str(i)]); % sym and balanced
+%         results = load(['./OptiBLessWorkResulsts/FullConstResults/HS_FullConst' num2str(i)]); % sym and balanced
        
-       NGeoConstraints(i+1) = CheckContinuity(SS{i+1},Constraints.PatchConnectivity);
+       SS_Patch{i} = results.Output.SS_Patch;
+       [Fitness(i),output{i}] = HS_EvaluationFct(SS_Patch{i},Parameters);
+       minBuckling(i) = max(output{i}.BucklingFactor);
+       
+       %NGeoConstraints(i+1) = CheckContinuity(SS_Patch{i+1},Constraints.PatchConnectivity);
        
     end
+end
+
+for j=1:18
+    Nply(j)=length(cell2mat(temp(j,:)))
 end

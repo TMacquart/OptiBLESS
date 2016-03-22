@@ -48,7 +48,6 @@ for i=1:18
 end
 Fitness = sum(Vol)*Parameters.rho;
 
-
 % ---
 % Buckling constraints for all 18 panels
 OptConstraint.FoS = 1;

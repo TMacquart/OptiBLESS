@@ -60,6 +60,22 @@ display(' Creating IniPop ... ' )
 ipop          = 1 ;
 NTried        = 0;
 
+
+if Constraints.Vector(7)
+    if NStruct.NInsertVar > NStructMin.MinNplies*1.5 % Empirical limit for Constraints.NInternalCont = 3
+        warning(['A Feasible initial Population will be difficult or even impossible to generate due to internal continuity constraints.' ...
+            'You may which to increase the value of Constraints.NInternalCont or reduced the difference between Max and Min Nply'])
+        
+        str = input('Would you like to continue anyway? [Y/N]','s');
+        if ~strcmp(str,'Y')
+            error(' ---------   Code stopped by users during initial population generation  ---------')
+        end
+    end
+%     if NStruct.NInsertVar > (NStructMin.MinNplies*3), % ultimate limit
+%         error('Impossible to satisfy all constraints due to internal continuity')
+%     end
+end
+
 % Loop until IniPop is complete
 while ipop < Npop + 1
 % parfor Iparallel = 1 : 100000
@@ -184,14 +200,15 @@ while ipop < Npop + 1
     
     if FEASIBLE
         
+        
 %         keyboard
         if 1 % random
             if NStruct.NInsertVar>0
                 InsertIndexes = [];
                 InsertTried   = 0;
                 InsertVar     = 1 + length(InsertIndexes);
-                while InsertVar<=NStruct.NInsertVar && InsertTried<35 % 201
-                    
+                
+                while InsertVar<=NStruct.NInsertVar && InsertTried<201%35                     
                     
                     Nloc = length(SSTable);
                     if Constraints.Vector(1), Nloc = floor(Nloc/2); end % symmetric
@@ -234,6 +251,14 @@ while ipop < Npop + 1
                 end % end while
             end
         end
+        
+%         if ~exist('BestInsertVar','var')
+%             BestInsertVar = InsertVar
+%         elseif InsertVar>BestInsertVar
+%             BestInsertVar = InsertVar
+%             keyboard
+%         end
+
         
 %         keyboard
         if 0 % Enumeration
@@ -285,14 +310,13 @@ while ipop < Npop + 1
         
     end
     
-    %     keyboard
+%         keyboard
     
     %% Finally, add number of plies for each patch until feasible (or discard) and Add to population
     
     
     if FEASIBLE
         
-%         keyboard
         % --- generate the Number of plies for each patch
         NvarPatch     = length(BCs.UB.Nply);            % number of patches with variable thickness
         if NvarPatch>0
