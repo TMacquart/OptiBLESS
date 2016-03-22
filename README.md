@@ -23,7 +23,7 @@ Once you have a suitable working version of MATLAB the toolbox can be run withou
 
 ## Tests
 
-The toolbox has been thouroughly validated and is provided with a set of examples and benchmarks. Reaching 100% certainty in terms of validation is, however, impropable and possible errors may still be experienced. In this case, you can fix it and report it or simply provide feedback for me to be able to fix it. Do not hesitate to aslo propose features you would like to be implemented.     
+The toolbox has been thouroughly validated and is provided with a set of examples and benchmarks. Reaching 100% certainty in terms of validation is, however, impropable and possible errors may still be experienced. In this case, you can fix it and report it or simply provide feedback for me to be able to fix it (terence.macquart@gmail.com). Do not hesitate to aslo propose features you would like to be implemented.     
 
 ## Contributors
 
@@ -37,6 +37,7 @@ The **Opti-BLESS** toolbox is distributed under a permisive 2-clause BSD license
 ## Release Update
 
 Release 1.1.0 improves upon the previous version on the following point:
+
 - Ply drops are replaced by ply insertion making easier to generate initial populations
 - For sake a clarity the encoded solutions is replaced by its corresponding stacking sequence table in the source code
 - Explicit and an implicit constraints for the 10% rule now have been added
