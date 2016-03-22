@@ -61,13 +61,13 @@ Constraints.ply_t      = 0.000127;          % ply thickness
 
 Constraints.NContiguity   = 3;  % optional (only needed if Contiguity = true)
 Constraints.NInternalCont = 3;  % optional (only needed if InternalContinuity = true)
-
+Constraints.Implicit10PercentRule = false; 
 
 
 %% === Options 
 GAoptions.Npop    = 100;                    % Population size
-GAoptions.Ngen    = 500;                    % Number of generations
-GAoptions.NgenMin = 500;                    % Minimum number of generation calculated
+GAoptions.Ngen    = 200;                    % Number of generations
+GAoptions.NgenMin = 200;                    % Minimum number of generation calculated
 GAoptions.Elitism = 0.01;                   % Percentage of elite passing to the next Gen. (from 0 to 1)
 GAoptions.PC      = 0.75;                   % Percentage of crossover (from 0.1 to 1)
 GAoptions.IniPopFEASIBLE = 1;               % Either (1 or 2), Ensure the initial population 1:respect all design guidelines, 2:and addition respect user function constraints
@@ -96,8 +96,8 @@ display(Output.Table)
 
 fprintf('\n')
 display('--- A Matrix ---')
-display(A2Match{1})
-display(AOpt)
+display(A2Match{1})     % input matrix
+display(AOpt)           % Retrieved Matrix
 fprintf('\n')
 display('--- B Matrix ---')
 display(B2Match{1})

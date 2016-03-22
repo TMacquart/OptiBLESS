@@ -46,9 +46,7 @@ Objectives.UserFct    = false;
 %                        [Symmetry,  Balanced,  Damtol,   Rule10percent,  Disorientation,  Contiguity,  InternalContinuity,  Covering];
 Constraints.Vector     = [false   ,    false ,  false ,      false     ,      false     ,     false  ,      false         ,     false];
 Constraints.DeltaAngle = 45;
-Constraints.ORDERED    = false;                           
-Constraints.Balanced   = true; 
-Constraints.Sym        = false; 
+Constraints.Implicit10PercentRule = false; 
 
 
 %% === Options 

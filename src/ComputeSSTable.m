@@ -50,7 +50,6 @@ ThetasCoded   = ThetasCoded(1:NStructMin.NthetaVar);
 BalancedLoc   = BalancedLoc(1:NStructMin.NbalVar);
 TenPercentLoc = TenPercentLoc(1:NStructMin.N10percentVar);
 
-% keyboard
 
 %% Calculate fibre angles values
 if SymbolicTable
@@ -143,8 +142,6 @@ if Constraints.Vector(4)
     end
 end
 
-% keyboard
-
 
 %% Add Mid plane angles
 if ~isempty(Thetas_MidCoded)
@@ -167,8 +164,6 @@ if ~isempty(Thetas_MidCoded)
         
         R = [0 90];
         Thetas_Mid = R(Thetas_MidCoded);
-        
-%         Thetas_Mid = [Thetas_Mid; zeros(1,length(Thetas_Mid))];
         Thetas_Mid = [Thetas_Mid; zeros(1,length(Thetas_Mid)); [1:length(Thetas_Mid(1,:))] + LastIndex(2,1)];
     end
     
@@ -177,8 +172,6 @@ if ~isempty(Thetas_MidCoded)
             keyboard % should never happen, internal check
         end
         Thetas_Mid = -90 + Thetas_MidCoded(1,1)*ones(1,length(Thetas_MidCoded))*Constraints.DeltaAngle;
-        
-%         Thetas_Mid = [Thetas_Mid; zeros(1,length(Thetas_Mid))];
         Thetas_Mid = [Thetas_Mid; zeros(1,length(Thetas_Mid)); ones(1,length(Thetas_Mid(1,:)))*(1+LastIndex(2,1))];
     end
     
@@ -187,9 +180,7 @@ if ~isempty(Thetas_MidCoded)
         
         if NStruct.NMidPlane==1 || NStruct.NMidPlane==2
             Thetas_Mid = R(Thetas_MidCoded(1))*ones(1,length(Thetas_MidCoded));
-            
             Thetas_Mid = [Thetas_Mid; zeros(1,length(Thetas_Mid)); ones(1,length(Thetas_Mid(1,:)))*(1+LastIndex(2,1))];
-%             Thetas_Mid = [Thetas_Mid; zeros(1,length(Thetas_Mid))];
         end
       
         if NStruct.NMidPlane==3
@@ -197,9 +188,6 @@ if ~isempty(Thetas_MidCoded)
             Thetas_Mid13 = R(Thetas_MidCoded(2))*ones(1,2);
             
             Thetas_Mid = [Thetas_Mid13(1) Thetas_Mid0 Thetas_Mid13(2)];
-            
-            
-%             Thetas_Mid = [Thetas_Mid; zeros(1,3)];
             Thetas_Mid = [Thetas_Mid; zeros(1,3); [LastIndex(2,1)+1 LastIndex(2,1)+2 LastIndex(2,1)+1]];
         end
 
@@ -276,7 +264,6 @@ if ~isempty(InsertIndexes)
             if Delta_N10percentVar>0 && length(TenPercentAngles)>=ii
                 % Add New lines with 10% fibre angle (if any)
                 
-%                 Added10Percent = true;
                 Added10Percent = false;
                 if strcmp(LamType,'Balanced_Sym'),                Added10Percent = true; end
                 if strcmp(LamType,'Sym')      && rem(i,2) == 0,   Added10Percent = true; end
@@ -298,19 +285,9 @@ if ~isempty(InsertIndexes)
                         
                         if TenPercentAngles(ii)==-45
                             [NewLine,SSTable] = InsertAngle(TenPercentAngles(ii),TenPercentLoc_Add(ii),NewLine,SSTable,LamType,Constraints,MidAngle);
-                            
-%                             Delta_N10percentVar = Delta_N10percentVar -1;
                             [NewLine,SSTable] = InsertAngle(TenPercentAngles(ii-2),TenPercentLoc_Add(ii-2),NewLine,SSTable,LamType,Constraints,MidAngle);
                             Delta_N10percentVar = Delta_N10percentVar -2;
                         end
-                        
-%                         if TenPercentAngles(ii)==45
-%                             [NewLine,SSTable] = InsertAngle(TenPercentAngles(ii),TenPercentLoc_Add(ii),NewLine,SSTable,LamType,Constraints,MidAngle);
-%                             
-%                             Delta_N10percentVar = Delta_N10percentVar -1;
-% %                             [NewLine,SSTable] = InsertAngle(TenPercentAngles(ii-2),TenPercentLoc_Add(ii-2),NewLine,SSTable,LamType,Constraints,MidAngle);
-% %                             Delta_N10percentVar = Delta_N10percentVar -2;
-%                         end
                         
                     end
                     SSTable = [NewLine; SSTable];

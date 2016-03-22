@@ -55,7 +55,7 @@ Constraints.DeltaAngle = 45;
 
 Constraints.NContiguity   = 3;  % optional (only needed if Contiguity = true)
 Constraints.NInternalCont = 3;  % optional (only needed if InternalContinuity = true)
-
+Constraints.Implicit10PercentRule = false; 
 
 
 %% === Options 
@@ -79,6 +79,7 @@ GAoptions.OutputFct    = @GACustomOutput;   % Custom ouput function (can be chan
 
 display(Output)
 display(Output.Table)
+
 
 
 %% === Checking output results are correctly matching (should not return an error!!!)

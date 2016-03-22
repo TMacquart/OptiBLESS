@@ -40,43 +40,12 @@ addpath ./src
 addpath ./GUI
 addpath ./src/StiffnessOpt
 
-Optimisation = 0; % 0=direct, 1=indirect
 
-
-if Optimisation ==0
-    Objectives.Table   = [{'Laminate #'}  {'Nplies [LB UB]'}];
-    for i=1:18
-        Objectives.Table = [Objectives.Table; {i}  {[16 49]}];
-    end
-else
-    Table =[ % Nply  V1D     V3D
-                32	0.208	-0.843 
-                28	0.092	-0.714
-                20	-0.722	0.054
-                18	-0.582	-0.228
-                16	-0.477	-0.235
-                22	-0.469	-0.335
-                18	-0.582	-0.228
-                24	-0.597	-0.252
-                38	0.192	-0.657
-                34	0.308	-0.776
-                30	-0.241	-0.816
-                28	0.092	-0.714
-                22	-0.469	-0.335
-                18	-0.582	-0.228
-                24	-0.597	-0.252
-                30	-0.241	-0.816
-                18	-0.582	-0.228
-                22	-0.469	-0.335];
-    
-            ScalingCoef = [0 0 0 0, 0 0 0 0, 1 0 1 0]';
-            Objectives.Table   = [{'Laminate Index'} {'Nplies [LB UB]'} {'LP2Match'} {'Importance'}];
-            for i=1:18
-                Lp2Match(:,i) = [zeros(8,1); Table(i,2); 0; Table(i,3);0 ];
-                Objectives.Table = [Objectives.Table; {i}  {[1 1]*Table(i,1)} {Lp2Match(:,i)}  ScalingCoef];
-            end
+Objectives.Table   = [{'Laminate #'}  {'Nplies [LB UB]'}];
+for i=1:18
+    Objectives.Table = [Objectives.Table; {i}  {[16 49]}];
 end
-                        
+
 % ---
 if 1    % Problem definition
     Parameters.Dim{1}      = [18 24];                                % Panel dimension (inch)
@@ -155,73 +124,36 @@ if 1    % Problem definition
         PatchXYZ{i}.Z = [0 0 0 0];
     end
     
-    Parameters.mMax = 1;
-    Parameters.nMax = 1;
-    
-    Parameters.connectivity = [
-        0 1 0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0
-        1 0 1 0 0 1 0 0 1 1 0 0 0 0 0 0 0 0
-        0 1 0 1 0 1 1 0 0 0 0 0 0 0 0 0 0 0
-        0 0 1 0 1 1 1 1 0 0 0 0 0 0 0 0 0 0
-        0 0 0 1 0 0 1 1 0 0 0 0 0 0 0 0 0 0
-        0 1 1 1 0 0 1 0 0 0 0 0 0 0 0 0 0 0
-        0 0 1 1 1 1 0 1 0 0 0 0 0 0 0 0 0 0
-        0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0
-        1 1 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0
-        1 1 0 0 0 0 0 0 1 0 1 1 0 0 0 0 0 0
-        0 0 0 0 0 0 0 0 1 1 0 1 0 0 0 0 0 0
-        0 0 0 0 0 0 0 0 1 1 1 0 1 0 0 1 0 0
-        0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 1 1 0
-        0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 1 1 1
-        0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 1 1
-        0 0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 1 0
-        0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 1
-        0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 1 0];
+    Parameters.mMax = 1; % number of buckling modes calculated
+    Parameters.nMax = 1; % number of buckling modes calculated
     
 end
 
 
 Objectives.UserFct = true;
-if Optimisation ==0
-    Objectives.Type       = 'SS';
-    Objectives.FitnessFct = @(SS)  HS_EvaluationFct(SS,Parameters);
-else
-    Objectives.Type       = 'LP';
-    Objectives.FitnessFct = @(LP)  RMSE_LP(LP,Objectives);
-end
+Objectives.Type       = 'SS';
+Objectives.FitnessFct = @(SS)  HS_EvaluationFct(SS,Parameters);
+
 
 % ---
 %                        [Symmetry,  Balanced,  Damtol,   Rule10percent,  Disorientation,  Contiguity,  InternalContinuity,  Covering];
-Constraints.Vector     = [true   ,    true ,  true ,      false     ,      true     ,     true  ,      true         ,     true];
+Constraints.Vector     = [false   ,    false ,  false ,      false     ,      false     ,     false  ,      false         ,     true];
 Constraints.DeltaAngle    = 15;                    
 Constraints.NContiguity   = 3;           % only used if Contiguity is set to true 
 Constraints.NInternalCont = 3;           % only used if InernalContinuity is set to true 
 Constraints.PatchXYZ      = PatchXYZ;    % (optional / used with PatchConnectivity) 
-
-% --- Format Geometric Input
-if 0 
-    if isfield(Constraints,'PatchXYZ') && ~isfield(Constraints,'PatchConnectivity')
-        PatchConnectivity = Format_GeometricInput(Constraints.PatchXYZ);
-        display(PatchConnectivity)
-        UserInput = input(' Please check the Patch Connectivity matrix. Do you want to continue? [Y/N]: ','s');
-        if ~strcmp(UserInput,'Y')
-            error('Stopped by user. If the automatic Patch Connectivity matrix is incorrect you can input it directly as Constraints.PatchConnectivity')
-        end
-        Constraints.PatchConnectivity = PatchConnectivity;
-    end
-end
-
+Constraints.Implicit10PercentRule = true; 
 
 % ---
-GAoptions.Npop     = 100; 	   % Population size
-GAoptions.Ngen     = 10000; 	   % Number of generations
-GAoptions.NgenMin  = 5000; 	   % Minimum number of generation calculated
+GAoptions.Npop     = 50; 	   % Population size
+GAoptions.Ngen     = 100; 	   % Number of generations
+GAoptions.NgenMin  = 500; 	   % Minimum number of generation calculated
 GAoptions.Elitism  = 0.10; 	   % Percentage of elite passing to the next Gen.
 GAoptions.PC       = 0.75; 	   
-GAoptions.IniPopFEASIBLE = 1;  % [1,2] % 1-Satisfy all design guidelines,  2-Addtionally satify user function Constraints
+GAoptions.IniPopFEASIBLE = 2;  % [1,2] % 1-Satisfy all design guidelines,  2-Addtionally satify user function Constraints
 GAoptions.FitnessLimit = 1e-5; 
 
-GAoptions.PlotInterval = [50];                  % Refresh plot every X itterations         
+GAoptions.PlotInterval = [1];                  % Refresh plot every X itterations         
 GAoptions.SaveInterval = [1];                   % Save Data every X itterations   
 GAoptions.PlotFct      = @gaplotbestf;          % Refresh plot every X itterations
 GAoptions.OutputFct    = @GACustomOutput;
@@ -232,33 +164,10 @@ GAoptions.OutputFct    = @GACustomOutput;
 
 % ---
 plotSS(Output,1,PatchXYZ)
-% NGeoConstraints = CheckContinuity(Output.SS_Patch,Constraints.PatchConnectivity)
 
 
 % ---
 Parameters.mMax = 1;
 Parameters.nMax = 1;
-[Fitness2,output2] = HS_EvaluationFct(Output.SS_Patch,Parameters)
+[Fitness2,output2] = HS_EvaluationFct(Output.SS_Patch,Parameters);
 
-
-% ---
-if 0
-    for i=1:20
-   
-%        results = load(['./OptiBLessWorkResulsts/SymResults/HS_Sym' num2str(i)]); %symmetric
-%        results = load(['./OptiBLessWorkResulsts/SymBalResults/HS_SymBal' num2str(i)]); % sym and balanced
-       results = load(['./OptiBLessWorkResulsts/FullConst_Implicit10Percent_Results/HS_FullConst_ImplicitTenPercent_' num2str(i)]); % sym and balanced
-%         results = load(['./OptiBLessWorkResulsts/FullConstResults/HS_FullConst' num2str(i)]); % sym and balanced
-       
-       SS_Patch{i} = results.Output.SS_Patch;
-       [Fitness(i),output{i}] = HS_EvaluationFct(SS_Patch{i},Parameters);
-       minBuckling(i) = max(output{i}.BucklingFactor);
-       
-       %NGeoConstraints(i+1) = CheckContinuity(SS_Patch{i+1},Constraints.PatchConnectivity);
-       
-    end
-end
-
-for j=1:18
-    Nply(j)=length(cell2mat(temp(j,:)))
-end

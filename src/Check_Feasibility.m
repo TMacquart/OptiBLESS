@@ -72,13 +72,13 @@ end
 
 % These Constraints are checked for all patches
 % Rule10percent,  Disorientation and Contiguity
-if Constraints.Vector(4) || Constraints.Vector(5) || Constraints.Vector(6)
+if Constraints.Vector(4) || Constraints.Vector(5) || Constraints.Vector(6) || Constraints.Implicit10PercentRule
     
     for i = 1:length(NplySS) 
         FiberAngles = cell2mat(SSTable(i,:));
         
         % --- Rule10percent 
-            if 1 %Constraints.Vector(2) 
+            if Constraints.Vector(2) || Constraints.Implicit10PercentRule
                 
                 TenpercentDV = round(length(FiberAngles)*0.1);
                 N0Plies      = length(find(FiberAngles==0));
@@ -154,44 +154,6 @@ if Constraints.Vector(4) || Constraints.Vector(5) || Constraints.Vector(6)
         
     end
 end
-
-
-
-% if ConstraintVector(5) % check if balanced for indirect constraint handling
-%     % guide
-%     [FiberAngles] = Convert_dvAngles2FiberAngles(GuideAngles,[],LamType);
-%     UniqueAngle = unique(FiberAngles);
-%     UniqueAngle(abs(UniqueAngle)==90) = [];
-%     UniqueAngle(UniqueAngle==0)       = [];
-%     for j=1:length(UniqueAngle)
-%         if length(find(UniqueAngle(j)==FiberAngles)) ~= length(find(-UniqueAngle(j)==FiberAngles))
-%             FEASIBLE = false;
-%             return
-%         end
-%     end
-%     
-%     % guideDroped laminates
-%     for iDrop=1:length(DropsIndexes)
-%         ply_angles = GuideAngles;
-%         DropsLoc = unique(DropsIndexes(1:iDrop));
-%         if max(DropsLoc)>NGuidePlies
-%             DropsLoc(DropsLoc>NGuidePlies) = [];
-%         end
-%         
-%         ply_angles(DropsLoc(DropsLoc<=length(ply_angles))) = [];  % drop plies
-%         FiberAngles      = Convert_dvAngles2FiberAngles(ply_angles,[],LamType);
-%         UniqueAngle = unique(FiberAngles);
-%         UniqueAngle(abs(UniqueAngle)==90) = [];
-%         UniqueAngle(UniqueAngle==0)       = [];
-%         
-%         for j=1:length(UniqueAngle)
-%             if length(find(UniqueAngle(j)==FiberAngles)) ~= length(find(-UniqueAngle(j)==FiberAngles))
-%                 FEASIBLE = false;
-%                 return
-%             end
-%         end
-%     end
-% end
 
 
 end

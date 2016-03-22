@@ -71,9 +71,9 @@ if Constraints.Vector(7)
             error(' ---------   Code stopped by users during initial population generation  ---------')
         end
     end
-%     if NStruct.NInsertVar > (NStructMin.MinNplies*3), % ultimate limit
-%         error('Impossible to satisfy all constraints due to internal continuity')
-%     end
+    if NStruct.NInsertVar > (NStructMin.MinNplies*3), % ultimate limit
+        error('Impossible to satisfy all constraints due to internal continuity')
+    end
 end
 
 % Loop until IniPop is complete
@@ -199,122 +199,52 @@ while ipop < Npop + 1
     %% Add plies (a feasible thinnest laminate has been found (you can check it in SSTable) - now we add feasible plies)
     
     if FEASIBLE
-        
-        
-%         keyboard
-        if 1 % random
-            if NStruct.NInsertVar>0
-                InsertIndexes = [];
-                InsertTried   = 0;
-                InsertVar     = 1 + length(InsertIndexes);
+        if NStruct.NInsertVar>0
+            InsertIndexes = [];
+            InsertTried   = 0;
+            InsertVar     = 1 + length(InsertIndexes);
+            
+            while InsertVar<=NStruct.NInsertVar && InsertTried<201%35
                 
-                while InsertVar<=NStruct.NInsertVar && InsertTried<201%35                     
-                    
-                    Nloc = length(SSTable);
-                    if Constraints.Vector(1), Nloc = floor(Nloc/2); end % symmetric
-                    
-                    InsertTrial = InsertIndexes;
-                    InsertTrial = [InsertTrial randi([BCs.LB.InsertIndex(InsertVar)+2 Nloc+2])];
-
-%                     InsertTrial = [InsertTrial randi([BCs.LB.InsertIndex(InsertVar)+2 BCs.UB.InsertIndex(InsertVar)])];
-                   
-                    SSTable = ComputeSSTable(Thetas,InsertTrial,BalancedLoc,TenPercentLoc,Thetas_Mid,LamType,Constraints,NStruct,NStructMin,false);
-                    [FEASIBLE,output] = Check_Feasibility(Constraints,SSTable);
-                      
-%                     output
-                    
-                    if FEASIBLE
-                        InsertIndexes = InsertTrial;
-                        InsertVar     = InsertVar +1;
-                        InsertTried   = 0;
-                    else
-                        InsertTried = InsertTried +1;
-                    end
-                    
-                    if  rem(InsertTried,10) && Constraints.Vector(4) && (NStructMin.N10percentVar+InsertVar)<NStruct.N10percentVar 
-%                         TenPercentLoc(NStructMin.N10percentVar+InsertVar) = randi([BCs.LB.TenPercentLoc(1) BCs.UB.TenPercentLoc(1)]);
-                        TenPercentLoc(NStructMin.N10percentVar+InsertVar) = randi([BCs.LB.TenPercentLoc(1) Nloc+2]);
-                    end
-                    
-                    if rem(InsertTried,15) && Constraints.Vector(2) && (NStructMin.NbalVar+InsertVar)<NStruct.NbalVar
-%                         BalancedLoc(NStructMin.NbalVar+InsertVar) = randi([BCs.LB.BalancedLoc(1) BCs.UB.BalancedLoc(1)]);
-                        BalancedLoc(NStructMin.NbalVar+InsertVar) = randi([BCs.LB.BalancedLoc(1) Nloc+2]);
-                    end
-                    
-                    if  (rem(InsertTried,20) || strcmp(output.ConstViolated,'TenPercentRule')) && (NStructMin.NbalVar+InsertVar)<NStruct.NthetaVar
-                        Thetas(NStructMin.NthetaVar+InsertVar) = randi([BCs.LB.Thetas(2) BCs.UB.Thetas(2)]);
-                    end
-                    
-                    if FEASIBLE && length(SSTable(1,:))>=NStruct.MaxNplies
-                        break
-                    end
-                end % end while
-            end
-        end
-        
-%         if ~exist('BestInsertVar','var')
-%             BestInsertVar = InsertVar
-%         elseif InsertVar>BestInsertVar
-%             BestInsertVar = InsertVar
-%             keyboard
-%         end
-
-        
-%         keyboard
-        if 0 % Enumeration
-            if NStruct.NInsertVar>0
-                InsertVar   = 1;
-                InsertTried = 0;
-                InsertIndexes = zeros(1,NStruct.NInsertVar);
+                Nloc = length(SSTable);
+                if Constraints.Vector(1), Nloc = floor(Nloc/2); end % symmetric
                 
-                NonAllowed = cell(NStruct.NInsertVar,1);
-                j=1;
-                iEnumerate = 0;
-                NEnumerate = NStruct.NInsertVar*5;
-                while (j<=NStruct.NInsertVar) && (iEnumerate<NEnumerate)
-                    iEnumerate = iEnumerate +1;
-                    PossibleInsert = randperm(BCs.UB.InsertIndex(InsertVar)-1,BCs.UB.InsertIndex(InsertVar)-1)+1;
-                    PossibleInsert(ismember(PossibleInsert,NonAllowed{j})) = [];
-                    
-                    for i=1:length(PossibleInsert)
-                        
-                        InsertIndexes(j)  = PossibleInsert(i);
-                        SSTable           = ComputeSSTable(Thetas,InsertIndexes,BalancedLoc,TenPercentLoc,Thetas_Mid,LamType,Constraints,NStruct,NStructMin,false);
-                        [FEASIBLE,output] = Check_Feasibility(Constraints,SSTable);
-                        
-                        if FEASIBLE
-                            j=j+1;
-                            iEnumerate = 0;
-                            break % break out the for loop
-                        end
-                    end
-                    
-                    if ~FEASIBLE % no feasible solution with the current InsertIndexes, remove the last index
-                        if (j-1)==0
-                            break
-                        end
-                        InsertIndexes(j) = 0;
-                        NonAllowed{j}    = [];
-                        j=j-1;
-                        NonAllowed{j}    = [NonAllowed{j} InsertIndexes(j)];
-                        InsertIndexes(j) = 0;
-                        InsertTried      = InsertTried +1;
-                    end
-                    
-                    if FEASIBLE && length(SSTable(1,:))==NStruct.MaxNplies
-                        break
-                    end
-                end % end while
-            end
+                InsertTrial = InsertIndexes;
+                InsertTrial = [InsertTrial randi([BCs.LB.InsertIndex(InsertVar)+2 Nloc+2])];
+                
+                SSTable = ComputeSSTable(Thetas,InsertTrial,BalancedLoc,TenPercentLoc,Thetas_Mid,LamType,Constraints,NStruct,NStructMin,false);
+                [FEASIBLE,output] = Check_Feasibility(Constraints,SSTable);
+                
+                
+                if FEASIBLE
+                    InsertIndexes = InsertTrial;
+                    InsertVar     = InsertVar +1;
+                    InsertTried   = 0;
+                else
+                    InsertTried = InsertTried +1;
+                end
+                
+                if  rem(InsertTried,10) && Constraints.Vector(4) && (NStructMin.N10percentVar+InsertVar)<NStruct.N10percentVar
+                    TenPercentLoc(NStructMin.N10percentVar+InsertVar) = randi([BCs.LB.TenPercentLoc(1) Nloc+2]);
+                end
+                
+                if rem(InsertTried,15) && Constraints.Vector(2) && (NStructMin.NbalVar+InsertVar)<NStruct.NbalVar
+                    BalancedLoc(NStructMin.NbalVar+InsertVar) = randi([BCs.LB.BalancedLoc(1) Nloc+2]);
+                end
+                
+                if  (rem(InsertTried,20) || strcmp(output.ConstViolated,'TenPercentRule')) && (NStructMin.NbalVar+InsertVar)<NStruct.NthetaVar
+                    Thetas(NStructMin.NthetaVar+InsertVar) = randi([BCs.LB.Thetas(2) BCs.UB.Thetas(2)]);
+                end
+                
+                if FEASIBLE && length(SSTable(1,:))>=NStruct.MaxNplies
+                    break
+                end
+            end % end while
         end
-        
     end
     
-%         keyboard
-    
+
     %% Finally, add number of plies for each patch until feasible (or discard) and Add to population
-    
-    
     if FEASIBLE
         
         % --- generate the Number of plies for each patch
@@ -398,25 +328,10 @@ while ipop < Npop + 1
         end
     end
     
-    
-    
-    % --- Check geometric continuity of ply over patches
-    %         if FEASIBLE
-    %             NGeoConstraints = 0;
-    %             if isfield(Constraints,'PatchConnectivity')
-    %                 NGeoConstraints = CheckContinuity(output.SS_Patch,Constraints.PatchConnectivity);
-    %             end
-    %             display(NGeoConstraints)
-    %         end
-    % ---
-    
     %% Stop if too hard to create the initial populations
     NTried = NTried + 1;
-%     if NTried ==1000
-%         warning('Difficulties generating feasible initial guess! This may take some times')
-%     end
     if  NTried == 100000 && ipop<2
-        error('Hard Constrained Problem. Difficulties Generating IniPop')
+        error('Hard Constrained Problem. Difficulties Generating IniPop.')
     end
 end
 

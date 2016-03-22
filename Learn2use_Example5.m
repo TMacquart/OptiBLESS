@@ -53,7 +53,7 @@ Constraints.ply_t      = 0.000127;          % ply thickness
 
 Constraints.NContiguity   = 3;  % optional (only needed if Contiguity = true)
 Constraints.NInternalCont = 3;  % optional (only needed if InternalContinuity = true)
-
+Constraints.Implicit10PercentRule = false; 
 
 
 %% === Options 

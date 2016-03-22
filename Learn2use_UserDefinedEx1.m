@@ -58,10 +58,10 @@ Constraints.Vector     = [false   ,    false ,  false ,      false     ,      fa
 Constraints.DeltaAngle = 5;                       
 Constraints.ply_t      = 0.000127;          % ply thickness    
 
+
 Constraints.NContiguity   = 3;  % optional (only needed if Contiguity = true)
 Constraints.NInternalCont = 3;  % optional (only needed if InternalContinuity = true)
-
-
+Constraints.Implicit10PercentRule = false; % the 10% rule can be implicitely or explicitely(Constraints.Vector) handled
 
 %% === Options 
 GAoptions.Npop    = 100;                    % Population size

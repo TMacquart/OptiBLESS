@@ -63,18 +63,6 @@ if 1 % --- Format Geometric Input
     Patch{4}.X = 4.5+[0   1.5 1.5  0];
     Patch{4}.Y = [-1 -1  0    0];
     Patch{4}.Z = [0   0  0    0];
-    
-    Constraints.Patch = Patch; % not used
-    
-    if ~isfield(Constraints,'PatchConnectivity')
-        PatchConnectivity = Format_GeometricInput(Constraints.Patch);
-        display(PatchConnectivity)
-        UserInput = input(' Please check the Patch Connectivity matrix. Do you want to continue? [Y/N]: ','s');
-        if ~strcmp(UserInput,'Y')
-            error('Stopped by user. If the automatic Patch Connectivity matrix is incorrect you can input it directly as Constraints.PatchConnectivity')
-        end
-        Constraints.PatchConnectivity = PatchConnectivity;
-    end
 end
 
 
@@ -87,7 +75,7 @@ Constraints.ply_t      = 0.000127;          % ply thickness
 
 Constraints.NContiguity   = 3;  % optional (only needed if Contiguity = true)
 Constraints.NInternalCont = 3;  % optional (only needed if InternalContinuity = true)
-
+Constraints.Implicit10PercentRule = false; 
 
 
 %% === Options 
@@ -100,7 +88,6 @@ GAoptions.IniPopFEASIBLE = 1;               % Either (1 or 2), Ensure the initia
 
 
 GAoptions.FitnessLimit = 1e-5;               % ----- Note the value here is much higher due the high value of stiffness matrices ------
-
 
 GAoptions.PlotInterval = [10];              % Refresh plot every X itterations         
 GAoptions.SaveInterval = [2];               % Save Data every    X itterations (in Results.txt)   

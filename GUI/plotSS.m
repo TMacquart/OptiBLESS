@@ -42,8 +42,8 @@ function [] = plotSS(Output,Scale,PatchXYZ,varargin)
 
 Fig = figure;
 FigPosition    = [0.0,0.0,0.8,0.8]*Scale;
-FigPosition(1) = 0.98-(FigPosition(end-1)); %  |0.98|   are used to fixed the window on the top right corner (you can change these values acccording to your preferences)
-FigPosition(2) = 0.95-(FigPosition(end));   %  |0.95|
+FigPosition(1) = 0.95-(FigPosition(end-1)); %  |0.98|   are used to fixed the window on the top right corner (you can change these values acccording to your preferences)
+FigPosition(2) = 0.90-(FigPosition(end));   %  |0.95|
 
 set(Fig,'Units','normalized','Position',FigPosition)
 

@@ -10,9 +10,9 @@ addpath ./src
 addpath ./FitnessFcts
 addpath ./GUI
 
-% GuideLamDv = [-45 0 45 90 0  -45  45  90  -45  45];    
-% Lam1       = [    0    90 0  -45  45  90  -45  45];   
-% Lam2       = [    0    90 0           90  -45  45];   
+% GuideLamDv = Bottom Ply [-45 0 45 90 0  -45  45  90  -45  45]; Top Ply    
+% Lam1       =            [    0    90 0  -45  45  90  -45  45];   
+% Lam2       =            [    0    90 0           90  -45  45];   
 
 Lp2Match = [
     % Guide     % Lam 1     % Lam 2
@@ -50,7 +50,7 @@ Objectives.FitnessFct = @(LP) RMSE_LP(LP,Objectives);
 %                        [Symmetry,  Balanced,  Damtol,   Rule10percent,  Disorientation,  Contiguity,  InternalContinuity,  Covering];
 Constraints.Vector     = [false   ,    false ,  false ,      false     ,      false     ,     false  ,      false         ,     false];
 Constraints.DeltaAngle = 45;
-
+Constraints.Implicit10PercentRule = false; 
 
 %% === Options 
 GAoptions.Npop    = 50;                     % Population size

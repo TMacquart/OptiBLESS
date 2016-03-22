@@ -33,3 +33,13 @@ Terence Macquart - Original Developer
 
 The **Opti-BLESS** toolbox is distributed under a permisive 2-clause BSD license. You can redistribute and use the code in source and binary forms, with or without modification, provided that the redistributions retain the copyright notice, the list of conditions and the disclaimer.
 
+
+## Release Update
+
+Release 1.1.0 improves upon the previous version on the following point:
+- Ply drops are replaced by ply insertion making easier to generate initial populations
+- For sake a clarity the encoded solutions is replaced by its corresponding stacking sequence table in the source code
+- Explicit and an implicit constraints for the 10% rule now have been added
+- The plot function includes a new scaling inputs
+- New learning examples have also been added
+- Initial population generations has been greatly changes to increase its speed
