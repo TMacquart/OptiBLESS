@@ -8,7 +8,23 @@ The **Opti**misation of **BLE**nded **S**tacking **S**equence toolbox (**Opti-BL
 
 ## Motivation
 
-While the theory of stacking sequence optimisation is rather straightforward, its numerical implementation is something of a challenge and a time consuming task. At present time, only private tools are available for this purpose. The **Opti-BLESS** toolbox will give you a thouroughly validated set of building blocks required for stacking sequence optimisation. You can either use the toolbox as is or improve upon it and even make it yours. The ultimate goal of the developing toolbox, from my point of view, is to bridge the gap between the numerical and practical design of composite structures. Don't get me wrong, there is still quite some work left to be done in order bridge that gap but this toolbox at least provides a basis to start with. 
+While the theory of stacking sequence optimisation is rather straightforward, its numerical implementation is something of a challenge and a time consuming task. At present time, only private tools such as [Hypersizer](http://hypersizer.com/) and [OptiStruct](http://www.altairhyperworks.co.uk/product/optistruct) are available for this purpose. The **Opti-BLESS** toolbox will give you a thouroughly validated set of building blocks required for stacking sequence optimisation. You can either use the toolbox as is or improve upon it and even make it yours. The ultimate goal of the developing toolbox, from my point of view, is to bridge the gap between the numerical and practical design of composite structures. Don't get me wrong, there is still quite some work left to be done in order bridge that gap but this toolbox at least provides a basis to start with. 
+
+## Capabilities
+
+The **Opti-BLESS** toolbox relies on a direct optimisation approach where explicit design variables such as ply angles, ply insertion and number of plies are used to optimise stacking sequences. The toolbox is a numerical implementation based on the guide-blending strategy which ensures the composite structure continuity over the laminate patches. The toolbox can either be used to optimise composite structures directly or to retrieve stacking sequences matching the structural properties of designs optimised using parametrisation such as stiffness or lamination parameters.  
+
+In addition, the composite design guidelines included within the toolbox algorithm are:
+
+* Symmetry: Stacking sequence is mirrored about the mid-plane.
+2. Balance: All fibre angles, except 0 and 90deg, occur in ± pairs. 
+3. Damtol: Damage Tolerance,  ±45deg plies are used for the upper and lower laminate plies.
+4. Rule10percent: A minimum of 10% of plies in each of the 0, ±45 and 90deg is enforced.
+5. Disorientation: The change of angles between two consecutive plies should not exceed 45deg.
+6. Contiguity: No more that 'X' plies with same fibre orientation should be next to each other (set by user).
+7. DiscreteAngle: Discrete fibre angles are used (set by user).  
+8. InernalContinuity: One ply must be kept spanning the entire structure every 'X' plies (set by user).
+9. Covering: Covering plies on the lower and upper surfaces of the laminate cannot be dropped. 
 
 
 ## Requirement
@@ -31,7 +47,7 @@ Terence Macquart - Instigator
 
 ## License
 
-The **Opti-BLESS** toolbox is distributed under a permisive 2-clause BSD license. You can redistribute and use the code in source and binary forms, with or without modification, provided that the redistributions retain the copyright notice, the list of conditions and the disclaimer.
+The **Opti-BLESS** toolbox is distributed under a permisive 2-clause BSD license. You can redistribute and use the code in source and binary forms, with or without modification, provided that the redistributions retain the copyright notice, the list of conditions and the disclaimer. A copy of the license file is also provided with the toolbox for more details.
 
 
 ## Release Update
