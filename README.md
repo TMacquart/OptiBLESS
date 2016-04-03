@@ -8,7 +8,7 @@ The **Opti**misation of **BLE**nded **S**tacking **S**equence toolbox (**Opti-BL
 
 ## Motivation
 
-While the theory of stacking sequence optimisation is rather straightforward, its numerical implementation is something of a challenge and a time consuming task. At present time, only private tools such as [Hypersizer](http://hypersizer.com/) and [OptiStruct](http://www.altairhyperworks.co.uk/product/optistruct) are available for this purpose. The **Opti-BLESS** toolbox will give you a thouroughly validated set of building blocks required for stacking sequence optimisation. You can either use the toolbox as is or improve upon it and even make it yours. The ultimate goal of the developing toolbox, from my point of view, is to bridge the gap between the numerical and practical design of composite structures. Don't get me wrong, there is still quite some work left to be done in order bridge that gap but this toolbox at least provides a basis to start with. 
+While the theory of stacking sequence optimisation is rather straightforward, its numerical implementation is something of a challenge and a time consuming task. At present time, only private tools such as [Hypersizer](http://hypersizer.com/) and [OptiStruct](http://www.altairhyperworks.co.uk/product/optistruct) are available for this purpose. The **Opti-BLESS** toolbox will give you a thouroughly validated set of building blocks required for stacking sequence optimisation. You can either use the toolbox as is or improve upon it and even make it yours. I will be more than happy to accept pull requests or contributions from other developers. The ultimate goal of the developing toolbox is to bridge the gap between the numerical and practical design of composite structures. Don't get me wrong, there is still quite some work left to be done in order bridge that gap but this toolbox at least provides a basis to start with. The toolbox current capabilities and possible improvements are discussed below. 
 
 ## Capabilities
 
@@ -25,6 +25,17 @@ In addition, the composite design guidelines included within the toolbox algorit
 7. DiscreteAngle: Discrete fibre angles are used (set by user).  
 8. InernalContinuity: One ply must be kept spanning the entire structure every 'X' plies (set by user).
 9. Covering: Covering plies on the lower and upper surfaces of the laminate cannot be dropped. 
+
+
+## Limitation - Possibility for improvements
+
+* The curse of dimensionality. Despite the concise coding provided by the guide-based approach, the growth of design variables will quickly limit the capability of the genetic algorithm in finding an optimal solution.
+* Limited geometrical capabilities. The structure geometry could be used in future release so as to have a more significant influence on the final optimised design. For instance, by considering by drop rates, gap and overlap due to automated fibre placement. 
+* Transition section between patches are considered negligible during fitness calculation. Intermediate sections contain all ply drops and are therefore critical parts of the structure, due to stress concentration and trough-thickness load distribution, where failure is likely to start.
+* Tow-steering methodologies are not currently considered. I may, however, be possible to exploit the current code in order to create an option for fibre path design. 
+* A single material type is used. All plies are made of the materials. This limitation could be easily removed in future release. 
+* The addition of detailed manufacturability constraints could further help bridging the gap between optimised and manufacturable designs. 
+
 
 
 ## Requirement
@@ -44,6 +55,7 @@ The toolbox has been thouroughly validated and is provided with a set of example
 ## Contributors
 
 Terence Macquart - Instigator  
+You can contribute too!
 
 ## License
 
