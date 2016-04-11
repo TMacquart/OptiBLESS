@@ -35,6 +35,7 @@ In addition, the composite design guidelines included within the toolbox algorit
 * Tow-steering methodologies are not currently considered. I may, however, be possible to exploit the current code in order to create an option for fibre path design. 
 * A single material type is used. All plies are made of the materials. This limitation could be easily removed in future release. 
 * The addition of detailed manufacturability constraints could further help bridging the gap between optimised and manufacturable designs. 
+* Despite the consice coding methodology provided by the guide based approach, current exploration of the design space for highly constrained stacking sequence optimisation remains difficult. New explicit constraint handling could help solve this problem.
 
 
 
