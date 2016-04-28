@@ -44,7 +44,6 @@ BalancedLoc     = Individual(NVarPatch + NStruct.NthetaVar + [1:NStruct.NbalVar]
 TenPercentLoc   = Individual(NVarPatch + NStruct.NthetaVar + NStruct.NbalVar + [1:NStruct.N10percentVar]);
 
 if NStruct.NMidPlane>=NStruct.NDV_NMidPlane
-    keyboard
     % only happens for Sym. Balanced (NStruct.NMidPlane can be = 3 at max), in this case need to ensure symmetry is preserved
     Thetas_Mid      = Individual(NVarPatch + NStruct.NthetaVar + NStruct.NbalVar + NStruct.N10percentVar + [1:NStruct.NDV_NMidPlane]);
 else
