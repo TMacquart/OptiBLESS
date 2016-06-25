@@ -1,6 +1,17 @@
 % =====                                                              ====== 
 %
 %       Simple Single Patch Example with Stiffness Matrix Matching
+%       This is the same example as Learn2useExample1.m except that
+%       sitffness matrices are used instead of lamination parameters
+% 
+% %  In this Example:
+%  A single laminate with stacking sequence [45/-45/90/0/45/90/0/45] is
+%  used. The stiffness matrices corresponding to the given stacking 
+%  sequence are pre-calculated (i.e. A2Match). The optimiser tries to 
+%  match the values of 'A2Match' ,'B2Match' and 'D2Match' by evaluating 
+%  various stacking sequences and comparing their stifness values against
+%  'A2Match' ,'B2Match' and 'D2Match'. A minimisation approach is used 
+%  (i.e. lower fitness = better match). 
 %
 % =====                                                              ====== 
 
@@ -13,28 +24,42 @@ addpath ./src
 addpath ./src/StiffnessOpt      % ----- Supplementary path for stiffness optimisation ------
 addpath ./GUI
 
-% --- bottom [ 45   -45    90     0    45    90     0    45] Top   
-E1   = 13.0e9;
-E2   = 72.0e9;
-G12  = 26.9e9;
-v12  = 0.33;
 
-tply = 0.000127;  % ply thickness
-h    = 8*tply;    % Laminate thickness
+%% Objective
+% In comparison to the first example, material properties are required
+% in order to calculate the laminate stiffness matrices. These values
+% are stored in the objective structure:
+% Objectives.mat = [E1 E2 G12 v12 h] 
+% 
+% The Scaling coefficient are also replaced by scaling matrices for each of
+% the stiffness matrices (IndexAStiff, IndexBStiff and IndexDStiff)
+% 
+% --- bottom [ 45   -45    90     0    45    90     0    45] Top   
+E1   = 13.0e9;  % principal axis young's modulus
+E2   = 72.0e9;  % Second axis young's modulus
+G12  = 26.9e9;  % Torsional rigidity
+v12  = 0.33;    % Poisson's ratio
+
+tply = 0.000127;  % a ply thickness
+h    = 8*tply;    % Laminate thickness ( eight time because we assume to know that the laminate contains 8 plies)
 
 % Stiffness matrices to retrieve using OptiBLESS
 A2Match ={[
    1.0874e+11   5.8225e+10  -9.2917e+09
    5.8225e+10   1.0874e+11  -9.2917e+09
-  -9.2917e+09  -9.2917e+09   2.5255e+10]};
+  -9.2917e+09  -9.2917e+09   2.5255e+10]}; % in-plane stiffness matrix
+
 B2Match ={[
   -9.7029e+09   4.1122e+08  -6.9687e+09
    4.1122e+08   8.8804e+09  -6.9687e+09
-  -6.9687e+09  -6.9687e+09   4.1122e+08]};
+  -6.9687e+09  -6.9687e+09   4.1122e+08]}; % Coupled stiffness matrix
+
+
 D2Match ={[
    1.0602e+11   5.7454e+10   -1.626e+10
    5.7454e+10   1.1299e+11   -1.626e+10
-   -1.626e+10   -1.626e+10   2.4484e+10]};
+   -1.626e+10   -1.626e+10   2.4484e+10]}; % Out-of-plane stiffness matrix
+
 
 Objectives.mat = [E1 E2 G12 v12 h];
  
