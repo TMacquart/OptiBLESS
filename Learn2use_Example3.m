@@ -95,7 +95,7 @@ for i = 2:size(Objectives.Table,1)
         error('non matching SS and LPOpt')
     end
     
-    if abs( rms ( (LP-LP2Match).*ScalingCoef(:,i-1) )-Output.Table{i,7})>1e-10
+    if abs( MYrms ( (LP-LP2Match).*ScalingCoef(:,i-1) )-Output.Table{i,7})>1e-10
         error('non matching RSM')
     end
     

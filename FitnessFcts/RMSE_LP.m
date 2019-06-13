@@ -44,7 +44,8 @@ Nlam = size(LP2Match,2);
 localFit = zeros(Nlam,1);
 for ilam = 1 : Nlam
     Error = (LP2Match(:,ilam) - LP(:,ilam)).*ScalingCoef(:,ilam);
-    localFit(ilam) = rms(Error);
+    localFit(ilam) = MYrms(Error);
+
 end
 Fitness = sum(localFit)/Nlam;
 
