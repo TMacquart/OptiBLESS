@@ -136,7 +136,10 @@ if strcmp(Objectives.Type,'LP')
         ScalingCoef = Objectives.Table{j+1,4};                                      % Scaling coefficients given as objectives 
         
         QualIndex1 = norm( (LPMatched(:,j) - LP2Match(:)).*ScalingCoef );           % Norm Error
-        QualIndex2 = rms( (LPMatched(:,j) - LP2Match(:)).*ScalingCoef );            % Root mean square error
+        QualIndex2 = MYrms( (LPMatched(:,j) - LP2Match(:)).*ScalingCoef );            % Root mean square error
+        %add manual rms
+%         dataToBeRms =  (LPMatched(:,j) - LP2Match(:)).*ScalingCoef ;  
+%          QualIndex2=sqrt(1/length(dataToBeRms).*(sum(dataToBeRms(:).^2)));
         QualIndex3 = mae( (LPMatched(:,j) - LP2Match(:)).*ScalingCoef );            % Mean absolute error
         QualIndex4 = max( abs((LPMatched(:,j) - LP2Match(:)).*ScalingCoef) );       % Maximum absolute error
         
@@ -169,15 +172,15 @@ if strcmp(Objectives.Type,'ABD')
     
         QualIndex1A = 100*sum(abs(  AScaling(:).*((A_Matched(:) - A2Match(:))./A2Match(:)) ));
         QualIndex2A = norm( AScaling(:).*(A_Matched(:) - A2Match(:)) );
-        QualIndex3A = rms(  AScaling(:).*(A_Matched(:) - A2Match(:)) );
+        QualIndex3A = MYrms(  AScaling(:).*(A_Matched(:) - A2Match(:)) );
         
         QualIndex1B = 100*sum(abs(  BScaling(:).*((B_Matched(:) - B2Match(:))./B2Match(:)) ));
         QualIndex2B = norm( BScaling(:).*(B_Matched(:) - B2Match(:)) );
-        QualIndex3B = rms(  BScaling(:).*(B_Matched(:) - B2Match(:)) );
+        QualIndex3B = MYrms(  BScaling(:).*(B_Matched(:) - B2Match(:)) );
         
         QualIndex1D = 100*sum(abs(  DScaling(:).*((D_Matched(:) - D2Match(:))./D2Match(:)) ));
         QualIndex2D = norm( DScaling(:).*(D_Matched(:) - D2Match(:)) );
-        QualIndex3D = rms(  DScaling(:).*(D_Matched(:) - D2Match(:)) );
+        QualIndex3D = MYrms(  DScaling(:).*(D_Matched(:) - D2Match(:)) );
         
         Table = [Table ;  {j} { length(cell2mat(output.SS_Patch(j,:)))} {cell2mat(output.SS_Patch(j,:))} ...                                      
                     {A2Match} {A_Matched} {QualIndex1A} {QualIndex2A} {QualIndex3A}...

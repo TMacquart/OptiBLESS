@@ -166,19 +166,22 @@ for i = 2:size(Objectives.Table,1)
         error('non matching LP2Match')
     end
     
-    if abs( rms ( (Output.Table{i,5}-LP2Match).*ScalingCoef(:,i-1) )-Output.Table{i,7})>1e-10
+    if abs( MYrms ( (Output.Table{i,5}-LP2Match).*ScalingCoef(:,i-1) )-Output.Table{i,7})>1e-10
         error('non matching SS and LPOpt')
     end
-    
+
+
     LP = Convert_SS2LP(Output.Table{i,3});
     if sum(abs(LP-Output.Table{i,5}))>1e-10
         error('non matching SS and LPOpt')
     end
     
-    if abs( rms ( (LP-LP2Match).*ScalingCoef(:,i-1) )-Output.Table{i,7})>1e-10
+    if abs( MYrms ( (LP-LP2Match).*ScalingCoef(:,i-1) )-Output.Table{i,7})>1e-10
         error('non matching RSM')
     end
+
     
+
     if abs( norm ((LP-LP2Match).*ScalingCoef(:,i-1))-Output.Table{i,6})>1e-10
         error('non matching norm')
     end
