@@ -55,7 +55,7 @@ The toolbox has been thouroughly validated and is provided with a set of example
 
 ## Contributors
 
-Terence Macquart - Instigator  
+Terence Macquart - Instigator (University of Bristol http://www.bristol.ac.uk/engineering/people/terence-macquart/overview.html) 
 You can contribute too!
 
 ## License
