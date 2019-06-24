@@ -4,7 +4,7 @@ Terence Macquart - Instigator (University of Bristol http://www.bristol.ac.uk/en
 
 You can contribute too!
 
-![](./UOB_logo_transparent.png)
+![UoB_Logo](./GUI/UOB_logo_transparent.png)
 
 ## Opti-BLESS Overview
 
