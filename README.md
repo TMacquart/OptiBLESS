@@ -1,3 +1,11 @@
+## Contributors
+
+Terence Macquart - Instigator (University of Bristol http://www.bristol.ac.uk/engineering/people/terence-macquart/overview.html)
+
+You can contribute too!
+
+![](./UOB_logo_transparent.png)
+
 ## Opti-BLESS Overview
 
 The **Opti**misation of **BLE**nded **S**tacking **S**equence toolbox (**Opti-BLESS**) is a simple MATLAB toolbox allowing you to optimise patch-based stacking sequences including composite design guidelines. The code is easily accesible to everybody who posseses a basic understanding in classical laminate theory and optimisation. Detailed explanation about how to use the code are provided in the PDF file distributed with the code. Typical outputs obtained for the composite optimisation of an aircraft wing are shown in the figures below.
@@ -53,10 +61,6 @@ Once you have a suitable working version of MATLAB the toolbox can be run withou
 
 The toolbox has been thouroughly validated and is provided with a set of examples and benchmarks. Reaching 100% certainty in terms of validation is, however, impropable and possible errors may still be experienced. In this case, you can fix it and report it or simply provide feedback for me to be able to fix it (terence.macquart@gmail.com). Do not hesitate to aslo propose features you would like to be implemented.     
 
-## Contributors
-
-Terence Macquart - Instigator (University of Bristol http://www.bristol.ac.uk/engineering/people/terence-macquart/overview.html) 
-You can contribute too!
 
 ## License
 
